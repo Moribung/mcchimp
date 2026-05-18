@@ -350,6 +350,7 @@ h1 em::after{
 }
 .accent-gold{background:var(--gold)}
 .accent-blue{background:var(--blue)}
+.accent-green{background:var(--green)}
 
 /* ── HOW IT WORKS ── */
 .how-grid{
@@ -541,6 +542,7 @@ footer{
   <p class="hero-sub fade-up delay-2">Multiple-choice trivia games built around real sports careers. Answer questions. Climb the rankings. Win the belt.</p>
   <div class="hero-actions fade-up delay-3">
     <a href="/mma" class="btn-primary">Play MMA Trivia</a>
+    <a href="/football" class="btn-primary" style="background:var(--blue)">Play Football Trivia</a>
     <a href="#games" class="btn-ghost">See All Games</a>
   </div>
 </section>
@@ -549,14 +551,14 @@ footer{
 <div class="ticker-wrap">
   <div class="ticker">
     <div class="ticker-item"><span>MMA Career Trivia</span> Now Live</div>
-    <div class="ticker-item"><span>Football Trivia</span> Coming Soon</div>
+    <div class="ticker-item"><span>Football Trivia</span> Now Live</div>
     <div class="ticker-item"><span>Multiple Choice</span> Gameplay</div>
     <div class="ticker-item"><span>Career Mode</span> Included</div>
     <div class="ticker-item"><span>Sparring Mode</span> Practice Free</div>
     <div class="ticker-item"><span>Question Sets</span> Modular</div>
     <!-- duplicate for seamless loop -->
     <div class="ticker-item"><span>MMA Career Trivia</span> Now Live</div>
-    <div class="ticker-item"><span>Football Trivia</span> Coming Soon</div>
+    <div class="ticker-item"><span>Football Trivia</span> Now Live</div>
     <div class="ticker-item"><span>Multiple Choice</span> Gameplay</div>
     <div class="ticker-item"><span>Career Mode</span> Included</div>
     <div class="ticker-item"><span>Sparring Mode</span> Practice Free</div>
@@ -579,14 +581,14 @@ footer{
       <div class="card-accent accent-gold"></div>
     </a>
 
-    <div class="game-card" style="cursor:default">
+    <a href="/football" class="game-card">
       <div class="card-num">02</div>
-      <div class="card-tag tag-soon">Coming Soon</div>
+      <div class="card-tag tag-live">● Live Now</div>
       <div class="card-title">Football<br>Trivia</div>
       <p class="card-desc">Manage a career across the football pyramid. Tactics, transfers, and trivia — your knowledge of the game determines everything.</p>
-      <div class="card-arrow" style="color:var(--muted)">In Development</div>
-      <div class="card-accent accent-blue"></div>
-    </div>
+      <div class="card-arrow">Play Now</div>
+      <div class="card-accent accent-green"></div>
+    </a>
 
   </div>
 </section>
@@ -622,8 +624,8 @@ footer{
 <section class="signup-section" id="notify">
   <div class="signup-left">
     <div class="section-label" style="margin-bottom:12px">Early Access</div>
-    <h2>Be First<br>Through the Door</h2>
-    <p>Football Trivia and player accounts are in development. Drop your email and we'll tell you when it's ready.</p>
+    <h2>More Games<br>Coming Soon</h2>
+    <p>Player accounts, leaderboards and more sports are in development. Drop your email to stay in the loop.</p>
   </div>
   <form class="signup-form" onsubmit="handleSignup(event)">
     <input type="email" id="email-input" placeholder="your@email.com" required>
