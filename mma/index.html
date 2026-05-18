@@ -61,6 +61,72 @@
   /* Sparring: full-width, no right sidebar */
   body.sparring.in-game #career-col  { display:none; }
   body.sparring.in-game #game-col    { max-width:760px; margin:0 auto; }
+
+  /* ── Mobile: stack columns vertically ───────────────── */
+  @media (max-width: 768px) {
+    body { font-size:14px; }
+
+    #header { padding:14px 16px 12px; }
+    #score-display { font-size:16px; gap:10px; }
+
+    /* Stack layout vertically — game col on top, career col below */
+    #layout-wrap {
+      flex-direction: column;
+    }
+    #game-col {
+      max-width: 100%;
+      padding: 16px 16px 24px;
+      border-right: none;
+    }
+    #career-col {
+      width: 100%;
+      border-left: none;
+      border-top: 1px solid var(--border);
+      padding: 16px 16px 24px;
+      position: static;
+      max-height: none;
+      overflow-y: visible;
+    }
+
+    /* Module / end screens */
+    body:not(.in-game) #layout-wrap { padding:0 16px; }
+    #screen-module, #screen-end { padding:20px 0 32px; }
+
+    /* Ranking table: tighten up on mobile */
+    #ranking-table { margin-bottom:10px; }
+    .rt-rank { width:28px !important; font-size:10px !important; }
+    .rt-rec  { font-size:10px !important; }
+
+    /* Bout history: full width scrollable */
+    #bout-history { margin-bottom:10px; }
+    .bh-scroll { max-height:200px; }
+
+    /* Question options: full tap targets */
+    .option-btn { padding:12px 12px; }
+
+    /* Buttons */
+    .btn-row { flex-direction:column; }
+    .btn-row .btn { width:100%; text-align:center; }
+
+    /* Progress dots wrap tightly */
+    #progress-dots { gap:4px; }
+    .dot { width:10px; height:10px; }
+
+    /* Timer */
+    #timer-secs { font-size:13px; }
+
+    /* Module switcher */
+    .msw-inner { padding:20px 16px; }
+    .confirm-inner { padding:20px 16px; }
+
+    /* Career panel: more compact */
+    .cp-fighter { font-size:18px !important; }
+    .cp-org-row { font-size:11px; }
+
+    /* Diff/length buttons: two per row */
+    .diff-row, .length-row { gap:6px; }
+    .diff-btn, .length-btn { padding:8px 10px; min-width:0; }
+  }
   #fight-count { font-size:11px; letter-spacing:0.12em; text-transform:uppercase; color:var(--text-muted); margin-bottom:20px; }
   .screen { display:none; } .screen.active { display:block; }
 
