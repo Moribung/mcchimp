@@ -3574,16 +3574,34 @@ let state   = null;
 let qState  = null;
 let career  = null;
 
+// Safe localStorage wrappers — fall back silently when storage is blocked
+// (e.g. cross-origin iframes, sandboxed environments, private browsing)
+const _store = (() => {
+  let _mem = {};
+  let _hasLS = null;
+  function _check() {
+    if (_hasLS !== null) return _hasLS;
+    try { localStorage.setItem('_t','1'); localStorage.removeItem('_t'); _hasLS = true; }
+    catch(e) { _hasLS = false; }
+    return _hasLS;
+  }
+  return {
+    setItem(k, v) { try { if (_check()) localStorage.setItem(k, v); else _mem[k] = v; } catch(e) { _mem[k] = v; } },
+    getItem(k)    { try { if (_check()) return localStorage.getItem(k); return _mem[k] ?? null; } catch(e) { return _mem[k] ?? null; } },
+    removeItem(k) { try { if (_check()) localStorage.removeItem(k); else delete _mem[k]; } catch(e) { delete _mem[k]; } },
+  };
+})();
+
 function saveState() {
   const qs = deepCopy(qState);
-  localStorage.setItem('anstoss_state',     JSON.stringify(state));
-  localStorage.setItem('anstoss_questions', JSON.stringify(qs));
-  localStorage.setItem('anstoss_career',    JSON.stringify(career));
+  _store.setItem('anstoss_state',     JSON.stringify(state));
+  _store.setItem('anstoss_questions', JSON.stringify(qs));
+  _store.setItem('anstoss_career',    JSON.stringify(career));
 }
 
 function loadSavedState() {
   try {
-    const raw = localStorage.getItem('anstoss_state');
+    const raw = _store.getItem('anstoss_state');
     if (!raw) return false;
     state  = JSON.parse(raw);
     if (!state.matchdays) {
@@ -3592,12 +3610,12 @@ function loadSavedState() {
     }
     if (!state.tactic) state.tactic = 'moderate';
     if (!state.questionSet) state.questionSet = 'animals';
-    const qs = JSON.parse(localStorage.getItem('anstoss_questions') || '{}');
+    const qs = JSON.parse(_store.getItem('anstoss_questions') || '{}');
     qState = {
       customQuestions: qs.customQuestions || [],
       _qScores:        qs._qScores        || {},
     };
-    career = JSON.parse(localStorage.getItem('anstoss_career') || 'null') || freshCareer();
+    career = JSON.parse(_store.getItem('anstoss_career') || 'null') || freshCareer();
     return true;
   } catch(e) { return false; }
 }
@@ -4344,9 +4362,9 @@ function renderInfoTab() {
 
 function confirmNewGame() {
   if (confirm('Delete this save and start a new game? This cannot be undone.')) {
-    localStorage.removeItem('anstoss_state');
-    localStorage.removeItem('anstoss_questions');
-    localStorage.removeItem('anstoss_career');
+    _store.removeItem('anstoss_state');
+    _store.removeItem('anstoss_questions');
+    _store.removeItem('anstoss_career');
     state = null; qState = null; career = null;
     renderStartScreen();
   }
@@ -5656,7 +5674,7 @@ function renderStartScreen() {
   `;
 
   // Check for existing save
-  const raw = localStorage.getItem('anstoss_state');
+  const raw = _store.getItem('anstoss_state');
   if (raw) {
     try {
       const saved = JSON.parse(raw);
