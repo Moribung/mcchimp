@@ -3,547 +3,160 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>McChimp — Know Your Sport</title>
-<meta name="description" content="Sports trivia games that actually test you. MMA, Football and more. Coming soon.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500&display=swap" rel="stylesheet">
-<style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-
-:root{
-  --black:#0A0A0A;
-  --off:#111213;
-  --surface:#191B1D;
-  --gold:#E8C14A;
-  --gold2:#C89A20;
-  --white:#F2EFE8;
-  --muted:#6B6B6B;
-  --red:#D94040;
-  --blue:#2A5EAD;
-  --green:#2E8B57;
-}
-
+<title>McChimp &#8212; Know Your Sport</title>
+<meta name="description" content="Sports trivia games built around real careers. MMA, Football and more.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500&display=swap" rel="stylesheet">
+<style>*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--black:#0A0A0A;--off:#111213;--surface:#191B1D;--gold:#E8C14A;--gold2:#C89A20;--white:#F2EFE8;--muted:#6B6B6B;--blue:#2A5EAD;--green:#2E8B57;--border:rgba(255,255,255,0.06);--header-h:64px;}
 html{scroll-behavior:smooth}
-
-body{
-  background:var(--black);
-  color:var(--white);
-  font-family:'Barlow',sans-serif;
-  font-size:16px;
-  line-height:1.6;
-  overflow-x:hidden;
-}
-
-/* ── NOISE TEXTURE OVERLAY ── */
-body::before{
-  content:'';
-  position:fixed;
-  inset:0;
-  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
-  opacity:0.028;
-  pointer-events:none;
-  z-index:999;
-}
-
-/* ── HEADER ── */
-header{
-  position:fixed;
-  top:0;left:0;right:0;
-  z-index:100;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding:20px 48px;
-  background:linear-gradient(to bottom,rgba(10,10,10,0.95),transparent);
-}
-
-.logo{
-  font-family:'Bebas Neue',sans-serif;
-  font-size:28px;
-  letter-spacing:.06em;
-  color:var(--gold);
-  text-decoration:none;
-}
-.logo span{color:var(--white);opacity:.5}
-
-nav{display:flex;gap:32px;align-items:center}
-nav a{
-  font-family:'Barlow Condensed',sans-serif;
-  font-size:14px;
-  font-weight:600;
-  letter-spacing:.1em;
-  text-transform:uppercase;
-  color:var(--muted);
-  text-decoration:none;
-  transition:color .2s;
-}
-nav a:hover{color:var(--white)}
-
-.nav-cta{
-  background:var(--gold);
-  color:var(--black) !important;
-  padding:8px 20px;
-  border-radius:2px;
-  font-weight:700;
-  transition:background .2s !important;
-}
-.nav-cta:hover{background:var(--gold2) !important}
-
-/* ── HERO ── */
-.hero{
-  min-height:100vh;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  padding:120px 48px 80px;
-  position:relative;
-  overflow:hidden;
-}
-
-.hero-bg{
-  position:absolute;
-  inset:0;
-  background:
-    radial-gradient(ellipse 60% 50% at 80% 50%,rgba(232,193,74,0.06) 0%,transparent 70%),
-    radial-gradient(ellipse 40% 60% at 10% 80%,rgba(42,94,173,0.08) 0%,transparent 60%);
-}
-
-.hero-tag{
-  font-family:'Barlow Condensed',sans-serif;
-  font-size:13px;
-  font-weight:700;
-  letter-spacing:.18em;
-  text-transform:uppercase;
-  color:var(--gold);
-  margin-bottom:24px;
-  display:flex;
-  align-items:center;
-  gap:12px;
-}
-.hero-tag::before{
-  content:'';
-  display:block;
-  width:32px;
-  height:2px;
-  background:var(--gold);
-}
-
-h1{
-  font-family:'Bebas Neue',sans-serif;
-  font-size:clamp(72px,11vw,160px);
-  line-height:.92;
-  letter-spacing:.02em;
-  color:var(--white);
-  max-width:900px;
-  position:relative;
-  z-index:1;
-}
-h1 em{
-  font-style:normal;
-  color:var(--gold);
-  position:relative;
-  display:inline-block;
-}
-h1 em::after{
-  content:'';
-  position:absolute;
-  left:0;bottom:-4px;right:0;
-  height:4px;
-  background:var(--gold);
-  border-radius:2px;
-}
-
-.hero-sub{
-  font-family:'Barlow Condensed',sans-serif;
-  font-size:clamp(18px,2.2vw,26px);
-  font-weight:400;
-  color:rgba(242,239,232,0.55);
-  margin-top:36px;
-  max-width:520px;
-  line-height:1.4;
-  position:relative;
-  z-index:1;
-}
-
-.hero-actions{
-  display:flex;
-  gap:16px;
-  align-items:center;
-  margin-top:48px;
-  flex-wrap:wrap;
-  position:relative;
-  z-index:1;
-}
-
-.btn-primary{
-  font-family:'Barlow Condensed',sans-serif;
-  font-size:16px;
-  font-weight:700;
-  letter-spacing:.1em;
-  text-transform:uppercase;
-  background:var(--gold);
-  color:var(--black);
-  border:none;
-  padding:16px 36px;
-  border-radius:2px;
-  cursor:pointer;
-  text-decoration:none;
-  transition:background .2s,transform .15s;
-  display:inline-block;
-}
-.btn-primary:hover{background:var(--gold2);transform:translateY(-1px)}
-.btn-primary:active{transform:translateY(0)}
-
-.btn-ghost{
-  font-family:'Barlow Condensed',sans-serif;
-  font-size:16px;
-  font-weight:600;
-  letter-spacing:.1em;
-  text-transform:uppercase;
-  background:transparent;
-  color:var(--white);
-  border:1px solid rgba(242,239,232,0.2);
-  padding:15px 36px;
-  border-radius:2px;
-  cursor:pointer;
-  text-decoration:none;
-  transition:border-color .2s,color .2s;
-  display:inline-block;
-}
-.btn-ghost:hover{border-color:rgba(242,239,232,0.5);color:var(--white)}
-
-/* ── TICKER ── */
-.ticker-wrap{
-  overflow:hidden;
-  border-top:1px solid rgba(232,193,74,0.2);
-  border-bottom:1px solid rgba(232,193,74,0.2);
-  padding:14px 0;
-  background:rgba(232,193,74,0.03);
-  margin-top:80px;
-}
-.ticker{
-  display:flex;
-  gap:0;
-  white-space:nowrap;
-  animation:ticker 28s linear infinite;
-}
-.ticker-item{
-  font-family:'Barlow Condensed',sans-serif;
-  font-size:13px;
-  font-weight:700;
-  letter-spacing:.16em;
-  text-transform:uppercase;
-  color:var(--muted);
-  padding:0 40px;
-}
-.ticker-item span{color:var(--gold);margin-right:40px}
-@keyframes ticker{
-  0%{transform:translateX(0)}
-  100%{transform:translateX(-50%)}
-}
-
-/* ── GAMES SECTION ── */
-.section{padding:120px 48px}
-
-.section-label{
-  font-family:'Barlow Condensed',sans-serif;
-  font-size:12px;
-  font-weight:700;
-  letter-spacing:.2em;
-  text-transform:uppercase;
-  color:var(--gold);
-  margin-bottom:16px;
-  display:flex;
-  align-items:center;
-  gap:10px;
-}
-.section-label::before{content:'';display:block;width:24px;height:1px;background:var(--gold)}
-
-.section-title{
-  font-family:'Bebas Neue',sans-serif;
-  font-size:clamp(42px,6vw,80px);
-  line-height:1;
-  letter-spacing:.03em;
-  color:var(--white);
-  margin-bottom:60px;
-}
-
-.games-grid{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:2px;
-  max-width:1100px;
-}
-
-.game-card{
-  background:var(--surface);
-  padding:48px;
-  position:relative;
-  overflow:hidden;
-  text-decoration:none;
-  display:block;
-  transition:background .2s;
-  border:1px solid rgba(255,255,255,0.04);
-}
-.game-card:hover{background:#1E2023}
-.game-card:hover .card-arrow{transform:translate(4px,-4px)}
-
-.card-num{
-  font-family:'Bebas Neue',sans-serif;
-  font-size:96px;
-  line-height:1;
-  color:rgba(255,255,255,0.04);
-  position:absolute;
-  top:16px;right:24px;
-  letter-spacing:.02em;
-}
-
-.card-tag{
-  font-family:'Barlow Condensed',sans-serif;
-  font-size:11px;
-  font-weight:700;
-  letter-spacing:.18em;
-  text-transform:uppercase;
-  margin-bottom:20px;
-  display:inline-block;
-  padding:4px 10px;
-  border-radius:2px;
-}
-.tag-live{background:rgba(46,139,87,0.15);color:#4CAF85;border:1px solid rgba(46,139,87,0.3)}
-.tag-soon{background:rgba(107,107,107,0.15);color:var(--muted);border:1px solid rgba(107,107,107,0.2)}
-
-.card-title{
-  font-family:'Bebas Neue',sans-serif;
-  font-size:48px;
-  letter-spacing:.04em;
-  color:var(--white);
-  margin-bottom:12px;
-  line-height:1;
-}
-
-.card-desc{
-  font-size:14px;
-  color:rgba(242,239,232,0.5);
-  line-height:1.6;
-  max-width:340px;
-  margin-bottom:32px;
-}
-
-.card-arrow{
-  font-family:'Barlow Condensed',sans-serif;
-  font-size:13px;
-  font-weight:700;
-  letter-spacing:.14em;
-  text-transform:uppercase;
-  color:var(--gold);
-  display:flex;
-  align-items:center;
-  gap:10px;
-  transition:transform .2s;
-}
-.card-arrow::after{content:'→';font-size:16px}
-
-.card-accent{
-  position:absolute;
-  bottom:0;left:0;right:0;
-  height:3px;
-}
-.accent-gold{background:var(--gold)}
-.accent-blue{background:var(--blue)}
-.accent-green{background:var(--green)}
-
-/* ── HOW IT WORKS ── */
-.how-grid{
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:2px;
-  max-width:1100px;
-}
-
-.how-card{
-  background:var(--surface);
-  padding:40px;
-  border:1px solid rgba(255,255,255,0.04);
-  position:relative;
-}
-
-.how-num{
-  font-family:'Bebas Neue',sans-serif;
-  font-size:14px;
-  letter-spacing:.1em;
-  color:var(--gold);
-  margin-bottom:20px;
-  opacity:.7;
-}
-
-.how-title{
-  font-family:'Bebas Neue',sans-serif;
-  font-size:28px;
-  letter-spacing:.04em;
-  color:var(--white);
-  margin-bottom:12px;
-  line-height:1.1;
-}
-
-.how-desc{
-  font-size:14px;
-  color:rgba(242,239,232,0.45);
-  line-height:1.65;
-}
-
-/* ── EMAIL SIGNUP ── */
-.signup-section{
-  padding:120px 48px;
-  background:var(--surface);
-  border-top:1px solid rgba(255,255,255,0.04);
-  border-bottom:1px solid rgba(255,255,255,0.04);
-  display:flex;
-  gap:80px;
-  align-items:center;
-  justify-content:space-between;
-}
-
-.signup-left h2{
-  font-family:'Bebas Neue',sans-serif;
-  font-size:clamp(36px,5vw,64px);
-  letter-spacing:.03em;
-  line-height:1;
-  color:var(--white);
-  margin-bottom:12px;
-}
-.signup-left p{
-  font-size:15px;
-  color:rgba(242,239,232,0.45);
-  max-width:360px;
-}
-
-.signup-form{
-  display:flex;
-  gap:0;
-  flex-shrink:0;
-}
-.signup-form input{
-  font-family:'Barlow',sans-serif;
-  font-size:15px;
-  background:rgba(255,255,255,0.06);
-  border:1px solid rgba(255,255,255,0.1);
-  border-right:none;
-  color:var(--white);
-  padding:14px 20px;
-  width:280px;
-  outline:none;
-  border-radius:2px 0 0 2px;
-  transition:border-color .2s;
-}
-.signup-form input::placeholder{color:rgba(242,239,232,0.25)}
-.signup-form input:focus{border-color:rgba(232,193,74,0.4)}
-.signup-form button{
-  font-family:'Barlow Condensed',sans-serif;
-  font-size:14px;
-  font-weight:700;
-  letter-spacing:.12em;
-  text-transform:uppercase;
-  background:var(--gold);
-  color:var(--black);
-  border:none;
-  padding:14px 28px;
-  cursor:pointer;
-  border-radius:0 2px 2px 0;
-  transition:background .2s;
-  white-space:nowrap;
-}
-.signup-form button:hover{background:var(--gold2)}
-
-/* ── FOOTER ── */
-footer{
-  padding:48px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  border-top:1px solid rgba(255,255,255,0.06);
-}
-
-.footer-logo{
-  font-family:'Bebas Neue',sans-serif;
-  font-size:22px;
-  letter-spacing:.06em;
-  color:var(--gold);
-  opacity:.6;
-}
-
-.footer-links{display:flex;gap:28px}
-.footer-links a{
-  font-family:'Barlow Condensed',sans-serif;
-  font-size:12px;
-  font-weight:600;
-  letter-spacing:.12em;
-  text-transform:uppercase;
-  color:var(--muted);
-  text-decoration:none;
-  transition:color .2s;
-}
-.footer-links a:hover{color:var(--white)}
-
-.footer-copy{
-  font-size:12px;
-  color:rgba(107,107,107,0.6);
-  letter-spacing:.04em;
-}
-
-/* ── ANIMATIONS ── */
-@keyframes fadeUp{
-  from{opacity:0;transform:translateY(24px)}
-  to{opacity:1;transform:translateY(0)}
-}
-
-.fade-up{animation:fadeUp .7s cubic-bezier(0.22,1,0.36,1) both}
-.delay-1{animation-delay:.1s}
-.delay-2{animation-delay:.2s}
-.delay-3{animation-delay:.35s}
-.delay-4{animation-delay:.5s}
-
-/* ── RESPONSIVE ── */
+body{background:var(--black);color:var(--white);font-family:'Barlow',sans-serif;font-size:16px;line-height:1.6;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");opacity:0.028;pointer-events:none;z-index:998;}
+/* HEADER */
+header{position:fixed;top:0;left:0;right:0;z-index:200;height:var(--header-h);display:flex;align-items:center;justify-content:space-between;padding:0 48px;background:rgba(10,10,10,0.96);border-bottom:1px solid var(--border);backdrop-filter:blur(12px);}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:.06em;color:var(--gold);text-decoration:none;flex-shrink:0;}
+.logo span{color:var(--white);opacity:.45}
+nav{display:flex;gap:4px;align-items:center;}
+.nav-item{position:relative;}
+/* Fix: dropdown stays open while hovering nav-item (includes the dropdown itself) */
+.nav-link{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:0 14px;height:var(--header-h);display:flex;align-items:center;gap:5px;transition:color .15s;cursor:pointer;background:none;border:none;white-space:nowrap;}
+.nav-link:hover{color:var(--white);}
+.nav-item:hover > .nav-link{color:var(--white);}
+.chevron{font-size:9px;opacity:.5;transition:transform .2s;}
+.nav-item:hover .chevron{transform:rotate(180deg);}
+.dropdown{position:absolute;top:var(--header-h);left:0;min-width:240px;background:#0F1011;border:1px solid var(--border);border-top:none;overflow:hidden;opacity:0;pointer-events:none;transform:translateY(-4px);transition:opacity .15s,transform .15s;z-index:300;box-shadow:0 12px 32px rgba(0,0,0,0.6);}
+/* Keep dropdown visible while hovering the nav-item (which wraps both trigger and dropdown) */
+.nav-item:hover .dropdown{opacity:1;pointer-events:all;transform:translateY(0);}
+.dropdown a{display:flex;flex-direction:column;padding:14px 20px;text-decoration:none;border-bottom:1px solid var(--border);transition:background .12s;gap:3px;}
+.dropdown a:last-child{border-bottom:none;}
+.dropdown a:hover{background:var(--surface);}
+.dd-label{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--white);}
+.dd-sub{font-size:11px;color:var(--muted);}
+.dd-badge{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:2px 6px;border-radius:2px;margin-left:6px;vertical-align:middle;background:rgba(46,139,87,0.2);color:#4CAF85;border:1px solid rgba(46,139,87,0.3);}
+/* LAYOUT */
+.page-body{padding-top:var(--header-h);}
+/* PRIMITIVES */
+.section{padding:100px 48px;}
+.alt-section{padding:100px 48px;background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border);}
+.section-label{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:16px;display:flex;align-items:center;gap:10px;}
+.section-label::before{content:'';display:block;width:24px;height:1px;background:var(--gold);}
+.section-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(42px,6vw,80px);line-height:1;letter-spacing:.03em;color:var(--white);margin-bottom:48px;}
+.sub-title{font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:.04em;color:var(--white);margin-bottom:8px;}
+.sub-body{font-size:14px;color:var(--muted);max-width:560px;line-height:1.65;margin-bottom:28px;}
+/* BUTTONS */
+.btn-primary{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;background:var(--gold);color:var(--black);border:none;padding:16px 32px;border-radius:2px;cursor:pointer;text-decoration:none;transition:background .2s,transform .15s;display:inline-block;}
+.btn-primary:hover{background:var(--gold2);transform:translateY(-1px);}
+.btn-ghost{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;background:transparent;color:var(--white);border:1px solid rgba(242,239,232,0.2);padding:15px 32px;border-radius:2px;cursor:pointer;text-decoration:none;transition:border-color .2s;display:inline-block;}
+.btn-ghost:hover{border-color:rgba(242,239,232,0.5);}
+.btn-row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;}
+/* HERO */
+.hero{min-height:calc(100vh - var(--header-h));display:flex;flex-direction:column;justify-content:center;padding:80px 48px;position:relative;overflow:hidden;}
+.hero-bg{position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 80% 50%,rgba(232,193,74,0.06) 0%,transparent 70%),radial-gradient(ellipse 40% 60% at 10% 80%,rgba(42,94,173,0.08) 0%,transparent 60%);}
+.hero-tag{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:24px;display:flex;align-items:center;gap:12px;}
+.hero-tag::before{content:'';display:block;width:32px;height:2px;background:var(--gold);}
+h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(72px,11vw,160px);line-height:.92;letter-spacing:.02em;color:var(--white);max-width:900px;position:relative;z-index:1;}
+h1 em{font-style:normal;color:var(--gold);position:relative;display:inline-block;}
+h1 em::after{content:'';position:absolute;left:0;bottom:-4px;right:0;height:4px;background:var(--gold);border-radius:2px;}
+.hero-sub{font-family:'Barlow Condensed',sans-serif;font-size:clamp(18px,2.2vw,26px);font-weight:400;color:rgba(242,239,232,0.55);margin-top:36px;max-width:520px;line-height:1.4;position:relative;z-index:1;}
+.hero-actions{display:flex;gap:16px;align-items:center;margin-top:48px;flex-wrap:wrap;position:relative;z-index:1;}
+/* TICKER */
+.ticker-wrap{overflow:hidden;border-top:1px solid rgba(232,193,74,0.2);border-bottom:1px solid rgba(232,193,74,0.2);padding:14px 0;background:rgba(232,193,74,0.03);}
+.ticker{display:flex;white-space:nowrap;animation:ticker 28s linear infinite;}
+.ticker-item{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);padding:0 40px;}
+.ticker-item span{color:var(--gold);margin-right:40px;}
+@keyframes ticker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+/* CARDS */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:2px;max-width:1100px;}
+.three-col{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;max-width:1100px;}
+.game-card{background:var(--surface);padding:48px;position:relative;overflow:hidden;text-decoration:none;display:block;transition:background .2s;border:1px solid rgba(255,255,255,0.04);}
+.game-card:hover{background:#1E2023;}
+.game-card:hover .card-arrow{transform:translate(4px,-4px);}
+.card-num{font-family:'Bebas Neue',sans-serif;font-size:96px;line-height:1;color:rgba(255,255,255,0.04);position:absolute;top:16px;right:24px;}
+.card-tag{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;margin-bottom:20px;display:inline-block;padding:4px 10px;border-radius:2px;}
+.tag-live{background:rgba(46,139,87,0.15);color:#4CAF85;border:1px solid rgba(46,139,87,0.3);}
+.tag-soon{background:rgba(107,107,107,0.15);color:var(--muted);border:1px solid rgba(107,107,107,0.2);}
+.card-title{font-family:'Bebas Neue',sans-serif;font-size:48px;letter-spacing:.04em;color:var(--white);margin-bottom:12px;line-height:1;}
+.card-desc{font-size:14px;color:rgba(242,239,232,0.5);line-height:1.6;max-width:340px;margin-bottom:32px;}
+.card-arrow{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);display:flex;align-items:center;gap:10px;transition:transform .2s;}
+.card-arrow::after{content:'&#8594;';font-size:16px;}
+.card-accent{position:absolute;bottom:0;left:0;right:0;height:3px;}
+.accent-gold{background:var(--gold)}.accent-green{background:var(--green)}
+.info-card{background:var(--surface);padding:40px;border:1px solid rgba(255,255,255,0.04);}
+.info-num{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:.1em;color:var(--gold);margin-bottom:20px;opacity:.7;}
+.info-title{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:.04em;color:var(--white);margin-bottom:12px;line-height:1.1;}
+.info-desc{font-size:14px;color:rgba(242,239,232,0.45);line-height:1.65;}
+/* QUESTION SET CARDS (rendered by JS) */
+.qs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:2px;max-width:1100px;}
+.qs-card{background:var(--surface);padding:32px;border:1px solid rgba(255,255,255,0.04);display:flex;flex-direction:column;gap:10px;}
+.qs-icon{font-size:28px;}
+.qs-name{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:.04em;color:var(--white);line-height:1.1;}
+.qs-meta{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);}
+.qs-desc{font-size:13px;color:rgba(242,239,232,0.45);line-height:1.6;flex:1;}
+.qs-link{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);text-decoration:none;display:inline-flex;align-items:center;gap:6px;margin-top:4px;}
+.qs-link::after{content:'&#8594;';}
+/* CODE */
+.code-block{background:var(--off);border:1px solid var(--border);border-radius:4px;padding:24px 28px;font-family:monospace;font-size:13px;color:rgba(242,239,232,0.7);line-height:1.8;overflow-x:auto;margin:24px 0;white-space:pre;}
+/* CONTACT */
+.contact-strip{padding:100px 48px;background:var(--surface);border-top:1px solid var(--border);display:flex;gap:80px;align-items:center;justify-content:space-between;}
+.contact-strip h2{font-family:'Bebas Neue',sans-serif;font-size:clamp(36px,5vw,64px);letter-spacing:.03em;line-height:1;color:var(--white);margin-bottom:12px;}
+.contact-strip p{font-size:15px;color:rgba(242,239,232,0.45);max-width:360px;}
+/* FOOTER */
+footer{padding:40px 48px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--border);}
+.footer-logo{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:.06em;color:var(--gold);opacity:.5;}
+.footer-links{display:flex;gap:24px;}
+.footer-links a{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);text-decoration:none;transition:color .2s;}
+.footer-links a:hover{color:var(--white);}
+.footer-copy{font-size:11px;color:rgba(107,107,107,0.5);}
+/* ANIM */
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+.fade-up{animation:fadeUp .7s cubic-bezier(0.22,1,0.36,1) both;}
+.d1{animation-delay:.1s}.d2{animation-delay:.2s}.d3{animation-delay:.35s}
+/* RESPONSIVE */
 @media(max-width:900px){
-  header{padding:16px 24px}
-  nav{gap:20px}
-  .hero{padding:100px 24px 60px}
-  .section{padding:80px 24px}
-  .games-grid,.how-grid{grid-template-columns:1fr}
-  .signup-section{flex-direction:column;gap:40px;padding:80px 24px;align-items:flex-start}
-  .signup-form{width:100%}
-  .signup-form input{width:100%;flex:1}
-  footer{flex-direction:column;gap:24px;text-align:center;padding:40px 24px}
-  .footer-links{flex-wrap:wrap;justify-content:center}
+  header{padding:0 20px;}
+  .hero,.section,.alt-section,.contact-strip{padding-left:24px;padding-right:24px;}
+  .two-col,.three-col{grid-template-columns:1fr;}
+  .contact-strip{flex-direction:column;gap:32px;align-items:flex-start;}
+  footer{flex-direction:column;gap:20px;text-align:center;padding:32px 24px;}
+  .footer-links{flex-wrap:wrap;justify-content:center;}
+  .section,.alt-section{padding-top:64px;padding-bottom:64px;}
 }
-
-@media(max-width:600px){
-  nav .nav-cta{display:none}
-  nav a:not(.nav-cta){display:none}
-  h1{font-size:64px}
-}
-</style>
+@media(max-width:600px){h1{font-size:64px;}}</style>
 </head>
 <body>
-
 <header>
   <a class="logo" href="/">Mc<span>Chimp</span></a>
   <nav>
-    <a href="#games">Games</a>
-    <a href="#how">How it works</a>
-    <a href="#notify" class="nav-cta">Get Early Access</a>
+    <div class="nav-item">
+      <button class="nav-link"><span>Games</span><span class="chevron">&#9662;</span></button>
+      <div class="dropdown">
+        <a href="/mma"><span class="dd-label">MMA Career Trivia <span class="dd-badge">Live</span></span><span class="dd-sub">Build a fighter, climb the rankings</span></a>
+        <a href="/football"><span class="dd-label">Football Trivia <span class="dd-badge">Live</span></span><span class="dd-sub">Manage a career through the pyramid</span></a>
+        <a href="/#games"><span class="dd-label">All Games &#8594;</span><span class="dd-sub">See the full catalogue</span></a>
+      </div>
+    </div>
+    <div class="nav-item">
+      <button class="nav-link"><span>Questions</span><span class="chevron">&#9662;</span></button>
+      <div class="dropdown">
+        <a href="/#native"><span class="dd-label">Native Question Sets</span><span class="dd-sub">Curated sets included with each game</span></a>
+        <a href="/#upload"><span class="dd-label">Upload Your Own</span><span class="dd-sub">Add a custom JSON question file</span></a>
+        <a href="/#generate"><span class="dd-label">Generate a Question Set</span><span class="dd-sub">Build a set with AI assistance</span></a>
+      </div>
+    </div>
+    <a class="nav-link" href="/#how"><span>How It Works</span></a>
   </nav>
 </header>
+<div class="page-body">
 
 <!-- HERO -->
 <section class="hero">
   <div class="hero-bg"></div>
   <div class="hero-tag fade-up">Sports Trivia Platform</div>
-  <h1 class="fade-up delay-1">Know Your<br><em>Sport</em></h1>
-  <p class="hero-sub fade-up delay-2">Multiple-choice trivia games built around real sports careers. Answer questions. Climb the rankings. Win the belt.</p>
-  <div class="hero-actions fade-up delay-3">
+  <h1 class="fade-up d1">Know Your<br><em>Sport</em></h1>
+  <p class="hero-sub fade-up d2">Multiple-choice trivia games built around real sports careers. Answer questions. Climb the rankings. Win the belt.</p>
+  <div class="hero-actions fade-up d3">
     <a href="/mma" class="btn-primary">Play MMA Trivia</a>
     <a href="/football" class="btn-primary" style="background:var(--blue)">Play Football Trivia</a>
-    <a href="#games" class="btn-ghost">See All Games</a>
+    <a href="/#games" class="btn-ghost">All Games</a>
   </div>
 </section>
 
@@ -555,14 +168,13 @@ footer{
     <div class="ticker-item"><span>Multiple Choice</span> Gameplay</div>
     <div class="ticker-item"><span>Career Mode</span> Included</div>
     <div class="ticker-item"><span>Sparring Mode</span> Practice Free</div>
-    <div class="ticker-item"><span>Question Sets</span> Modular</div>
-    <!-- duplicate for seamless loop -->
+    <div class="ticker-item"><span>Custom Question Sets</span> Supported</div>
     <div class="ticker-item"><span>MMA Career Trivia</span> Now Live</div>
     <div class="ticker-item"><span>Football Trivia</span> Now Live</div>
     <div class="ticker-item"><span>Multiple Choice</span> Gameplay</div>
     <div class="ticker-item"><span>Career Mode</span> Included</div>
     <div class="ticker-item"><span>Sparring Mode</span> Practice Free</div>
-    <div class="ticker-item"><span>Question Sets</span> Modular</div>
+    <div class="ticker-item"><span>Custom Question Sets</span> Supported</div>
   </div>
 </div>
 
@@ -570,110 +182,163 @@ footer{
 <section class="section" id="games">
   <div class="section-label">The Games</div>
   <div class="section-title">Pick Your Sport</div>
-  <div class="games-grid">
-
+  <div class="two-col">
     <a href="/mma" class="game-card">
       <div class="card-num">01</div>
-      <div class="card-tag tag-live">● Live Now</div>
+      <div class="card-tag tag-live">&#9679; Live Now</div>
       <div class="card-title">MMA Career<br>Trivia</div>
       <p class="card-desc">Build a fighter from the regional circuit to world champion. Every fight is decided by a trivia question. How far can your knowledge take you?</p>
       <div class="card-arrow">Play Now</div>
       <div class="card-accent accent-gold"></div>
     </a>
-
     <a href="/football" class="game-card">
       <div class="card-num">02</div>
-      <div class="card-tag tag-live">● Live Now</div>
+      <div class="card-tag tag-live">&#9679; Live Now</div>
       <div class="card-title">Football<br>Trivia</div>
-      <p class="card-desc">Manage a career across the football pyramid. Tactics, transfers, and trivia — your knowledge of the game determines everything.</p>
+      <p class="card-desc">Manage a career across the football pyramid. Tactics, transfers, and trivia &#8212; your knowledge of the game determines everything.</p>
       <div class="card-arrow">Play Now</div>
       <div class="card-accent accent-green"></div>
     </a>
-
   </div>
 </section>
 
 <!-- HOW IT WORKS -->
-<section class="section" id="how" style="padding-top:0">
+<section class="alt-section" id="how">
   <div class="section-label">The Format</div>
   <div class="section-title">How It Works</div>
-  <div class="how-grid">
-
-    <div class="how-card">
-      <div class="how-num">01 / Answer</div>
-      <div class="how-title">Every Fight is a Question</div>
-      <p class="how-desc">You pick answers under a countdown timer. Nail it fast and clean — you win by KO. Scrape by and you go the distance. Miss completely and you get stopped.</p>
+  <div class="three-col">
+    <div class="info-card">
+      <div class="info-num">01 / Answer</div>
+      <div class="info-title">Every Fight is a Question</div>
+      <p class="info-desc">You pick answers under a countdown timer. Nail it fast &#8212; you win by KO. Scrape by and you go the distance. Miss completely and you get stopped.</p>
     </div>
-
-    <div class="how-card">
-      <div class="how-num">02 / Climb</div>
-      <div class="how-title">Build a Real Career</div>
-      <p class="how-desc">Start unranked in the regional circuit. Win fights, climb the rankings, earn promotion to bigger organisations. Your record is a direct reflection of your knowledge.</p>
+    <div class="info-card">
+      <div class="info-num">02 / Climb</div>
+      <div class="info-title">Build a Real Career</div>
+      <p class="info-desc">Start unranked in the regional circuit. Win fights, climb the rankings, earn promotion. Your record is a direct reflection of your knowledge.</p>
     </div>
-
-    <div class="how-card">
-      <div class="how-num">03 / Adapt</div>
-      <div class="how-title">Questions Learn From You</div>
-      <p class="how-desc">Questions you answer correctly become easier over time. Questions you miss get harder. The game calibrates dynamically — so it's always the right challenge level.</p>
+    <div class="info-card">
+      <div class="info-num">03 / Adapt</div>
+      <div class="info-title">Questions Learn From You</div>
+      <p class="info-desc">Questions you get right become easier over time. Questions you miss get harder. The game calibrates dynamically &#8212; always the right challenge.</p>
     </div>
-
   </div>
 </section>
 
-<!-- SIGNUP -->
-<section class="signup-section" id="notify">
-  <div class="signup-left">
-    <div class="section-label" style="margin-bottom:12px">Early Access</div>
-    <h2>More Games<br>Coming Soon</h2>
-    <p>Player accounts, leaderboards and more sports are in development. Drop your email to stay in the loop.</p>
+<!-- QUESTION SETS — native sets loaded from manifest.json -->
+<section class="section" id="native">
+  <div class="section-label">Native Question Sets</div>
+  <div class="section-title">Browse Sets</div>
+  <div class="qs-grid" id="qs-grid">
+    <p style="color:var(--muted);font-size:14px;">Loading&#8230;</p>
   </div>
-  <form class="signup-form" onsubmit="handleSignup(event)">
-    <input type="email" id="email-input" placeholder="your@email.com" required>
-    <button type="submit">Notify Me</button>
-  </form>
 </section>
 
-<!-- FOOTER -->
+<!-- UPLOAD -->
+<section class="alt-section" id="upload">
+  <div class="section-label">Upload Your Own</div>
+  <div class="section-title">Bring Your Own Set</div>
+  <p class="sub-body">Any topic, any language. If your JSON file follows the schema, drop it into any game and it works immediately.</p>
+  <div class="code-block">{"name": "My Module",
+"tiers": {
+  "easy":   [ ...questions ],
+  "medium": [ ...questions ],
+  "hard":   [ ...questions ],
+  "elite":  [ ...questions ]
+}}</div>
+  <p style="font-size:13px;color:var(--muted);margin-bottom:20px;max-width:560px;">Each question needs: <code style="color:var(--gold)">question</code>, <code style="color:var(--gold)">options</code> (array), <code style="color:var(--gold)">answers</code> (array of correct indices), optional <code style="color:var(--gold)">explanation</code>.</p>
+  <a href="/mma" class="btn-primary">Open MMA Trivia to Upload</a>
+</section>
+
+<!-- GENERATE -->
+<section class="section" id="generate">
+  <div class="section-label">Generate with AI</div>
+  <div class="section-title">Build a Set</div>
+  <p class="sub-body">Use an AI assistant to generate a question set. We have a short guide that tells any LLM exactly what format to produce.</p>
+  <div class="three-col" style="margin-bottom:36px;">
+    <div class="info-card">
+      <div class="info-num">01</div>
+      <div class="info-title">Download the Guide</div>
+      <p class="info-desc">A one-page instruction file written specifically for AI assistants like Claude, ChatGPT or Gemini.</p>
+    </div>
+    <div class="info-card">
+      <div class="info-num">02</div>
+      <div class="info-title">Paste + Describe</div>
+      <p class="info-desc">Paste the guide and say: "Generate a question set about [topic] with 10 questions per tier."</p>
+    </div>
+    <div class="info-card">
+      <div class="info-num">03</div>
+      <div class="info-title">Upload &amp; Play</div>
+      <p class="info-desc">Save the output as a .json file and drop it into any McChimp game. Works immediately.</p>
+    </div>
+  </div>
+  <a href="/questions/guide.md" class="btn-primary" download>Download the AI Guide</a>
+</section>
+
+<!-- CONTACT -->
+<section class="contact-strip" id="contact">
+  <div>
+    <div class="section-label" style="margin-bottom:12px">Contact</div>
+    <h2>Questions?<br>Say Hello.</h2>
+    <p>If you have questions, suggestions or just want to reach out &#8212; we&#8217;d love to hear from you.</p>
+  </div>
+  <a href="mailto:multiplechoicechimp@gmail.com" class="btn-primary">multiplechoicechimp@gmail.com</a>
+</section>
+
 <footer>
   <div class="footer-logo">McChimp</div>
   <div class="footer-links">
+    <a href="/">Home</a>
+    <a href="/#games">Games</a>
     <a href="/mma">MMA Trivia</a>
-    <a href="#games">Games</a>
-    <a href="#notify">Early Access</a>
+    <a href="/football">Football Trivia</a>
+    <a href="/#native">Question Sets</a>
+    <a href="mailto:multiplechoicechimp@gmail.com">Contact</a>
+    <a href="/privacy">Privacy Policy</a>
   </div>
-  <div class="footer-copy">© 2026 McChimp</div>
+  <div class="footer-copy">&#169; 2026 McChimp</div>
 </footer>
-
+</div>
 <script>
-function handleSignup(e){
-  e.preventDefault();
-  const input = document.getElementById('email-input');
-  const btn = e.target.querySelector('button');
-  // Replace with your email service embed (Buttondown, Beehiiv, etc.)
-  btn.textContent = "You're In ✓";
-  btn.style.background = '#2E8B57';
-  input.value = '';
-  input.disabled = true;
-  btn.disabled = true;
-}
-
-// Intersection observer for scroll reveals
+// Scroll reveal
 const obs = new IntersectionObserver((entries) => {
   entries.forEach(el => {
-    if(el.isIntersecting){
-      el.target.style.opacity = '1';
-      el.target.style.transform = 'translateY(0)';
-    }
+    if (el.isIntersecting) { el.target.style.opacity='1'; el.target.style.transform='translateY(0)'; }
   });
-}, { threshold: 0.1 });
-
-document.querySelectorAll('.game-card,.how-card').forEach(el => {
-  el.style.opacity = '0';
-  el.style.transform = 'translateY(20px)';
-  el.style.transition = 'opacity .6s ease, transform .6s ease';
+}, { threshold: 0.08 });
+document.querySelectorAll('.game-card,.info-card,.qs-card').forEach(el => {
+  el.style.opacity='0'; el.style.transform='translateY(16px)';
+  el.style.transition='opacity .5s ease,transform .5s ease';
   obs.observe(el);
 });
-</script>
 
+// Load question sets from manifest.json
+async function loadQuestionSets() {
+  const grid = document.getElementById('qs-grid');
+  if (!grid) return;
+  try {
+    const res = await fetch('/questions/manifest.json');
+    if (!res.ok) throw new Error('manifest not found');
+    const data = await res.json();
+    grid.innerHTML = data.sets.map(s => `
+      <div class="qs-card">
+        <div class="qs-icon">${s.icon}</div>
+        <div class="qs-name">${s.name}</div>
+        <div class="qs-meta">${s.count} questions &nbsp;&#183;&nbsp; ${s.game}</div>
+        <p class="qs-desc">${s.description}</p>
+        <a class="qs-link" href="${s.gameUrl}">Play in ${s.game}</a>
+      </div>`).join('');
+    // Re-observe new cards
+    grid.querySelectorAll('.qs-card').forEach(el => {
+      el.style.opacity='0'; el.style.transform='translateY(16px)';
+      el.style.transition='opacity .5s ease,transform .5s ease';
+      obs.observe(el);
+    });
+  } catch(e) {
+    grid.innerHTML = '<p style="color:var(--muted);font-size:14px;">Question sets loading&#8230;</p>';
+  }
+}
+loadQuestionSets();
+</script>
 </body>
 </html>
