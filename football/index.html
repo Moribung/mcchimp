@@ -866,6 +866,13 @@
   }
   .reveal-result.correct { color: var(--green); }
   .reveal-result.wrong { color: var(--red); }
+  .reveal-explanation { margin-top: 4px; color: var(--text-dim); font-size: 13px; line-height: 1.55; }
+  .tier-shift-notice { margin-top: 10px; padding: 6px 10px; border-radius: 3px; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+  .tier-shift-notice.promoted { background: rgba(74,232,122,0.1); color: var(--green); border: 1px solid var(--green-dim); }
+  .tier-shift-notice.demoted  { background: rgba(224,82,82,0.1);  color: var(--red);   border: 1px solid var(--red-dim); }
+  .diff-shift-arrow { display: inline-block; font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; margin-left: 6px; vertical-align: middle; }
+  .diff-shift-arrow.shift-up   { color: var(--green); }
+  .diff-shift-arrow.shift-down { color: var(--red); }
 
   @keyframes score-vibrate {
     0%,100% { transform: translateX(0) scale(1); }
@@ -3393,16 +3400,108 @@ const QUESTIONS_ECO = [
   }
 ];
 
-const QUESTION_SETS = [
-  { id: 'animals',   name: 'Animal Kingdom',  icon: '🦁', description: 'Wildlife, biology and animal behaviour.', questions: QUESTIONS },
-  { id: 'economics', name: 'Basic Economics',  icon: '📈', description: 'Markets, policy, trade and financial literacy.', questions: QUESTIONS_ECO },
-];
+// ── MODULE REGISTRY (v1.22-style) ──────────────────────────────────────────
+// Converts flat question arrays (each item has a "difficulty" field) into the
+// tiered module format so that built-in sets and uploaded modules share one
+// identical code path.  This is what fixes the website compatibility issue.
+
+function flatToTiers(flatArr) {
+  const tiers = { easy: [], medium: [], hard: [], elite: [] };
+  flatArr.forEach(q => {
+    const t = q.difficulty;
+    if (tiers[t]) tiers[t].push(q);
+  });
+  return tiers;
+}
+
+function countTierQs(mod) {
+  return ['easy','medium','hard','elite'].reduce((n,t) => n + (mod.tiers[t]||[]).length, 0);
+}
+
+function validateModule(obj) {
+  if (!obj || typeof obj !== 'object') return 'Not a valid JSON object.';
+  if (!obj.name) return 'Missing required field: "name".';
+  if (!obj.tiers || typeof obj.tiers !== 'object') return 'Missing required field: "tiers".';
+  for (const tier of ['easy','medium','hard','elite']) {
+    const qs = obj.tiers[tier];
+    if (!qs) continue;
+    if (!Array.isArray(qs)) return `"tiers.${tier}" must be an array.`;
+    for (let i = 0; i < qs.length; i++) {
+      const q = qs[i];
+      if (!q.question) return `tiers.${tier}[${i}]: missing "question".`;
+      if (!Array.isArray(q.options) || q.options.length < 2) return `tiers.${tier}[${i}]: "options" needs ≥2 items.`;
+      const answers = q.answers || (typeof q.answer === 'number' ? [q.answer] : null);
+      if (!answers || !answers.length) return `tiers.${tier}[${i}]: "answers" must be a non-empty array of indices.`;
+    }
+  }
+  if (countTierQs(obj) < 1) return 'Module must have at least 1 question.';
+  return null;
+}
+
+let availableModules = [];
+
+function registerModule(obj, tag) {
+  const modId = tag === 'builtin' ? (obj.id || 'builtin-' + Date.now()) : 'mod_' + Date.now();
+  const normTiers = {};
+  for (const t of ['easy','medium','hard','elite']) {
+    normTiers[t] = (obj.tiers[t] || []).map(q => {
+      const normed = (q.answers) ? q : { ...q, answers: (typeof q.answer === 'number' ? [q.answer] : []) };
+      return normed;
+    });
+  }
+  availableModules.push({
+    id: modId, name: obj.name, icon: obj.icon || '', description: obj.description || '',
+    tiers: normTiers, tag,
+    total: countTierQs({ tiers: normTiers }),
+  });
+  return modId;
+}
+
+function loadBuiltinModules() {
+  registerModule({
+    id: 'animals', name: 'Animal Kingdom', icon: '🦁',
+    description: 'Wildlife, biology and animal behaviour.',
+    tiers: flatToTiers(QUESTIONS),
+  }, 'builtin');
+  registerModule({
+    id: 'economics', name: 'Basic Economics', icon: '📈',
+    description: 'Markets, policy, trade and financial literacy.',
+    tiers: flatToTiers(QUESTIONS_ECO),
+  }, 'builtin');
+}
+
+// Kept for backward-compat references in renderStartScreen / renderInfoTab
+const QUESTION_SETS = {
+  // Proxy object: .find() / .map() are re-routed to availableModules after loadBuiltinModules()
+  find(fn) { return availableModules.find(fn); },
+  map(fn)  { return availableModules.map(fn);  },
+};
 
 function getActiveQuestions() {
   const setId = (state && state.questionSet) || 'animals';
-  const qs = QUESTION_SETS.find(s => s.id === setId);
-  return [...(qs ? qs.questions : QUESTIONS), ...(qState ? qState.customQuestions || [] : [])];
+  const mod = availableModules.find(m => m.id === setId) || availableModules[0];
+  return mod
+    ? ['easy','medium','hard','elite'].flatMap(t => mod.tiers[t] || [])
+    : [...QUESTIONS];
 }
+
+function effectiveDifficulty(qid, baseDiff) {
+  const tiers = ['easy', 'medium', 'hard', 'elite'];
+  const baseIndex = tiers.indexOf(baseDiff);
+  if (baseIndex === -1) return baseDiff;
+  const score = (qState?._qScores?.[qid]) || 0;
+  const shift = score >= 6 ? 2 : score >= 3 ? 1 : score <= -6 ? -2 : score <= -3 ? -1 : 0;
+  return tiers[clamp(baseIndex + shift, 0, 3)];
+}
+
+function diffShiftInfo(qid, baseDiff) {
+  const eff = effectiveDifficulty(qid, baseDiff);
+  if (eff === baseDiff) return { shifted: false, direction: null, eff };
+  const tiers = ['easy', 'medium', 'hard', 'elite'];
+  return { shifted: true, direction: tiers.indexOf(eff) > tiers.indexOf(baseDiff) ? 'up' : 'down', eff };
+}
+
+// normaliseUploadedJSON removed in v1.8 — superseded by flatToTiers() + validateModule()
 
 // ══════════════════════════════════════════
 // NAME POOLS
@@ -3534,17 +3633,36 @@ let state   = null;
 let qState  = null;
 let career  = null;
 
+// Safe localStorage wrappers — fall back silently when storage is blocked
+// (e.g. cross-origin iframes, sandboxed environments, private browsing)
+const _store = (() => {
+  let _mem = {};
+  let _hasLS = null;
+  function _check() {
+    if (_hasLS !== null) return _hasLS;
+    try { localStorage.setItem('_t','1'); localStorage.removeItem('_t'); _hasLS = true; }
+    catch(e) { _hasLS = false; }
+    return _hasLS;
+  }
+  return {
+    setItem(k, v) { try { if (_check()) localStorage.setItem(k, v); else _mem[k] = v; } catch(e) { _mem[k] = v; } },
+    getItem(k)    { try { if (_check()) return localStorage.getItem(k); return _mem[k] ?? null; } catch(e) { return _mem[k] ?? null; } },
+    removeItem(k) { try { if (_check()) localStorage.removeItem(k); else delete _mem[k]; } catch(e) { delete _mem[k]; } },
+  };
+})();
+
 function saveState() {
   const qs = deepCopy(qState);
-  qs.weaknessFlags = [...qState.weaknessFlags];
-  localStorage.setItem('anstoss_state',     JSON.stringify(state));
-  localStorage.setItem('anstoss_questions', JSON.stringify(qs));
-  localStorage.setItem('anstoss_career',    JSON.stringify(career));
+  const uploadedMods = availableModules.filter(m => m.tag === 'uploaded');
+  _store.setItem('anstoss_state',     JSON.stringify(state));
+  _store.setItem('anstoss_questions', JSON.stringify(qs));
+  _store.setItem('anstoss_career',    JSON.stringify(career));
+  _store.setItem('anstoss_modules',   JSON.stringify(uploadedMods));
 }
 
 function loadSavedState() {
   try {
-    const raw = localStorage.getItem('anstoss_state');
+    const raw = _store.getItem('anstoss_state');
     if (!raw) return false;
     state  = JSON.parse(raw);
     if (!state.matchdays) {
@@ -3553,30 +3671,29 @@ function loadSavedState() {
     }
     if (!state.tactic) state.tactic = 'moderate';
     if (!state.questionSet) state.questionSet = 'animals';
-    const qs = JSON.parse(localStorage.getItem('anstoss_questions') || '{}');
+    const qs = JSON.parse(_store.getItem('anstoss_questions') || '{}');
     qState = {
-      incorrectCounts:  qs.incorrectCounts  || {},
-      weaknessFlags:    new Set(qs.weaknessFlags || []),
-      recentlyWrong:    qs.recentlyWrong    || [],
-      correctStreaks:   qs.correctStreaks    || {},
-      customQuestions:  qs.customQuestions  || [],
+      customQuestions: qs.customQuestions || [],
+      _qScores:        qs._qScores        || {},
     };
-    career = JSON.parse(localStorage.getItem('anstoss_career') || 'null') || freshCareer();
+    career = JSON.parse(_store.getItem('anstoss_career') || 'null') || freshCareer();
+    // Restore any uploaded modules from the previous session
+    const savedMods = JSON.parse(_store.getItem('anstoss_modules') || '[]');
+    savedMods.forEach(m => {
+      if (!availableModules.find(x => x.id === m.id)) availableModules.push(m);
+    });
     return true;
   } catch(e) { return false; }
 }
 
 function freshCareer() {
-  return { seasonsPlayed: 0, highestDiv1Finish: null, highestDiv2Finish: null, totalGoals: 0, championships: 0, trophies: [] };
+  return { seasonsPlayed: 0, highestDiv1Finish: null, totalGoals: 0, championships: 0, wins: 0, draws: 0, losses: 0, trophies: [] };
 }
 
 function freshQState() {
   return {
-    incorrectCounts: {},
-    weaknessFlags:   new Set(),
-    recentlyWrong:   [],
-    correctStreaks:  {},
     customQuestions: [],
+    _qScores:        {}, // net score per question id: +1 per correct, -1 per wrong
   };
 }
 
@@ -3584,12 +3701,23 @@ function freshQState() {
 // SQUAD GENERATION
 // ══════════════════════════════════════════
 let _nextPlayerId = 1;
-function newPlayer(position, minRating, maxRating) {
+function uniqueName(localNames) {
+  const existing = new Set([
+    ...(localNames || []),
+    ...(state && state.squad ? state.squad.map(p => p.name) : []),
+  ]);
+  let name, attempts = 0;
+  do { name = randomName(); attempts++; } while (existing.has(name) && attempts < 100);
+  return name;
+}
+
+function newPlayer(position, minRating, maxRating, localNames) {
   const rating = randInt(minRating, maxRating);
   const age    = randInt(17, 32);
+  const name   = uniqueName(localNames);
   return {
     id:               _nextPlayerId++,
-    name:             randomName(),
+    name,
     position,
     rating,
     age,
@@ -3608,10 +3736,16 @@ const STARTERS_PER_POS = { GK: 1, DEF: 4, MID: 3, FWD: 3 };
 function generateSquad() {
   _nextPlayerId = 1;
   const players = [];
-  for (let i = 0; i < 2; i++) players.push(newPlayer('GK',  52, 60));
-  for (let i = 0; i < 8; i++) players.push(newPlayer('DEF', 50, 62));
-  for (let i = 0; i < 6; i++) players.push(newPlayer('MID', 48, 64));
-  for (let i = 0; i < 6; i++) players.push(newPlayer('FWD', 50, 65));
+  const localNames = []; // track names during generation before state.squad exists
+  const addPlayer = (pos, min, max) => {
+    const p = newPlayer(pos, min, max, localNames);
+    localNames.push(p.name);
+    players.push(p);
+  };
+  for (let i = 0; i < 2; i++) addPlayer('GK',  52, 60);
+  for (let i = 0; i < 8; i++) addPlayer('DEF', 50, 62);
+  for (let i = 0; i < 6; i++) addPlayer('MID', 48, 64);
+  for (let i = 0; i < 6; i++) addPlayer('FWD', 50, 65);
   assignStatuses(players);
   return players;
 }
@@ -3960,30 +4094,13 @@ function renderHub(tab) {
       </div>
 
       <div class="hub-body">
-        ${(() => {
-          const allQs2 = getActiveQuestions();
-          const tot2   = allQs2.length || 1;
-          const mas2   = allQs2.filter(q => (qState.correctStreaks[q.id]||0) >= 2).length;
-          const lea2   = allQs2.filter(q => (qState.incorrectCounts[q.id]||0) > 0 && (qState.correctStreaks[q.id]||0) < 2).length;
-          const mp = Math.round(mas2/tot2*100), lp = Math.round(lea2/tot2*100);
-          const wk = qState.weaknessFlags.size;
-          return `<div class="dual-progress-panel">
-            <div class="progress-sport">
-              <div class="progress-sport-pos">${playerPos > 0 ? ordinal(playerPos) : '—'}</div>
-              <div class="progress-sport-label">${divName(div)} · MD ${state.matchday}/${state.matchdays}</div>
-              <div class="progress-sport-form">${formDotsHtml(state.form)}</div>
-            </div>
-            <div class="progress-divider"></div>
-            <div class="progress-learn">
-              <div class="progress-learn-bar">
-                <div class="plb-mastered" style="width:${mp}%"></div>
-                <div class="plb-learning"  style="width:${lp}%"></div>
-              </div>
-              <div class="progress-learn-label">${mas2} of ${tot2} questions mastered</div>
-              ${wk ? `<div class="progress-learn-weak">${wk} weakness${wk>1?'es':''} active</div>` : ''}
-            </div>
-          </div>`;
-        })()}
+        <div class="dual-progress-panel">
+          <div class="progress-sport">
+            <div class="progress-sport-pos">${playerPos > 0 ? ordinal(playerPos) : '—'}</div>
+            <div class="progress-sport-label">${divName(div)} · MD ${state.matchday}/${state.matchdays}</div>
+            <div class="progress-sport-form">${formDotsHtml(state.form)}</div>
+          </div>
+        </div>
         ${tab === 'table'    ? renderTableTab(sorted, div)  : ''}
         ${tab === 'fixtures' ? renderFixturesTab()           : ''}
         ${tab === 'squad'    ? renderSquadTab()              : ''}
@@ -4107,16 +4224,11 @@ function renderSquadTab() {
     return primary !== 0 ? primary : posDiff !== 0 ? posDiff : b.rating - a.rating;
   });
   const rBar = p => {
-    const cost = ipCost(p);
-    const pct  = cost > 0 ? Math.min(100, Math.round(((p.improvementPoints || 0) / cost) * 100)) : 0;
-    const chg  = p.ratingChangeThisSeason || 0;
+    const chg = p.ratingChangeThisSeason || 0;
     const chgHtml = chg !== 0
       ? `<span style="font-size:10px;font-weight:700;color:${chg > 0 ? 'var(--green)' : 'var(--red)'};margin-right:5px;letter-spacing:0">${chg > 0 ? '↑' : '↓'}${Math.abs(chg)}</span>`
       : '';
-    return `<span class="rating-bar" title="${p.improvementPoints || 0} / ${cost} IP to next upgrade">
-      ${chgHtml}<span style="min-width:22px;display:inline-block;text-align:right">${p.rating}</span>
-      <span class="rating-bar-track"><span class="rating-bar-fill" style="width:${pct}%"></span></span>
-    </span>`;
+    return `<span style="display:inline-flex;align-items:center">${chgHtml}<span>${p.rating}</span></span>`;
   };
   const posBadge = p => `<span class="pos-badge pos-${p.toLowerCase()}">${p}</span>`;
   const sBadge   = s => {
@@ -4264,10 +4376,8 @@ function squadDragDrop(e, id) {
 
 /* ── Info / Settings tab ── */
 function renderInfoTab() {
-  const weakCount = qState ? qState.weaknessFlags.size : 0;
-  const customCount = qState ? (qState.customQuestions||[]).length : 0;
   const activeSetId = state.questionSet || 'animals';
-  const activeSet = QUESTION_SETS.find(s => s.id === activeSetId) || QUESTION_SETS[0];
+  const activeSet = availableModules.find(s => s.id === activeSetId) || availableModules[0] || {};
   return `
     <div class="mb-24">
       <p class="section-label">Career</p>
@@ -4275,9 +4385,8 @@ function renderInfoTab() {
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
           <div><div class="section-label" style="margin-bottom:4px">Seasons Played</div><div style="font-family:var(--font-display);font-size:28px;color:var(--gold)">${career?.seasonsPlayed||0}</div></div>
           <div><div class="section-label" style="margin-bottom:4px">Best Prima Divisione Finish</div><div style="font-family:var(--font-display);font-size:28px;color:var(--gold)">${career?.highestDiv1Finish ? ordinal(career.highestDiv1Finish) : '—'}</div></div>
-          <div><div class="section-label" style="margin-bottom:4px">Best Seconda Divisione Finish</div><div style="font-family:var(--font-display);font-size:28px;color:var(--gold)">${career?.highestDiv2Finish ? ordinal(career.highestDiv2Finish) : '—'}</div></div>
           <div><div class="section-label" style="margin-bottom:4px">Championships</div><div style="font-family:var(--font-display);font-size:28px;color:var(--gold)">${career?.championships||0}</div></div>
-          <div><div class="section-label" style="margin-bottom:4px">Total Goals Scored</div><div style="font-family:var(--font-display);font-size:28px;color:var(--gold)">${career?.totalGoals||0}</div></div>
+          <div><div class="section-label" style="margin-bottom:4px">Record</div><div style="font-family:var(--font-display);font-size:24px;line-height:1"><span style="color:var(--green)">${career?.wins||0}</span><span style="color:var(--muted)"> – </span><span style="color:#c8a800">${career?.draws||0}</span><span style="color:var(--muted)"> – </span><span style="color:var(--red)">${career?.losses||0}</span></div></div>
           <div><div class="section-label" style="margin-bottom:4px">Current Division</div><div style="font-family:var(--font-display);font-size:22px;color:var(--gold)">${divName(state.division)}</div></div>
         </div>
       </div>
@@ -4285,30 +4394,13 @@ function renderInfoTab() {
     <div class="mb-24">
       <p class="section-label">Question Set</p>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px" id="qset-picker-hub">
-        ${QUESTION_SETS.map(s => `
-          <div class="qset-card ${s.id===activeSetId?'selected':''}"
-               data-setid="${s.id}"
-               onclick="switchQuestionSet('${s.id}')" tabindex="0"
-               onkeydown="if(event.key==='Enter'||event.key===' ')switchQuestionSet('${s.id}')">
-            <div class="qset-card-icon">${s.icon}</div>
-            <div class="qset-card-name">${s.name}</div>
-            <div class="qset-card-desc">${s.description}</div>
-          </div>
-        `).join('')}
+        ${availableModules.map(s => qsetCardHtml(s, activeSetId, 'switchQuestionSet')).join('')}
       </div>
-      <div style="font-size:11px;color:var(--text-dim)">
-        Active: <strong style="color:var(--text)">${activeSet.icon} ${activeSet.name}</strong>
-        · ${activeSet.questions.length} built-in questions
-        ${customCount ? `· ${customCount} custom` : ''}
-        ${weakCount ? `· <span style="color:var(--amber)">${weakCount} weakness flags</span>` : ''}
-      </div>
-    </div>
-    <div class="mb-24">
-      <p class="section-label">Custom Questions</p>
-      <div class="upload-zone" id="hub-upload-zone">
+      <div style="font-size:11px;color:var(--text-dim)" id="qset-stats">${qsetStatsHtml(activeSet)}</div>
+      <div class="upload-zone" id="hub-upload-zone" style="margin-top:12px">
         <input type="file" accept=".json" onchange="handleQuestionUpload(event)">
         <div class="upload-zone-icon">📋</div>
-        <div style="font-size:12px">Import custom questions (JSON)</div>
+        <div style="font-size:12px">Upload a custom module (JSON) — adds it as a selectable set</div>
         <div class="upload-msg" style="display:none"></div>
       </div>
     </div>
@@ -4320,18 +4412,65 @@ function renderInfoTab() {
 
 function confirmNewGame() {
   if (confirm('Delete this save and start a new game? This cannot be undone.')) {
-    localStorage.removeItem('anstoss_state');
-    localStorage.removeItem('anstoss_questions');
-    localStorage.removeItem('anstoss_career');
+    _store.removeItem('anstoss_state');
+    _store.removeItem('anstoss_questions');
+    _store.removeItem('anstoss_career');
+    _store.removeItem('anstoss_modules');
+    // Reset uploaded modules from registry
+    availableModules = availableModules.filter(m => m.tag !== 'uploaded');
     state = null; qState = null; career = null;
     renderStartScreen();
   }
 }
 
+function qsetStatsHtml(activeSet) {
+  const scores = qState?._qScores || {};
+  const promoted = Object.values(scores).filter(s => s >= 3).length;
+  const demoted  = Object.values(scores).filter(s => s <= -3).length;
+  const parts = [
+    `Active: <strong style="color:var(--text)">${activeSet.icon||''} ${activeSet.name||'—'}</strong>`,
+    `${activeSet.total || 0} questions`,
+    promoted ? `· <span style="color:var(--green)">▲ ${promoted} promoted</span>` : '',
+    demoted  ? `· <span style="color:var(--red)">▼ ${demoted} demoted</span>`   : '',
+  ];
+  return parts.filter(Boolean).join(' ');
+}
+
+function qsetCardHtml(s, activeId, onclick) {
+  const tag = s.tag === 'uploaded'
+    ? `<span style="font-size:9px;letter-spacing:.08em;text-transform:uppercase;padding:2px 6px;border-radius:2px;background:rgba(74,232,122,.15);color:var(--green);font-weight:600">Custom</span>`
+    : '';
+  return `<div class="qset-card ${s.id===activeId?'selected':''}"
+               data-setid="${s.id}"
+               onclick="${onclick}('${s.id}')" tabindex="0"
+               onkeydown="if(event.key==='Enter'||event.key===' ')${onclick}('${s.id}')">
+            <div class="qset-card-icon">${s.icon||'📄'} ${tag}</div>
+            <div class="qset-card-name">${s.name}</div>
+            <div class="qset-card-desc">${s.description}</div>
+          </div>`;
+}
+
+function refreshQsetPicker() {
+  const el = document.getElementById('qset-picker-hub');
+  if (!el) return;
+  const activeId = state.questionSet || 'animals';
+  el.innerHTML = availableModules.map(s => qsetCardHtml(s, activeId, 'switchQuestionSet')).join('');
+}
+
+function refreshQsetPickerStart() {
+  const el = document.getElementById('qset-picker');
+  if (!el) return;
+  el.innerHTML = availableModules.map(s => qsetCardHtml(s, selectedQuestionSet, 'selectQuestionSetStart')).join('');
+}
+
 function switchQuestionSet(id) {
   state.questionSet = id;
   saveState();
-  renderHub('info');
+  refreshQsetPicker();
+  // Update the stats line below the picker
+  const activeSet = availableModules.find(s => s.id === id) || {};
+  const statsEl = document.getElementById('qset-stats');
+  if (statsEl) statsEl.innerHTML = qsetStatsHtml(activeSet);
 }
 
 function sortSquadBy(col) {
@@ -4406,28 +4545,11 @@ function getDifficultyMix(ratingGap, formScore, season) {
 function selectQuestions(count, mix) {
   const all      = getActiveQuestions();
   const diffs    = ['easy', 'medium', 'hard', 'elite'];
-  const byDiff   = Object.fromEntries(diffs.map(d => [d, all.filter(q => q.difficulty === d)]));
+  const byDiff   = Object.fromEntries(diffs.map(d => [d, all.filter(q => effectiveDifficulty(q.id, q.difficulty) === d)]));
   const usedIds  = new Set();
   const selected = [];
 
-  // 1. Guaranteed weakness question (once per 3 matches)
-  const weakIds = [...qState.weaknessFlags];
-  if (weakIds.length > 0 && state.matchday % 3 === 1) {
-    const wq = all.find(q => weakIds.includes(q.id));
-    if (wq) { selected.push(wq); usedIds.add(wq.id); }
-  }
-
-  // 2. Recently-wrong questions within their window
-  const now = state.matchday;
-  (qState.recentlyWrong || []).forEach(rw => {
-    const window = (qState.incorrectCounts[rw.id] || 1) >= 2 ? 3 : 5;
-    if (now - rw.addedAtMatchday <= window && !usedIds.has(rw.id) && selected.length < count) {
-      const q = all.find(q => q.id === rw.id);
-      if (q) { selected.push(q); usedIds.add(q.id); }
-    }
-  });
-
-  // 3. Fill remaining via weighted difficulty mix
+  // Fill remaining via weighted difficulty mix
   const remaining = count - selected.length;
   for (let i = 0; i < remaining; i++) {
     const r   = Math.random();
@@ -4548,10 +4670,7 @@ function startMatch() {
     lastAnswerCorrect: null,
     rotationEligible: false,
     positionBefore:   sortedBefore.findIndex(r => r.id === 'player') + 1,
-    sessionMastered:  [],
-    sessionWeaknessCleared: [],
-    sessionCorrect:   0,
-    sessionTotal:     0,
+    tierChanges:      [],
   };
 
   saveState();
@@ -4618,13 +4737,20 @@ function renderMatch() {
     </button>`;
   }).join('');
 
-  const revealHtml = cm.phase === 'revealed' ? `
-    <div class="reveal-panel">
+  const revealHtml = cm.phase === 'revealed' ? (() => {
+    const newScore = qState._qScores?.[q.id] || 0;
+    const justPromoted = cm.lastAnswerCorrect && (newScore === 3 || newScore === 6);
+    const justDemoted  = !cm.lastAnswerCorrect && (newScore === -3 || newScore === -6);
+    const eff = effectiveDifficulty(q.id, q.difficulty);
+    return `<div class="reveal-panel">
       <div class="reveal-result ${cm.lastAnswerCorrect?'correct':'wrong'}">
         ${cm.lastAnswerCorrect ? '✓ Correct' : '✗ Wrong'}
       </div>
-      ${q.explanation ? `<div>${q.explanation}</div>` : ''}
-    </div>` : '';
+      ${q.explanation ? `<div class="reveal-explanation">${q.explanation}</div>` : ''}
+      ${justPromoted ? `<div class="tier-shift-notice promoted">▲ Question promoted to ${eff}</div>` : ''}
+      ${justDemoted  ? `<div class="tier-shift-notice demoted">▼ Question demoted to ${eff}</div>` : ''}
+    </div>`;
+  })() : '';
 
   const hName  = cm.isHome ? state.club.name : getClubName(cm.opponentId);
   const aName  = cm.isHome ? getClubName(cm.opponentId) : state.club.name;
@@ -4689,7 +4815,7 @@ function renderMatch() {
 
         ${inlineScore}
 
-        <span class="diff-badge ${diffMap[q.difficulty]||'diff-medium'}">${q.difficulty}</span>
+        ${(() => { const si = diffShiftInfo(q.id, q.difficulty); return `<span class="diff-badge ${diffMap[si.eff]||'diff-medium'}">${si.eff}</span>${si.shifted ? `<span class="diff-shift-arrow shift-${si.direction}">${si.direction==='up'?'▲':'▼'} ${q.difficulty}</span>` : ''}`; })()}
         <div class="question-text">${q.question}</div>
         ${isMulti?`<div style="font-size:11px;color:var(--muted);margin-bottom:12px;letter-spacing:.08em">SELECT ALL THAT APPLY</div>`:''}
 
@@ -4882,24 +5008,9 @@ function buildNarrative(n) {
 }
 
 function updateQState(q, correct) {
-  const id = q.id;
-  if (!correct) {
-    qState.incorrectCounts[id] = (qState.incorrectCounts[id] || 0) + 1;
-    const rw = qState.recentlyWrong.find(x => x.id === id);
-    if (rw) { rw.addedAtMatchday = state.matchday; rw.count = (rw.count||1)+1; }
-    else     qState.recentlyWrong.push({ id, addedAtMatchday: state.matchday, count: 1 });
-    if (qState.incorrectCounts[id] >= 3) qState.weaknessFlags.add(id);
-    qState.correctStreaks[id] = 0;
-  } else {
-    qState.correctStreaks[id] = (qState.correctStreaks[id] || 0) + 1;
-    if (qState.weaknessFlags.has(id) && qState.correctStreaks[id] >= 2) {
-      qState.weaknessFlags.delete(id);
-      delete qState.incorrectCounts[id];
-      qState.recentlyWrong = qState.recentlyWrong.filter(x => x.id !== id);
-    } else if (!qState.weaknessFlags.has(id)) {
-      qState.recentlyWrong = qState.recentlyWrong.filter(x => x.id !== id);
-    }
-  }
+  if (!qState._qScores) qState._qScores = {};
+  const prevScore = qState._qScores[q.id] || 0;
+  qState._qScores[q.id] = Math.max(-6, Math.min(6, prevScore + (correct ? 1 : -1)));
 }
 
 function lockIn() {
@@ -4910,19 +5021,12 @@ function lockIn() {
   const correct = isCorrectAnswer(q, cm.selectedOptions);
   cm.phase             = 'revealed';
   cm.lastAnswerCorrect = correct;
-  const hadWeakness = qState.weaknessFlags.has(q.id);
+  const effBefore = effectiveDifficulty(q.id, q.difficulty);
   updateQState(q, correct);
-  cm.sessionTotal = (cm.sessionTotal || 0) + 1;
-  if (correct) {
-    cm.sessionCorrect = (cm.sessionCorrect || 0) + 1;
-    if (qState.correctStreaks[q.id] === 2) {
-      cm.sessionMastered = cm.sessionMastered || [];
-      if (!cm.sessionMastered.includes(q.id)) cm.sessionMastered.push(q.id);
-    }
-    if (hadWeakness && !qState.weaknessFlags.has(q.id)) {
-      cm.sessionWeaknessCleared = cm.sessionWeaknessCleared || [];
-      cm.sessionWeaknessCleared.push(q.id);
-    }
+  const effAfter = effectiveDifficulty(q.id, q.difficulty);
+  if (effBefore !== effAfter) {
+    cm.tierChanges = cm.tierChanges || [];
+    cm.tierChanges.push({ baseDiff: q.difficulty, from: effBefore, to: effAfter });
   }
   resolveQuestion(correct, cm);
   saveState();
@@ -5155,6 +5259,9 @@ function finaliseMatch() {
 
   // Career total goals
   career.totalGoals = (career.totalGoals || 0) + cm.playerGoals;
+  if (result === 'W') career.wins   = (career.wins   || 0) + 1;
+  else if (result === 'D') career.draws = (career.draws || 0) + 1;
+  else career.losses = (career.losses || 0) + 1;
 
   // Award improvement points
   const cleanSheet = cm.oppGoals === 0;
@@ -5250,43 +5357,28 @@ function renderMatchReport() {
     ? `<span style="color:var(--red);font-size:11px">↓${Math.abs(posDiff)}</span>`
     : `<span style="color:var(--muted);font-size:11px">—</span>`;
 
-  // Session learning summary
-  const allQs       = getActiveQuestions();
-  const totalQs     = allQs.length;
-  const masteredQs  = allQs.filter(q => (qState.correctStreaks[q.id] || 0) >= 2).length;
-  const weaknesses  = qState.weaknessFlags.size;
-  const sCorrect    = cm.sessionCorrect || 0;
-  const sTotal      = cm.sessionTotal   || 0;
-  const sMastered   = (cm.sessionMastered || []).map(id => allQs.find(q => q.id === id)).filter(Boolean);
-  const sCleared    = (cm.sessionWeaknessCleared || []).length;
-  const masteredListHtml = sMastered.length ? `
-    <div class="mastered-list">
-      <div class="mastered-label">Mastered this session:</div>
-      ${sMastered.map(q => `<div class="mastered-item">✓ ${q.question.slice(0,60)}${q.question.length>60?'…':''}</div>`).join('')}
-    </div>` : '';
-  const sessionSummaryHtml = `
-    <div class="session-summary card card-tight mb-16">
-      <div class="section-label">Session Summary</div>
-      <div class="session-stats">
-        <div class="session-stat">
-          <span class="session-stat-value">${sCorrect}/${sTotal}</span>
-          <span class="session-stat-label">Questions correct</span>
-        </div>
-        ${sMastered.length ? `<div class="session-stat">
-          <span class="session-stat-value text-green">${sMastered.length} mastered</span>
-          <span class="session-stat-label">New this session</span>
-        </div>` : ''}
-        ${sCleared ? `<div class="session-stat">
-          <span class="session-stat-value" style="color:var(--amber)">${sCleared} cleared</span>
-          <span class="session-stat-label">Weaknesses resolved</span>
-        </div>` : ''}
-        <div class="session-stat">
-          <span class="session-stat-value">${weaknesses}</span>
-          <span class="session-stat-label">Questions flagged</span>
-        </div>
-      </div>
-      ${masteredListHtml}
+  // Tier shift summary
+  const tierChanges = cm.tierChanges || [];
+  const tierSummaryHtml = (() => {
+    if (!tierChanges.length) return '';
+    const tiers = ['easy', 'medium', 'hard', 'elite'];
+    const groups = {};
+    tierChanges.forEach(({ from, to }) => {
+      const dir = tiers.indexOf(to) > tiers.indexOf(from) ? 'promoted' : 'demoted';
+      const key = `${dir}|${to}`;
+      groups[key] = (groups[key] || 0) + 1;
+    });
+    const lines = Object.entries(groups).map(([key, n]) => {
+      const [dir, tier] = key.split('|');
+      const arrow = dir === 'promoted' ? '▲' : '▼';
+      const col   = dir === 'promoted' ? 'var(--green)' : 'var(--red)';
+      return `<span style="color:${col}">${arrow} ${n} ${n === 1 ? 'question' : 'questions'} ${dir} to ${tier}</span>`;
+    });
+    return `<div class="card card-tight mb-16">
+      <div class="section-label">Tier Shifts</div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:4px;font-size:13px">${lines.join('')}</div>
     </div>`;
+  })();
 
   const scorers = [...cm.goalScorers].sort((a, b) => a.minute - b.minute);
   const scorerHtml = scorers.length
@@ -5325,7 +5417,7 @@ function renderMatchReport() {
 
       <div class="flavour-text mb-16">${flavour}</div>
 
-      ${sessionSummaryHtml}
+      ${tierSummaryHtml}
 
       <div class="card card-flush mb-24">
         <div style="padding:8px 16px;border-bottom:1px solid var(--border);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)">
@@ -5651,25 +5743,12 @@ function renderStartScreen() {
       <div class="card mb-24">
         <div class="section-label" style="margin-bottom:10px">Question Set</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px" id="qset-picker">
-          ${QUESTION_SETS.map(s => `
-            <div class="qset-card ${selectedQuestionSet===s.id?'selected':''}"
-                 data-setid="${s.id}"
-                 onclick="selectQuestionSetStart('${s.id}')" tabindex="0"
-                 onkeydown="if(event.key==='Enter'||event.key===' ')selectQuestionSetStart('${s.id}')">
-              <div class="qset-card-icon">${s.icon}</div>
-              <div class="qset-card-name">${s.name}</div>
-              <div class="qset-card-desc">${s.description}</div>
-            </div>
-          `).join('')}
+          ${availableModules.map(s => qsetCardHtml(s, selectedQuestionSet, 'selectQuestionSetStart')).join('')}
         </div>
-      </div>
-
-      <div class="card mb-24">
-        <div class="section-label">Custom Questions (optional)</div>
-        <div class="upload-zone" id="upload-zone">
+        <div class="upload-zone" id="upload-zone" style="margin-top:12px">
           <input type="file" accept=".json" id="question-upload" onchange="handleQuestionUpload(event)">
           <div class="upload-zone-icon">📋</div>
-          <div>Drop a JSON question file or click to browse</div>
+          <div style="font-size:12px">Upload a custom module (JSON) — adds it as a selectable set</div>
           <div class="upload-msg" style="display:none"></div>
         </div>
       </div>
@@ -5679,7 +5758,7 @@ function renderStartScreen() {
   `;
 
   // Check for existing save
-  const raw = localStorage.getItem('anstoss_state');
+  const raw = _store.getItem('anstoss_state');
   if (raw) {
     try {
       const saved = JSON.parse(raw);
@@ -5714,9 +5793,7 @@ function selectKit(i) {
 
 function selectQuestionSetStart(id) {
   selectedQuestionSet = id;
-  document.querySelectorAll('#qset-picker .qset-card').forEach(el => {
-    el.classList.toggle('selected', el.dataset.setid === id);
-  });
+  refreshQsetPickerStart();
 }
 
 function randomiseClubName() {
@@ -5733,25 +5810,44 @@ function handleQuestionUpload(e) {
   const reader = new FileReader();
   reader.onload = ev => {
     try {
-      const parsed = JSON.parse(ev.target.result);
-      if (!Array.isArray(parsed)) throw new Error('Root must be an array');
-      let added = 0, skipped = 0;
-      const existing = new Set([...QUESTIONS, ...(qState?.customQuestions||[])].map(q => q.question));
-      parsed.forEach((q, i) => {
-        const ok = q && typeof q.question === 'string'
-          && Array.isArray(q.options) && q.options.length >= 2 && q.options.length <= 6
-          && Array.isArray(q.answers) && q.answers.length >= 1
-          && ['easy','medium','hard','elite'].includes(q.difficulty);
-        if (!ok) { skipped++; return; }
-        if (existing.has(q.question)) { skipped++; return; }
-        const entry = { ...q, id: `custom_${Date.now()}_${added}`, source: 'custom' };
-        if (qState) qState.customQuestions.push(entry);
-        existing.add(q.question);
-        added++;
-      });
-      msg.textContent = `✓ ${added} question${added!==1?'s':''} imported${skipped?` · ${skipped} skipped`:''}`;
+      const raw = JSON.parse(ev.target.result);
+
+      // Accept both tiered module format AND legacy flat array format
+      let moduleObj = raw;
+      if (Array.isArray(raw)) {
+        // Legacy flat array: wrap into a module with auto-grouped tiers
+        moduleObj = {
+          name: file.name.replace(/\.json$/i, '') || 'Custom',
+          description: 'Uploaded custom questions',
+          tiers: flatToTiers(raw.map((q, i) => {
+            if (q.answer !== undefined && !q.answers) q = { ...q, answers: [q.answer] };
+            if (!q.id) q = { ...q, id: `custom_${Date.now()}_${i}` };
+            if (!q.difficulty || !['easy','medium','hard','elite'].includes(q.difficulty)) q = { ...q, difficulty: 'medium' };
+            return q;
+          })),
+        };
+      }
+
+      const err = validateModule(moduleObj);
+      if (err) { msg.textContent = `✗ ${err}`; msg.style.color = 'var(--red)'; return; }
+
+      const newModId = registerModule(moduleObj, 'uploaded');
+      const total = availableModules.find(m => m.id === newModId)?.total || 0;
+
+      // Auto-select the newly uploaded module
+      if (state) {
+        state.questionSet = newModId;
+        saveState();
+        // Re-render the in-hub picker so the new card appears selected
+        refreshQsetPicker();
+      } else {
+        selectedQuestionSet = newModId;
+        // Re-render the start screen picker so the new card appears
+        refreshQsetPickerStart();
+      }
+
+      msg.textContent = `✓ "${moduleObj.name}" loaded · ${total} questions`;
       msg.style.color = 'var(--green)';
-      if (qState) saveState();
     } catch(err) {
       msg.textContent = `✗ Invalid JSON: ${err.message}`;
       msg.style.color = 'var(--red)';
@@ -5765,6 +5861,7 @@ function handleQuestionUpload(e) {
 // INIT
 // ══════════════════════════════════════════
 function init() {
+  loadBuiltinModules(); // register built-in question sets as tiered modules
   if (loadSavedState()) {
     // Resume correct screen based on saved phase
     if (state.phase === 'matchreport' && state.currentMatch) renderMatchReport();
