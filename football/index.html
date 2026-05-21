@@ -5805,8 +5805,13 @@ function randomiseClubName() {
 function handleQuestionUpload(e) {
   const file = e.target.files?.[0];
   if (!file) return;
-  const msg = e.target.closest('.upload-zone').querySelector('.upload-msg');
-  msg.style.display = 'block';
+  // Find the status message element — try closest zone first, fall back to any visible upload-msg
+  const uploadZone = e.target.closest('.upload-zone');
+  const msg = uploadZone ? uploadZone.querySelector('.upload-msg') : null;
+  const showMsg = (text, colour) => {
+    if (msg) { msg.style.display = 'block'; msg.textContent = text; msg.style.color = colour; }
+    else console.log(text);
+  };
   const reader = new FileReader();
   reader.onload = ev => {
     try {
@@ -5829,28 +5834,26 @@ function handleQuestionUpload(e) {
       }
 
       const err = validateModule(moduleObj);
-      if (err) { msg.textContent = `✗ ${err}`; msg.style.color = 'var(--red)'; return; }
+      if (err) { showMsg(`✗ ${err}`, 'var(--red)'); console.error('validateModule:', err, moduleObj); return; }
 
       const newModId = registerModule(moduleObj, 'uploaded');
       const total = availableModules.find(m => m.id === newModId)?.total || 0;
 
-      // Auto-select the newly uploaded module
-      if (state) {
-        state.questionSet = newModId;
-        saveState();
-        // Re-render the in-hub picker so the new card appears selected
+      // Auto-select the newly uploaded module.
+      // Check which picker is actually in the DOM — not whether state exists,
+      // because state remains non-null when reaching start screen via Menu button.
+      if (document.getElementById('qset-picker-hub')) {
+        if (state) { state.questionSet = newModId; saveState(); }
         refreshQsetPicker();
       } else {
         selectedQuestionSet = newModId;
-        // Re-render the start screen picker so the new card appears
         refreshQsetPickerStart();
       }
 
-      msg.textContent = `✓ "${moduleObj.name}" loaded · ${total} questions`;
-      msg.style.color = 'var(--green)';
+      showMsg(`✓ "${moduleObj.name}" loaded · ${total} questions`, 'var(--green)');
     } catch(err) {
-      msg.textContent = `✗ Invalid JSON: ${err.message}`;
-      msg.style.color = 'var(--red)';
+      showMsg(`✗ ${err.message}`, 'var(--red)');
+      console.error('Upload error:', err);
     }
   };
   reader.readAsText(file);
