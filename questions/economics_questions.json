@@ -1,0 +1,1657 @@
+{
+  "id": "builtin-economics",
+  "name": "Basic Economics",
+  "description": "Fundamental economic concepts, markets, policy, trade, and financial literacy from introductory through advanced.",
+  "tiers": {
+    "easy": [
+      {
+        "id": "ECO-EA-001",
+        "question": "What does GDP stand for?",
+        "options": [
+          "Gross Domestic Product",
+          "General Distribution Price",
+          "Global Development Plan",
+          "Government Demand Percentage"
+        ],
+        "answers": [
+          0
+        ],
+        "explanation": "GDP (Gross Domestic Product) is the total monetary value of all goods and services produced within a country's borders in a given period."
+      },
+      {
+        "id": "ECO-EA-002",
+        "question": "What is inflation?",
+        "options": [
+          "A rise in unemployment",
+          "A general increase in price levels over time",
+          "A decrease in government spending",
+          "An increase in exports"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Inflation is the rate at which the general level of prices for goods and services rises over time, reducing purchasing power."
+      },
+      {
+        "id": "ECO-EA-003",
+        "question": "Which of the following are factors of production? (Select all that apply)",
+        "options": [
+          "Land",
+          "Labour",
+          "Capital",
+          "Profit"
+        ],
+        "answers": [
+          0,
+          1,
+          2
+        ],
+        "explanation": "The classical factors of production are land, labour, and capital. Some economists add entrepreneurship as a fourth. Profit is the reward for combining these factors, not a factor itself."
+      },
+      {
+        "id": "ECO-EA-004",
+        "question": "What does 'supply and demand' describe?",
+        "options": [
+          "Government price controls",
+          "The relationship between how much of something is available and how much people want it",
+          "The trade balance between two countries",
+          "The cost of producing goods"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Supply and demand describes the relationship between the availability of a product (supply) and consumer desire for it (demand), which together determine market prices."
+      },
+      {
+        "id": "ECO-EA-005",
+        "question": "What is a budget deficit?",
+        "options": [
+          "When a country exports more than it imports",
+          "When government spending exceeds revenue",
+          "When a company has more assets than liabilities",
+          "When inflation exceeds wage growth"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "A budget deficit occurs when a government's expenditure exceeds its tax and other revenues in a given period, requiring borrowing to cover the gap."
+      },
+      {
+        "id": "ECO-EA-006",
+        "question": "What is the role of a central bank?",
+        "options": [
+          "To set all product prices",
+          "To manage monetary policy and the money supply",
+          "To collect corporate taxes",
+          "To regulate international trade"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Central banks manage monetary policy, control the money supply, set interest rates, and act as lender of last resort to commercial banks."
+      },
+      {
+        "id": "ECO-EA-007",
+        "question": "Which of these are examples of public goods? (Select all that apply)",
+        "options": [
+          "National defence",
+          "A loaf of bread",
+          "Street lighting",
+          "A cinema ticket"
+        ],
+        "answers": [
+          0,
+          2
+        ],
+        "explanation": "Public goods are non-excludable and non-rival — everyone benefits and one person's use doesn't reduce another's. National defence and street lighting fit; bread and cinema tickets are private goods."
+      },
+      {
+        "id": "ECO-EA-008",
+        "question": "What happens to price when demand increases and supply stays the same?",
+        "options": [
+          "Price falls",
+          "Price rises",
+          "Price stays the same",
+          "Price becomes zero"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "When demand increases and supply is unchanged, buyers compete for the same quantity, pushing the equilibrium price upward."
+      },
+      {
+        "id": "ECO-EA-009",
+        "question": "What is unemployment?",
+        "options": [
+          "People who choose not to work",
+          "People who are actively seeking work but cannot find it",
+          "People working part-time",
+          "People who have retired"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Unemployment refers to people who are actively looking for work but are unable to find employment. It excludes those not actively seeking work."
+      },
+      {
+        "id": "ECO-EA-010",
+        "question": "What is a free market?",
+        "options": [
+          "A market where goods are given away for free",
+          "An economy where prices and production are determined by supply and demand with minimal government intervention",
+          "A government-run distribution system",
+          "A market for financial instruments"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "A free market is an economic system where prices for goods and services are determined by the open market and consumers, with minimal government control or intervention."
+      },
+      {
+        "id": "ECO-EA-011",
+        "question": "What is interest?",
+        "options": [
+          "The cost of borrowing money or the return on savings",
+          "A government tax on imports",
+          "A fee paid to stockbrokers",
+          "The difference between exports and imports"
+        ],
+        "answers": [
+          0
+        ],
+        "explanation": "Interest is the charge for borrowing money (paid by borrowers) or the return earned on savings and investments (received by lenders/savers)."
+      },
+      {
+        "id": "ECO-EA-012",
+        "question": "Which of these are examples of taxes? (Select all that apply)",
+        "options": [
+          "Income tax",
+          "Value Added Tax (VAT)",
+          "National insurance",
+          "Dividends"
+        ],
+        "answers": [
+          0,
+          1,
+          2
+        ],
+        "explanation": "Income tax, VAT, and national insurance contributions are all forms of taxation. Dividends are payments from company profits to shareholders, not a tax."
+      },
+      {
+        "id": "ECO-EA-013",
+        "question": "What does 'opportunity cost' mean?",
+        "options": [
+          "The cost of raw materials",
+          "The value of the next best alternative foregone when making a choice",
+          "The price of a product on the open market",
+          "The cost of a missed investment return"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Opportunity cost is what you give up by choosing one option over the next best alternative. It's the fundamental economic concept behind decision-making."
+      },
+      {
+        "id": "ECO-EA-014",
+        "question": "What is a recession?",
+        "options": [
+          "A period of rapid economic growth",
+          "Two or more consecutive quarters of negative GDP growth",
+          "A sudden rise in inflation",
+          "A government-declared economic emergency"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "A recession is conventionally defined as two or more consecutive quarters (6+ months) of negative GDP growth. It is associated with rising unemployment and falling output."
+      },
+      {
+        "id": "ECO-EA-015",
+        "question": "What is the difference between microeconomics and macroeconomics?",
+        "options": [
+          "Microeconomics studies small businesses; macroeconomics studies large ones",
+          "Microeconomics studies individual and firm decisions; macroeconomics studies economy-wide phenomena",
+          "Microeconomics is about prices; macroeconomics is about profits",
+          "There is no meaningful difference"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Microeconomics examines individual consumers, firms, and markets. Macroeconomics examines the economy as a whole — GDP, inflation, unemployment, monetary policy."
+      },
+      {
+        "id": "ECO-EA-016",
+        "question": "What is a trade deficit?",
+        "options": [
+          "When a country imports more than it exports",
+          "When government spends more than it earns",
+          "When unemployment exceeds inflation",
+          "When wages fall below prices"
+        ],
+        "answers": [
+          0
+        ],
+        "explanation": "A trade deficit occurs when the value of a country's imports exceeds the value of its exports."
+      },
+      {
+        "id": "ECO-EA-017",
+        "question": "What does 'purchasing power' mean?",
+        "options": [
+          "The legal power to make purchases",
+          "How much a unit of currency can buy in goods and services",
+          "The authority of central banks to print money",
+          "The buying influence of large corporations"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Purchasing power is the quantity of goods and services that a unit of currency can buy. Inflation erodes purchasing power over time."
+      },
+      {
+        "id": "ECO-EA-018",
+        "question": "What is a bond?",
+        "options": [
+          "A type of share in a company",
+          "A debt instrument where the issuer borrows money and pays interest",
+          "A government licence to operate a business",
+          "A contract between employer and employee"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "A bond is a debt security where the issuer borrows from the holder, paying regular interest and returning the principal at maturity."
+      },
+      {
+        "id": "ECO-EA-019",
+        "question": "Which of these are examples of services (invisible trade)? (Select all that apply)",
+        "options": [
+          "Exporting cars",
+          "Tourism revenue",
+          "Financial services",
+          "Shipping wheat"
+        ],
+        "answers": [
+          1,
+          2
+        ],
+        "explanation": "Tourism revenue and financial services are services exports. Cars and wheat are goods (visible trade)."
+      },
+      {
+        "id": "ECO-EA-020",
+        "question": "What is a minimum wage?",
+        "options": [
+          "The lowest wage an employer is legally allowed to pay",
+          "A suggested pay rate set by unions",
+          "The average wage in an economy",
+          "The wage paid to lowest-skilled workers"
+        ],
+        "answers": [
+          0
+        ],
+        "explanation": "A minimum wage is a legally mandated floor — the lowest amount an employer can pay per hour."
+      },
+      {
+        "id": "ECO-EA-021",
+        "question": "What is currency depreciation?",
+        "options": [
+          "A fall in the value of a currency relative to others",
+          "The wearing out of physical assets",
+          "A reduction in government spending",
+          "A fall in the stock market"
+        ],
+        "answers": [
+          0
+        ],
+        "explanation": "Currency depreciation is a fall in the exchange rate value of a currency. It makes imports more expensive and exports cheaper."
+      },
+      {
+        "id": "ECO-EA-022",
+        "question": "What does aggregate demand represent?",
+        "options": [
+          "Demand from the largest firms",
+          "The total demand for all goods and services in an economy at a given price level",
+          "The demand for labour in a specific sector",
+          "Government demand for public services"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Aggregate demand (AD) is total spending in an economy: AD = C + I + G + (X – M)."
+      },
+      {
+        "id": "ECO-EA-023",
+        "question": "What is privatisation?",
+        "options": [
+          "The process of nationalising private companies",
+          "The transfer of a business from public to private ownership",
+          "Making financial information private",
+          "Restricting competition in a market"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Privatisation transfers state-owned enterprises to private ownership. The opposite is nationalisation."
+      },
+      {
+        "id": "ECO-EA-024",
+        "question": "What is a subsidy?",
+        "options": [
+          "A tax on imported goods",
+          "Financial support from the government to lower prices or increase production",
+          "A fine for polluting",
+          "A government-imposed price ceiling"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "A subsidy is a financial benefit (grant or payment) from government to encourage production or consumption of a good or service."
+      },
+      {
+        "id": "ECO-EA-025",
+        "question": "Which of these are functions of money? (Select all that apply)",
+        "options": [
+          "Medium of exchange",
+          "Store of value",
+          "Unit of account",
+          "Source of tax revenue"
+        ],
+        "answers": [
+          0,
+          1,
+          2
+        ],
+        "explanation": "Money's three core functions: medium of exchange, store of value, and unit of account. Being a tax source is a consequence, not a function."
+      }
+    ],
+    "medium": [
+      {
+        "id": "ECO-ME-001",
+        "question": "What is the difference between monetary policy and fiscal policy?",
+        "options": [
+          "Monetary policy deals with taxes; fiscal policy with interest rates",
+          "Monetary policy controls money supply and interest rates; fiscal policy involves government spending and taxation",
+          "They are the same thing",
+          "Monetary policy applies only to international trade"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Monetary policy is conducted by central banks (controlling money supply and interest rates). Fiscal policy is conducted by governments through taxation and spending decisions."
+      },
+      {
+        "id": "ECO-ME-002",
+        "question": "What is price elasticity of demand?",
+        "options": [
+          "How quickly prices change in a market",
+          "How responsive quantity demanded is to a change in price",
+          "The maximum price consumers will pay",
+          "The difference between supply and demand"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Price elasticity of demand measures the percentage change in quantity demanded in response to a 1% change in price. Elastic goods see large quantity changes; inelastic goods see small ones."
+      },
+      {
+        "id": "ECO-ME-003",
+        "question": "Which of the following correctly describe characteristics of a monopoly? (Select all that apply)",
+        "options": [
+          "Single seller dominates the market",
+          "No close substitutes exist",
+          "Price is set by market forces",
+          "High barriers to entry"
+        ],
+        "answers": [
+          0,
+          1,
+          3
+        ],
+        "explanation": "A monopoly has a single seller, no close substitutes, and high barriers to entry that prevent competition. Prices are set by the monopolist, not market forces."
+      },
+      {
+        "id": "ECO-ME-004",
+        "question": "What is comparative advantage?",
+        "options": [
+          "Producing more of everything than competitors",
+          "Producing a good at a lower opportunity cost than others",
+          "Having better technology than other countries",
+          "Being the largest economy in a trade bloc"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Comparative advantage is the ability to produce a good at a lower opportunity cost than others. Even if a country is worse at producing everything, it benefits from specialising in its comparative advantage."
+      },
+      {
+        "id": "ECO-ME-005",
+        "question": "What causes the 'crowding out' effect?",
+        "options": [
+          "Higher imports reducing domestic production",
+          "Government borrowing raising interest rates, reducing private investment",
+          "Monopolies preventing new market entrants",
+          "Inflation reducing real wages"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Crowding out occurs when government borrowing increases the demand for loanable funds, driving up interest rates, which discourages private sector borrowing and investment."
+      },
+      {
+        "id": "ECO-ME-006",
+        "question": "What is the difference between nominal GDP and real GDP?",
+        "options": [
+          "Nominal GDP measures services; real GDP measures goods",
+          "Nominal GDP is measured at current prices; real GDP adjusts for inflation",
+          "Real GDP is always larger than nominal GDP",
+          "They measure different countries"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Nominal GDP uses current market prices and includes the effects of inflation. Real GDP adjusts for inflation to reflect actual changes in output volume, allowing comparison over time."
+      },
+      {
+        "id": "ECO-ME-007",
+        "question": "Which of the following are causes of market failure? (Select all that apply)",
+        "options": [
+          "Externalities",
+          "Public goods",
+          "Information asymmetry",
+          "Perfect competition"
+        ],
+        "answers": [
+          0,
+          1,
+          2
+        ],
+        "explanation": "Market failure occurs when the free market doesn't allocate resources efficiently. Causes include externalities (spillover effects), public goods (underproduction), and information asymmetry (one party knows more). Perfect competition is an ideal, not a failure."
+      },
+      {
+        "id": "ECO-ME-008",
+        "question": "What is the multiplier effect in economics?",
+        "options": [
+          "The process by which banks create money through lending",
+          "An initial change in spending causing a larger change in national income",
+          "The compound effect of interest on savings",
+          "Price increases multiplying across supply chains"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "The multiplier effect describes how an initial injection of spending (e.g. government investment) generates a larger increase in national income because each round of spending becomes income for others who then spend again."
+      },
+      {
+        "id": "ECO-ME-009",
+        "question": "What distinguishes a tariff from a quota?",
+        "options": [
+          "Tariffs apply to services; quotas apply to goods",
+          "A tariff is a tax on imports; a quota is a limit on the quantity of imports",
+          "They are synonymous",
+          "Quotas only apply to agricultural products"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "A tariff is a tax levied on imported goods, raising their price. A quota is a physical limit on the quantity of a good that can be imported. Both protect domestic industries but work differently."
+      },
+      {
+        "id": "ECO-ME-010",
+        "question": "What is the Phillips Curve?",
+        "options": [
+          "A curve showing the relationship between interest rates and investment",
+          "The historical inverse relationship between inflation and unemployment",
+          "The relationship between GDP and government debt",
+          "A model of consumer spending over a lifecycle"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "The Phillips Curve describes the empirical inverse relationship between inflation and unemployment — lower unemployment was historically associated with higher inflation. This relationship has been questioned since the stagflation of the 1970s."
+      },
+      {
+        "id": "ECO-ME-011",
+        "question": "What is consumer surplus?",
+        "options": [
+          "The total amount consumers spend",
+          "The difference between what consumers are willing to pay and what they actually pay",
+          "Government transfers to low-income households",
+          "Profit earned by retailers above cost"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Consumer surplus is the economic benefit consumers receive when they pay less for a good than they would have been willing to pay. It represents the welfare gained from market exchange."
+      },
+      {
+        "id": "ECO-ME-012",
+        "question": "Which of the following are instruments of monetary policy? (Select all that apply)",
+        "options": [
+          "Interest rate changes",
+          "Open market operations",
+          "Income tax rates",
+          "Reserve requirements"
+        ],
+        "answers": [
+          0,
+          1,
+          3
+        ],
+        "explanation": "Central banks use interest rate changes, open market operations (buying/selling government bonds), and reserve requirements to control the money supply. Income tax is a fiscal policy tool."
+      },
+      {
+        "id": "ECO-ME-013",
+        "question": "What is an externality?",
+        "options": [
+          "A cost or benefit falling on third parties not involved in a transaction",
+          "A tax on foreign companies",
+          "The effect of exchange rates on exports",
+          "A company's external auditing costs"
+        ],
+        "answers": [
+          0
+        ],
+        "explanation": "An externality is a cost (negative) or benefit (positive) experienced by parties outside of a market transaction. Pollution is a classic negative externality; education is a positive one."
+      },
+      {
+        "id": "ECO-ME-014",
+        "question": "What does the Gini coefficient measure?",
+        "options": [
+          "Economic growth rate",
+          "Income inequality within a population",
+          "The trade balance between two countries",
+          "The efficiency of tax collection"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "The Gini coefficient measures income (or wealth) inequality on a scale from 0 (perfect equality) to 1 (one person has everything). Higher values indicate greater inequality."
+      },
+      {
+        "id": "ECO-ME-015",
+        "question": "What is the difference between a fixed and a floating exchange rate?",
+        "options": [
+          "Fixed rates apply to commodities; floating rates to currencies",
+          "Under a fixed rate the government pegs currency value; under floating it's determined by markets",
+          "Fixed rates are used only in trade blocs",
+          "Floating rates are always more stable"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "A fixed exchange rate is maintained by a government at a set value against another currency or basket. A floating exchange rate is determined by supply and demand in foreign exchange markets."
+      },
+      {
+        "id": "ECO-ME-016",
+        "question": "What is adverse selection in economics?",
+        "options": [
+          "When companies select the worst employees",
+          "A market problem where asymmetric information leads to market participants with unfavourable characteristics being more likely to engage in a transaction",
+          "When governments select inefficient industries to subsidise",
+          "The negative selection of exports over imports"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Adverse selection occurs when one party has more information than another, causing those with worse risks to select into a market disproportionately. Classic examples include insurance (riskier people buy more) and used car markets (sellers know defects buyers don't)."
+      },
+      {
+        "id": "ECO-ME-017",
+        "question": "What is the difference between economic growth and economic development?",
+        "options": [
+          "They are identical concepts",
+          "Economic growth is an increase in GDP; economic development is broader improvement in living standards, institutions, and human welfare",
+          "Growth is short-term; development is annual",
+          "Development refers to developing countries only"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Economic growth measures increase in GDP or output. Economic development is broader, encompassing improvements in education, health, inequality, institutions, and quality of life — not just raw output."
+      },
+      {
+        "id": "ECO-ME-018",
+        "question": "What is quantitative easing (QE)?",
+        "options": [
+          "Raising interest rates to reduce inflation",
+          "A central bank creating money to purchase assets, increasing money supply and liquidity",
+          "Reducing government debt by selling assets",
+          "Setting a fixed quantity of money in circulation"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "QE is an unconventional monetary policy where a central bank purchases financial assets (usually government bonds) using newly created money, expanding the money supply and lowering long-term interest rates."
+      },
+      {
+        "id": "ECO-ME-019",
+        "question": "Which market structures involve price-taking behaviour? (Select all that apply)",
+        "options": [
+          "Perfect competition",
+          "Monopoly",
+          "Monopolistic competition",
+          "Oligopoly"
+        ],
+        "answers": [
+          0
+        ],
+        "explanation": "Only perfectly competitive firms are pure price-takers — they have no market power and must accept the market price. Monopolies, oligopolies, and monopolistically competitive firms all have some degree of price-setting power."
+      },
+      {
+        "id": "ECO-ME-020",
+        "question": "What is the balance of payments?",
+        "options": [
+          "A government's annual budget statement",
+          "A record of all economic transactions between a country and the rest of the world",
+          "The balance between public and private sector spending",
+          "A company's financial statement"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "The balance of payments records all financial transactions between residents of one country and the rest of the world, including trade in goods and services, investment flows, and transfers."
+      },
+      {
+        "id": "ECO-ME-021",
+        "question": "What is moral hazard?",
+        "options": [
+          "The ethical standards required of financial professionals",
+          "When having insurance or protection changes behaviour in ways that increase risk",
+          "Government interference in private markets",
+          "The tendency for monopolists to exploit consumers"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Moral hazard occurs when a party takes on more risk because they don't bear the full consequences — e.g. people drive less carefully when insured, or banks take excessive risks when they expect government bailouts."
+      },
+      {
+        "id": "ECO-ME-022",
+        "question": "What does 'ceteris paribus' mean in economics?",
+        "options": [
+          "Everything changes simultaneously",
+          "All other things being equal (held constant)",
+          "The price is right",
+          "Supply equals demand"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Ceteris paribus is Latin for 'all other things being equal.' It's used in economic analysis to isolate the effect of one variable while holding all others constant."
+      },
+      {
+        "id": "ECO-ME-023",
+        "question": "Which of the following correctly describe characteristics of oligopolies? (Select all that apply)",
+        "options": [
+          "A few large firms dominate the market",
+          "Firms are interdependent in their pricing decisions",
+          "There are no barriers to entry",
+          "Strategic behaviour and game theory apply"
+        ],
+        "answers": [
+          0,
+          1,
+          3
+        ],
+        "explanation": "Oligopolies feature a small number of dominant firms, mutual interdependence (each firm considers rivals' reactions), and significant barriers to entry. Game theory is central to analysing their behaviour."
+      },
+      {
+        "id": "ECO-ME-024",
+        "question": "What is the difference between absolute and comparative advantage?",
+        "options": [
+          "They are the same concept",
+          "Absolute advantage is producing more with same resources; comparative advantage is producing at lower opportunity cost",
+          "Absolute advantage applies to countries; comparative advantage to firms",
+          "Comparative advantage requires more efficient production"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Absolute advantage means producing more of a good with the same resources. Comparative advantage means producing at a lower opportunity cost. Even without absolute advantage, countries gain from specialising in comparative advantages."
+      },
+      {
+        "id": "ECO-ME-025",
+        "question": "What is stagflation?",
+        "options": [
+          "Rapid economic growth with low inflation",
+          "The combination of high inflation and high unemployment (or economic stagnation)",
+          "A period of deflation and high growth",
+          "Zero inflation and zero unemployment"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Stagflation is the simultaneous occurrence of high inflation and high unemployment (or stagnant growth), which challenged the traditional Phillips Curve relationship. The 1970s oil crises caused the most famous episodes."
+      },
+      {
+        "id": "ECO-ME-026",
+        "question": "What distinguishes fixed from variable costs — and in the long run?",
+        "options": [
+          "Fixed costs are paid to the government; variable costs to suppliers",
+          "Fixed costs don't change with output in the short run; variable costs do — but in the long run all costs are variable",
+          "Fixed costs are one-time; variable costs are monthly",
+          "There is no difference"
+        ],
+        "answers": [
+          1,
+          2
+        ],
+        "explanation": "Fixed costs (rent, machinery) don't vary with output short-term. Variable costs (materials, labour) do. In the long run, all costs become variable as even capital can be renegotiated."
+      },
+      {
+        "id": "ECO-ME-027",
+        "question": "What is the money (deposit) multiplier?",
+        "options": [
+          "How many times a bank lends the same note",
+          "The ratio of total money supply to the monetary base, reflecting how bank lending amplifies central bank reserves",
+          "The rate of return on bank investments",
+          "The compounding of interest on savings"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "The money multiplier shows how central bank reserves expand through lending. With a 10% reserve ratio, £1 of reserves supports £10 of deposits. In practice it is lower due to cash holdings and excess reserves."
+      },
+      {
+        "id": "ECO-ME-028",
+        "question": "What is 'deadweight loss'?",
+        "options": [
+          "The cost of transporting heavy goods",
+          "The reduction in economic efficiency when market equilibrium is not achieved — lost surplus from market failures, taxes, or price controls",
+          "A company's unproductive fixed costs",
+          "Depreciation of capital equipment"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Deadweight loss is the consumer and producer surplus lost when market equilibrium quantity is not achieved — caused by taxes, monopoly pricing, price floors, or price ceilings."
+      },
+      {
+        "id": "ECO-ME-029",
+        "question": "What does the Human Development Index (HDI) measure?",
+        "options": [
+          "Economic output per capita only",
+          "A composite measure of life expectancy, education, and income per capita",
+          "The happiness and wellbeing of a nation",
+          "Military and economic power combined"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "The HDI combines life expectancy, years of schooling, and GNI per capita into a single development measure broader than GDP alone."
+      },
+      {
+        "id": "ECO-ME-030",
+        "question": "What is market equilibrium?",
+        "options": [
+          "When government sets prices",
+          "The price and quantity at which supply equals demand — the market clears",
+          "When all firms make equal profits",
+          "When unemployment is zero"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Market equilibrium is where quantity supplied equals quantity demanded, leaving no unsatisfied buyers or sellers at the prevailing price."
+      },
+      {
+        "id": "ECO-ME-031",
+        "question": "What distinguishes a recession from a depression?",
+        "options": [
+          "They are the same",
+          "A depression is a severe, prolonged recession — typically a GDP decline exceeding 10% or lasting more than 3 years",
+          "A recession involves falling prices; depression involves falling output",
+          "Depressions only occur in developing countries"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "A recession is two or more consecutive quarters of negative GDP growth. A depression is far more severe and prolonged, like the Great Depression (1929–1939)."
+      },
+      {
+        "id": "ECO-ME-032",
+        "question": "What is purchasing power parity (PPP)?",
+        "options": [
+          "An agreement for countries to use the same currency",
+          "The theory that exchange rates adjust so identical goods cost the same across countries in a common currency",
+          "The relationship between interest rates and purchasing power",
+          "A method of calculating inflation"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "PPP holds that in the long run, exchange rates equalise the price of identical baskets of goods across countries. Used to compare living standards internationally."
+      },
+      {
+        "id": "ECO-ME-033",
+        "question": "What is capital flight?",
+        "options": [
+          "Depreciation of industrial machinery",
+          "The rapid movement of money and assets out of a country due to instability",
+          "Investment in aviation infrastructure",
+          "The flow of venture capital to tech firms"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Capital flight is the rapid outflow of assets from a country due to political or economic instability, draining foreign reserves and potentially triggering currency crises."
+      },
+      {
+        "id": "ECO-ME-034",
+        "question": "What distinguishes CPI from RPI?",
+        "options": [
+          "They measure different countries",
+          "Both measure price levels but use different methodologies — RPI includes mortgage interest payments and typically reads higher than CPI",
+          "CPI measures goods; RPI measures services",
+          "They are identical"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "CPI uses geometric means and excludes mortgage interest. RPI uses arithmetic means and includes housing costs — making RPI typically higher than CPI."
+      },
+      {
+        "id": "ECO-ME-035",
+        "question": "What is a current account surplus?",
+        "options": [
+          "When a country's total assets exceed liabilities",
+          "When export earnings from goods, services, and income exceed import spending",
+          "When government revenue exceeds spending",
+          "When private savings exceed private investment"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "A current account surplus means a country earns more from exports of goods, services, and income than it spends on imports — making it a net lender to the rest of the world."
+      }
+    ],
+    "hard": [
+      {
+        "id": "ECO-HA-001",
+        "question": "What does the IS-LM model represent?",
+        "options": [
+          "Investment-Saving / Liquidity preference-Money supply: a framework for short-run macroeconomic equilibrium in goods and money markets",
+          "Import-Substitution / Labour-Market model of development",
+          "Index of Sustainability / Level of Monetarism",
+          "International Standard / Local Market framework"
+        ],
+        "answers": [
+          0
+        ],
+        "explanation": "The IS-LM model, developed by John Hicks from Keynes's work, shows the intersection of the goods market (IS curve: Investment-Saving equilibrium) and money market (LM curve: Liquidity preference-Money supply). It determines short-run output and interest rates."
+      },
+      {
+        "id": "ECO-HA-002",
+        "question": "What is Ricardian equivalence?",
+        "options": [
+          "The proposition that comparative advantage determines trade patterns",
+          "The theory that government borrowing and taxation have equivalent macroeconomic effects — consumers anticipate future taxes and save accordingly",
+          "The idea that all economic rents are equivalent to monopoly profits",
+          "Ricardo's theory that all value derives from labour"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Ricardian equivalence (Barro-Ricardo theorem) proposes that rational, forward-looking consumers anticipate that government deficits mean future tax rises, so they save rather than spend transfer payments — neutralising fiscal stimulus."
+      },
+      {
+        "id": "ECO-HA-003",
+        "question": "What distinguishes first-degree from third-degree price discrimination?",
+        "options": [
+          "First-degree applies to goods; third-degree to services",
+          "First-degree charges each consumer their exact willingness to pay (perfect discrimination); third-degree charges different prices to different consumer groups",
+          "First-degree is legal; third-degree is not",
+          "They differ only in the number of products involved"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "First-degree (perfect) price discrimination captures all consumer surplus by charging each buyer their maximum willingness to pay. Third-degree discrimination segments markets into groups (students, seniors) and charges each group a different price based on demand elasticity."
+      },
+      {
+        "id": "ECO-HA-004",
+        "question": "What is the Solow residual?",
+        "options": [
+          "The error term in GDP calculations",
+          "The portion of economic growth unexplained by capital and labour accumulation — attributed to total factor productivity (technology)",
+          "The difference between planned and actual investment",
+          "Excess savings over investment in an open economy"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "The Solow residual, derived from the Solow growth model, is the component of output growth that cannot be explained by increases in measurable inputs (capital and labour). It represents technological progress and total factor productivity growth."
+      },
+      {
+        "id": "ECO-HA-005",
+        "question": "Which of the following are predictions of the Heckscher-Ohlin trade model? (Select all that apply)",
+        "options": [
+          "Countries export goods that intensively use their abundant factors",
+          "Trade causes factor price equalisation across countries",
+          "Comparative advantage determines all trade patterns regardless of factor endowments",
+          "Trade benefits owners of scarce factors in each country"
+        ],
+        "answers": [
+          0,
+          1
+        ],
+        "explanation": "The Heckscher-Ohlin model predicts countries export goods intensive in their abundant factors (labour-abundant countries export labour-intensive goods). The related Stolper-Samuelson theorem predicts this harms owners of scarce factors, and factor price equalisation is a mathematical result (rarely fully observed in reality)."
+      },
+      {
+        "id": "ECO-HA-006",
+        "question": "What is the 'liquidity trap' in Keynesian economics?",
+        "options": [
+          "When banks cannot lend due to regulatory constraints",
+          "A situation where interest rates are at or near zero, monetary policy loses effectiveness, and people hoard cash rather than invest",
+          "When excessive liquidity causes asset bubbles",
+          "The impossibility of converting illiquid assets quickly"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "In a liquidity trap, nominal interest rates approach zero, making conventional monetary policy ineffective — further rate cuts or money creation don't stimulate spending because people prefer liquidity over low-yielding assets. Keynes described this; Japan in the 1990s and post-2008 advanced economies exemplified it."
+      },
+      {
+        "id": "ECO-HA-007",
+        "question": "What is the paradox of thrift?",
+        "options": [
+          "Saving is irrational for individuals but rational for nations",
+          "When individuals increase saving, aggregate demand falls, reducing income and potentially reducing total savings in the economy",
+          "High interest rates cause over-saving, trapping economies in recessions",
+          "A situation where prices fall, increasing real debt burdens"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "The paradox of thrift (Keynes) states that while individual saving is prudent, if everyone saves simultaneously, aggregate demand falls, output drops, and incomes decline — potentially leaving total savings unchanged or lower."
+      },
+      {
+        "id": "ECO-HA-008",
+        "question": "What are the conditions required for perfect competition?",
+        "options": [
+          "Many buyers and sellers, homogeneous products, free entry/exit, perfect information",
+          "A few large firms, differentiated products, and some barriers to entry",
+          "Government price regulation and subsidised entry",
+          "One large buyer and many sellers"
+        ],
+        "answers": [
+          0
+        ],
+        "explanation": "Perfect competition requires: many buyers and sellers (no single party influences price), homogeneous (identical) products, free entry and exit, and perfect information. This results in price-taking behaviour and zero long-run economic profit."
+      },
+      {
+        "id": "ECO-HA-009",
+        "question": "What does the Laffer Curve illustrate?",
+        "options": [
+          "The relationship between money supply and inflation",
+          "That at some tax rate above 0% and below 100%, tax revenue is maximised — and very high rates can reduce revenue",
+          "The diminishing returns to capital investment",
+          "The relationship between GDP and government debt"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "The Laffer Curve shows that tax revenue is zero at both 0% and 100% tax rates, with a revenue-maximising rate somewhere between. Supply-siders use it to argue tax cuts can increase revenue, though the revenue-maximising rate is empirically debated."
+      },
+      {
+        "id": "ECO-HA-010",
+        "question": "Which of the following are examples of automatic stabilisers? (Select all that apply)",
+        "options": [
+          "Unemployment benefits",
+          "Income tax (progressive)",
+          "Emergency government stimulus packages",
+          "Corporation tax"
+        ],
+        "answers": [
+          0,
+          1,
+          3
+        ],
+        "explanation": "Automatic stabilisers are fiscal mechanisms that moderate business cycles without deliberate policy action. When incomes fall, progressive income tax bills fall automatically (stimulating demand), and unemployment benefits rise. Emergency packages require deliberate decisions, so they're not automatic."
+      },
+      {
+        "id": "ECO-HA-011",
+        "question": "What is the difference between short-run and long-run aggregate supply?",
+        "options": [
+          "Short-run supply slopes upward; long-run supply is vertical at potential output",
+          "They are identical in Keynesian models",
+          "Long-run supply is flatter than short-run supply",
+          "Short-run supply is determined by technology; long-run by labour supply"
+        ],
+        "answers": [
+          0
+        ],
+        "explanation": "Short-run aggregate supply is upward-sloping because some input prices (especially wages) are sticky. Long-run aggregate supply is vertical at the natural rate of output — prices and wages have fully adjusted, so output returns to potential regardless of price level."
+      },
+      {
+        "id": "ECO-HA-012",
+        "question": "What is rent-seeking behaviour?",
+        "options": [
+          "Attempting to profit through productive economic activity",
+          "Attempting to gain wealth by manipulating the political or regulatory environment rather than creating value",
+          "Landlords raising rents to match market rates",
+          "Seeking the highest risk-adjusted return"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Rent-seeking is when individuals or firms use resources to obtain economic rents (unearned income) through political influence, lobbying, or regulatory capture rather than through productive economic activity. It is a source of economic inefficiency."
+      },
+      {
+        "id": "ECO-HA-013",
+        "question": "What does Okun's Law describe?",
+        "options": [
+          "The relationship between inflation and money supply growth",
+          "The empirical relationship between unemployment and GDP — roughly each 1% rise in unemployment corresponds to a 2% fall in output below potential",
+          "The diminishing marginal productivity of labour",
+          "The relationship between savings and investment in an open economy"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Okun's Law is the empirical relationship stating that a 1 percentage point increase in the unemployment rate is associated with approximately a 2% decrease in real GDP relative to potential output (the coefficient varies by country and period)."
+      },
+      {
+        "id": "ECO-HA-014",
+        "question": "What is the difference between GDP and GNP/GNI?",
+        "options": [
+          "GDP is a stock measure; GNP is a flow measure",
+          "GDP measures output within a country's borders; GNP/GNI measures output by a country's residents wherever they are located",
+          "GNP includes government spending; GDP does not",
+          "They measure the same thing with different deflators"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "GDP measures all economic output within a country's geographic borders regardless of who produces it. GNP (now GNI) measures output by a country's residents/citizens globally, including income earned abroad minus income earned domestically by foreigners."
+      },
+      {
+        "id": "ECO-HA-015",
+        "question": "Which of the following are predictions of New Keynesian economics? (Select all that apply)",
+        "options": [
+          "Prices and wages are sticky in the short run",
+          "Monetary policy has real effects in the short run due to nominal rigidities",
+          "Markets always clear instantly",
+          "Government spending multipliers can exceed one"
+        ],
+        "answers": [
+          0,
+          1,
+          3
+        ],
+        "explanation": "New Keynesian economics incorporates microfoundations of price and wage stickiness (menu costs, efficiency wages), giving monetary policy real short-run effects, and supporting multiplier effects above one in certain conditions. Instant market clearing is a New Classical/RBC assumption, not New Keynesian."
+      },
+      {
+        "id": "ECO-HA-016",
+        "question": "What is the difference between economic profit and accounting profit?",
+        "options": [
+          "They are identical",
+          "Economic profit subtracts implicit opportunity costs (including normal return on capital); accounting profit subtracts only explicit costs",
+          "Accounting profit is always higher than economic profit",
+          "Economic profit excludes depreciation"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Accounting profit = revenue minus explicit costs. Economic profit = revenue minus all costs including implicit opportunity costs (e.g. the return the entrepreneur could have earned elsewhere). In competitive long-run equilibrium, economic profit is zero even when accounting profit is positive."
+      },
+      {
+        "id": "ECO-HA-017",
+        "question": "What is the Nash Equilibrium?",
+        "options": [
+          "The point where aggregate supply equals aggregate demand",
+          "A situation in a strategic game where no player can improve their outcome by unilaterally changing their strategy",
+          "The optimal government spending level",
+          "The equilibrium price in a perfectly competitive market"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "A Nash Equilibrium (named after John Nash) is a stable state in a strategic interaction where no player has an incentive to deviate unilaterally from their chosen strategy, given the strategies of others. It may not be the socially optimal outcome (see Prisoner's Dilemma)."
+      },
+      {
+        "id": "ECO-HA-018",
+        "question": "What is the velocity of money?",
+        "options": [
+          "The speed at which prices rise",
+          "The rate at which a unit of money changes hands in a given period — linking money supply to nominal GDP",
+          "The rate of return on financial investments",
+          "How quickly banks process transactions"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Velocity of money (V) is the average number of times a unit of currency is spent in a given period. The quantity equation MV = PY links money supply (M), velocity (V), price level (P), and real output (Y)."
+      },
+      {
+        "id": "ECO-HA-019",
+        "question": "What is the difference between regressive, proportional, and progressive taxation?",
+        "options": [
+          "They refer to tax rates in different countries",
+          "A regressive tax takes a larger share of income from lower earners; proportional takes the same share; progressive takes a larger share from higher earners",
+          "They refer to different tax bases (income, wealth, consumption)",
+          "The terms describe how quickly tax rates change"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Progressive taxes (income tax) take a higher percentage from higher earners. Proportional (flat) taxes take the same percentage from all. Regressive taxes (like VAT) take a larger share of income from lower earners because the tax rate is flat but lower-income people spend more of their income."
+      },
+      {
+        "id": "ECO-HA-020",
+        "question": "Which of the following describe characteristics of a natural monopoly? (Select all that apply)",
+        "options": [
+          "Average costs fall continuously as output rises over the relevant demand range",
+          "High fixed costs relative to variable costs",
+          "Multiple firms would be more efficient than one",
+          "It typically requires regulation or public ownership"
+        ],
+        "answers": [
+          0,
+          1,
+          3
+        ],
+        "explanation": "Natural monopolies arise when average costs decline throughout the relevant output range (economies of scale), usually due to very high fixed costs (utilities, rail infrastructure). A single firm can serve the market more cheaply than multiple firms, making competition wasteful — hence the case for regulation or public ownership."
+      },
+      {
+        "id": "ECO-HA-021",
+        "question": "What is the difference between demand-pull and cost-push inflation?",
+        "options": [
+          "They are the same phenomenon",
+          "Demand-pull inflation arises when aggregate demand exceeds supply; cost-push inflation arises from rising production costs",
+          "Demand-pull is temporary; cost-push is permanent",
+          "Cost-push affects only specific sectors"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Demand-pull inflation occurs when aggregate demand grows faster than productive capacity (too much money chasing too few goods). Cost-push inflation occurs when rising input costs (energy, wages, materials) push the supply curve upward regardless of demand."
+      },
+      {
+        "id": "ECO-HA-022",
+        "question": "What does the concept of 'diminishing marginal returns' state?",
+        "options": [
+          "As more units of a variable input are added to fixed inputs, the marginal product of that input eventually falls",
+          "Returns always increase in the long run",
+          "As prices rise, demand falls proportionally",
+          "All goods eventually become inferior goods"
+        ],
+        "answers": [
+          0
+        ],
+        "explanation": "Diminishing marginal returns (the law of diminishing returns) states that as more of a variable input (e.g. labour) is added to a fixed input (e.g. land or capital), the marginal output eventually decreases — even if total output continues to rise."
+      },
+      {
+        "id": "ECO-HA-023",
+        "question": "What is the difference between the current account and the capital/financial account in the balance of payments?",
+        "options": [
+          "The current account records investment; the capital account records trade",
+          "The current account records trade in goods, services, income, and transfers; the capital/financial account records investment flows and asset transactions",
+          "They always sum to zero independently",
+          "The capital account is only for developing economies"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "The balance of payments has two main accounts: the current account (trade in goods and services, primary income like investment returns, and secondary income like remittances) and the financial/capital account (foreign direct investment, portfolio investment, reserve changes). Together they must sum to zero."
+      },
+      {
+        "id": "ECO-HA-024",
+        "question": "What is 'creative destruction' in economics?",
+        "options": [
+          "Government policies that destroy inefficient industries",
+          "Schumpeter's concept that innovation creates new industries and destroys old ones, driving long-run economic growth",
+          "The process by which competition lowers prices",
+          "Deliberate product obsolescence by manufacturers"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Creative destruction, coined by Joseph Schumpeter, describes capitalism's process of industrial mutation that revolutionises the economic structure from within — new innovations continuously destroy old industries and business models while creating new ones. It is the engine of long-run growth."
+      },
+      {
+        "id": "ECO-HA-025",
+        "question": "What is moral hazard and how does it differ from adverse selection?",
+        "options": [
+          "They are identical market failures",
+          "Adverse selection is a pre-contractual information problem; moral hazard is a post-contractual behavioural change due to reduced risk exposure",
+          "Moral hazard is about firms; adverse selection is about individuals",
+          "Adverse selection is intentional; moral hazard is accidental"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Adverse selection occurs before a transaction: one party has private information that disadvantages the other (e.g. bad risks disproportionately seek insurance). Moral hazard occurs after: having protection changes behaviour in ways that increase the likelihood or severity of the insured event."
+      },
+      {
+        "id": "ECO-HA-026",
+        "question": "What is the Theory of Second Best?",
+        "options": [
+          "That second-best products eventually displace market leaders",
+          "When one Pareto condition cannot be satisfied, satisfying others may not improve efficiency — optimal policy in the presence of existing distortions may require additional distortions",
+          "That any policy has second-order unintended consequences",
+          "That deregulation is always the second-best option after full competition"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Lipsey and Lancaster (1956) proved that when one efficiency condition cannot be met, satisfying the remaining conditions is not necessarily optimal. This challenges piecemeal welfare economics and affects trade, competition, and regulatory policy."
+      },
+      {
+        "id": "ECO-HA-027",
+        "question": "What is the J-curve effect?",
+        "options": [
+          "The relationship between GDP growth and interest rates",
+          "The pattern where currency depreciation initially worsens the trade balance before improving it, as trade volumes adjust slowly but prices change quickly",
+          "The exponential growth of international trade since WWII",
+          "The lifecycle of a trade agreement from negotiation to full effect"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "The J-curve describes how depreciation first worsens the trade deficit (import costs rise immediately while quantities haven't adjusted) before improving it as export competitiveness attracts buyers."
+      },
+      {
+        "id": "ECO-HA-028",
+        "question": "What distinguishes endogenous from exogenous growth theory?",
+        "options": [
+          "Endogenous growth is determined entirely by external factors",
+          "Endogenous growth models place technology and human capital formation inside the model — allowing policy to permanently affect growth rates, unlike the Solow model's exogenous technical progress",
+          "Exogenous growth assumes capital accumulation drives everything",
+          "They are the same approach with different names"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Solow (exogenous): long-run growth depends on exogenous technical progress. Endogenous growth (Romer, Lucas): technology and human capital are modelled explicitly, making growth permanently responsive to policy."
+      },
+      {
+        "id": "ECO-HA-029",
+        "question": "How do Keynesians and Classicals differ on Say's Law?",
+        "options": [
+          "They agree entirely",
+          "Classical economists accepted Say's Law ('supply creates its own demand'), arguing recessions self-correct; Keynes rejected it, arguing deficient demand can cause prolonged unemployment",
+          "Keynesians accept it in the long run only",
+          "Say's Law applies only in closed economies"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Say's Law holds that production generates equivalent income that must be spent. Classicals used it to argue self-correction. Keynes argued savings can leak from the circular flow, creating deficient demand and prolonged involuntary unemployment."
+      },
+      {
+        "id": "ECO-HA-030",
+        "question": "What is the Balassa-Samuelson effect?",
+        "options": [
+          "Commodity exporters tend to have overvalued currencies",
+          "Countries with faster productivity growth in traded goods sectors tend to have higher price levels, because wages equalise across sectors raising non-traded goods prices",
+          "The relationship between trade openness and inequality",
+          "The effect of capital flows on emerging-market exchange rates"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "High productivity in traded sectors raises wages economywide (since labour is mobile), increasing costs in non-traded services — explaining why developed countries have higher price levels. It implies PPP overstates real income convergence."
+      },
+      {
+        "id": "ECO-HA-031",
+        "question": "What is the Mundell-Fleming Impossible Trinity?",
+        "options": [
+          "The impossibility of free trade, full employment, and balanced budgets",
+          "A country cannot simultaneously maintain a fixed exchange rate, free capital mobility, and independent monetary policy — only two of the three are achievable",
+          "The conflict between growth, equality, and sustainability",
+          "The trade-off between inflation, unemployment, and growth"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "The Mundell-Fleming Trilemma: choose at most two of (1) fixed exchange rate, (2) free capital flows, (3) independent monetary policy. China maintains (1)+(3) with capital controls; the Eurozone has (1)+(2) but surrendered (3)."
+      },
+      {
+        "id": "ECO-HA-032",
+        "question": "What is Tiebout sorting?",
+        "options": [
+          "Firms clustering in industrial districts",
+          "Households 'voting with their feet' by moving to jurisdictions offering their preferred bundle of public goods and taxes",
+          "Sorting of workers by skill level across firms",
+          "Clustering of wealth in urban centres"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "The Tiebout model proposes that mobile households sort across jurisdictions based on preferred public service/tax combinations, creating competition among local governments analogous to market competition."
+      },
+      {
+        "id": "ECO-HA-033",
+        "question": "What does the Modigliani-Miller theorem state?",
+        "options": [
+          "Companies should always maximise debt",
+          "Under perfect markets (no taxes, no bankruptcy costs), firm value is independent of capital structure",
+          "Dividend policy always affects firm value",
+          "Only equity financing maximises shareholder value"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Modigliani-Miller (1958): with perfect markets, capital structure is irrelevant to firm value. Real-world violations (tax shields on debt, bankruptcy costs) underpin modern capital structure theory."
+      },
+      {
+        "id": "ECO-HA-034",
+        "question": "What is hysteresis in macroeconomics?",
+        "options": [
+          "The self-correcting tendency of business cycles",
+          "Path-dependence where temporary shocks create permanent effects — e.g. recession permanently raising structural unemployment through skill atrophy and long-term joblessness",
+          "The lagging effect of monetary policy on inflation",
+          "Slow wage adjustment to market conditions"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Hysteresis means the NAIRU rises permanently after deep recessions as unemployed workers lose skills and labour market connection, strengthening the case for strong counter-cyclical policy."
+      },
+      {
+        "id": "ECO-HA-035",
+        "question": "How do rational expectations differ from adaptive expectations?",
+        "options": [
+          "They are the same concept",
+          "Adaptive expectations extrapolate from past data; rational expectations use all available information and the correct model — making systematic errors impossible and anticipated policy ineffective",
+          "Rational expectations assume perfect foresight",
+          "Rational expectations apply only to financial markets"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Adaptive expectations (Friedman) update forecasts from past errors. Rational expectations (Muth/Lucas) use all available information and the correct model — underpinning the Lucas Critique and implying only unanticipated policy shocks have real effects."
+      }
+    ],
+    "elite": [
+      {
+        "id": "ECO-EL-001",
+        "question": "What does the Arrow-Debreu model prove about competitive equilibria?",
+        "options": [
+          "That markets always fail",
+          "Under certain conditions (complete markets, convex preferences, no externalities), a competitive equilibrium exists and is Pareto efficient — the First and Second Welfare Theorems",
+          "That monopolies are socially optimal",
+          "That government intervention always improves welfare"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "The Arrow-Debreu framework proves the First Welfare Theorem (competitive equilibria are Pareto efficient) and Second Welfare Theorem (any Pareto efficient allocation can be achieved by a competitive equilibrium with appropriate lump-sum transfers). Their conditions are stringent and rarely fully met in practice."
+      },
+      {
+        "id": "ECO-EL-002",
+        "question": "What is the Lucas Critique?",
+        "options": [
+          "The argument that all macroeconomic models are inherently flawed",
+          "Robert Lucas's argument that econometric policy models based on historical relationships are unreliable because those relationships shift when policy changes, since agents adjust expectations",
+          "The theory that central banks always inflate away debt",
+          "The critique that comparative advantage ignores dynamic efficiency"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "The Lucas Critique (1976) argues that the parameters of econometric models estimated from historical data are not structural — they change when policy changes because rational agents adjust their behaviour in response to anticipated policy. This fundamentally challenged large-scale Keynesian econometric models."
+      },
+      {
+        "id": "ECO-EL-003",
+        "question": "Which of the following are implications of efficient market hypothesis (EMH) in its strong form? (Select all that apply)",
+        "options": [
+          "All publicly available information is reflected in prices",
+          "All private (insider) information is also reflected in prices",
+          "Technical analysis cannot generate risk-adjusted excess returns",
+          "Fundamental analysis cannot generate risk-adjusted excess returns"
+        ],
+        "answers": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "explanation": "Strong-form EMH holds that all information — public and private — is reflected in asset prices, making it impossible for anyone (including insiders) to consistently earn excess risk-adjusted returns. Semi-strong EMH covers only public information; weak-form only covers historical price data."
+      },
+      {
+        "id": "ECO-EL-004",
+        "question": "What is the significance of the Coase Theorem?",
+        "options": [
+          "It proves government regulation always improves efficiency",
+          "It states that if property rights are well-defined and transaction costs are zero, parties will negotiate to an efficient outcome regardless of the initial assignment of rights",
+          "It shows that externalities always require taxation to correct",
+          "It demonstrates that monopolies are inevitable in industries with economies of scale"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "The Coase Theorem (Ronald Coase) states that with well-defined property rights and zero transaction costs, private bargaining leads to efficient outcomes regardless of who initially holds the rights. Its practical importance lies in highlighting transaction costs and property rights as the real barriers to efficient externality resolution."
+      },
+      {
+        "id": "ECO-EL-005",
+        "question": "What does the Diamond-Dybvig model explain?",
+        "options": [
+          "How diamond markets respond to information asymmetry",
+          "Why banks are inherently fragile and susceptible to self-fulfilling panic runs, even when fundamentally solvent",
+          "The relationship between economic growth and natural resource extraction",
+          "How international trade affects factor prices"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "The Diamond-Dybvig model (1983) formalises bank runs as multiple equilibria: a good equilibrium where depositors maintain confidence, and a bad equilibrium where panic causes a self-fulfilling run. Even a solvent bank can fail if everyone expects a run. This justifies deposit insurance and lender of last resort facilities."
+      },
+      {
+        "id": "ECO-EL-006",
+        "question": "What is the Ramsey-Cass-Koopmans model?",
+        "options": [
+          "A model of international capital flows",
+          "An optimal growth model where a representative agent maximises lifetime utility, determining consumption and savings paths endogenously — replacing the exogenous savings rate of the Solow model",
+          "A model of monopoly pricing over time",
+          "A theory of how fiscal policy affects long-run growth"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "The Ramsey-Cass-Koopmans model extends the Solow model by endogenising the savings rate through utility maximisation. A representative household maximises the present value of lifetime utility subject to a budget constraint, yielding the Euler equation for consumption growth and a saddle-path stable equilibrium."
+      },
+      {
+        "id": "ECO-EL-007",
+        "question": "Which of the following correctly describe the implications of the Stolper-Samuelson theorem? (Select all that apply)",
+        "options": [
+          "Trade increases real incomes for owners of abundant factors",
+          "Trade decreases real incomes for owners of scarce factors",
+          "Factor price equalisation occurs across trading countries in the long run",
+          "Winners from trade always compensate losers in practice"
+        ],
+        "answers": [
+          0,
+          1,
+          2
+        ],
+        "explanation": "Stolper-Samuelson (from Heckscher-Ohlin) predicts trade raises real returns to a country's abundant factor and reduces returns to its scarce factor — creating distributional conflict. Factor price equalisation is a theoretical result (rarely observed fully). Compensation of losers is not guaranteed — it is a separate policy decision."
+      },
+      {
+        "id": "ECO-EL-008",
+        "question": "What is the signalling model in labour economics (Spence)?",
+        "options": [
+          "Workers signal their preferences through union membership",
+          "Education may function as a costly signal of pre-existing ability rather than as human capital investment, if it is cheaper for high-ability workers to acquire than low-ability workers",
+          "Employers signal wage offers through job advertisements",
+          "Both workers and employers reveal information through salary negotiations"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Michael Spence's signalling model shows that education can serve as a credible signal of innate productivity (rather than creating productivity) if the cost of obtaining it is negatively correlated with ability. This produces a separating equilibrium where high-ability workers signal through education even if it adds no productive value."
+      },
+      {
+        "id": "ECO-EL-009",
+        "question": "What is the time-inconsistency problem in monetary policy?",
+        "options": [
+          "The difficulty of forecasting future inflation",
+          "The problem that an optimal policy announced today may no longer be optimal when it comes time to implement it — creating credibility issues, particularly for inflation targets",
+          "The lag between monetary policy decisions and their economic effects",
+          "The impossibility of setting the correct interest rate in real time"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Time-inconsistency (Kydland-Prescott) shows that rational expectations make discretionary policy subject to credibility failure: a central bank might announce low inflation but later have an incentive to inflate (to boost output). Anticipating this, agents expect higher inflation. The solution is commitment mechanisms — rules, independent central banks, inflation targets."
+      },
+      {
+        "id": "ECO-EL-010",
+        "question": "What does the permanent income hypothesis (Friedman) predict about the consumption response to a temporary tax cut?",
+        "options": [
+          "Consumers spend the full amount immediately",
+          "Consumers spread the windfall over their lifetime, consuming only a small fraction — because consumption is based on permanent (lifetime average) income, not current income",
+          "Consumers save the entire amount",
+          "The government must announce the cut well in advance for it to have any effect"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Friedman's permanent income hypothesis states that consumption depends on expected lifetime (permanent) income, not current income. A temporary tax cut adds little to permanent income, so consumers save most of it rather than spending — undermining the Keynesian fiscal multiplier from temporary transfers."
+      },
+      {
+        "id": "ECO-EL-011",
+        "question": "What is the difference between the income effect and the substitution effect of a price change?",
+        "options": [
+          "They always work in the same direction",
+          "The substitution effect captures switching to relatively cheaper goods; the income effect captures the change in real purchasing power — for normal goods both reinforce demand responses, for Giffen goods the income effect dominates and reverses the normal demand relationship",
+          "The income effect is always larger",
+          "The substitution effect only applies to inferior goods"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "When a price falls, the substitution effect causes consumers to buy more (it's relatively cheaper). The income effect captures the increase in real income — for normal goods this also raises demand. For Giffen goods (a theoretical extreme), the income effect of a price rise increases demand, reversing the law of demand."
+      },
+      {
+        "id": "ECO-EL-012",
+        "question": "Which of the following are features of Real Business Cycle (RBC) theory? (Select all that apply)",
+        "options": [
+          "Business cycles are optimal responses to real (productivity) shocks",
+          "Money is neutral even in the short run",
+          "Unemployment is always voluntary and reflects rational labour-leisure choices",
+          "Fiscal and monetary policy cannot improve on market outcomes"
+        ],
+        "answers": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "explanation": "RBC theory holds that business cycles are Pareto efficient responses to technology/productivity shocks, money is always neutral (no real effects), unemployment reflects voluntary choices between work and leisure, and policy interventions are ineffective or counterproductive — a stark contrast to Keynesian and New Keynesian views."
+      },
+      {
+        "id": "ECO-EL-013",
+        "question": "What is the concept of 'dynamic efficiency' and how does it relate to static efficiency?",
+        "options": [
+          "They are synonymous",
+          "Static efficiency achieves optimal resource allocation at a point in time; dynamic efficiency achieves optimal resource allocation and innovation over time — they can conflict when monopoly profits fund R&D",
+          "Dynamic efficiency always dominates",
+          "Static efficiency is only relevant in planned economies"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Static efficiency (allocative and productive) optimises resource use at a given time. Dynamic efficiency involves innovation and technological change over time. A monopoly may be statically inefficient but dynamically efficient if monopoly rents fund R&D that benefits society long-run. This tension underlies competition policy debates about intellectual property."
+      },
+      {
+        "id": "ECO-EL-014",
+        "question": "What is the Impossibility Theorem (Arrow's Impossibility Theorem)?",
+        "options": [
+          "The theorem that no competitive equilibrium exists with public goods",
+          "Arrow's proof that no social welfare function can simultaneously satisfy a set of seemingly reasonable axioms (Pareto efficiency, independence of irrelevant alternatives, non-dictatorship, unrestricted domain)",
+          "The theorem that externalities cannot be internalised without government intervention",
+          "The proof that free trade always increases aggregate welfare"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Arrow's Impossibility Theorem proves that when there are three or more options, no ranked voting procedure can convert individual preferences into a collective preference ranking while simultaneously satisfying Pareto efficiency, independence of irrelevant alternatives, non-dictatorship, and unrestricted domain. It has profound implications for voting systems and social choice."
+      },
+      {
+        "id": "ECO-EL-015",
+        "question": "What is the concept of Pareto improvement and how does it relate to the Kaldor-Hicks criterion?",
+        "options": [
+          "They are identical",
+          "A Pareto improvement makes at least one person better off with no one worse off; Kaldor-Hicks requires that winners could (not necessarily do) compensate losers — it permits policies where some lose as long as aggregate gains exceed losses",
+          "Pareto improvements require unanimous agreement; Kaldor-Hicks does not require compensation",
+          "The Kaldor-Hicks criterion is stricter than Pareto"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "A Pareto improvement requires making at least one person better off without making anyone worse off — a very restrictive standard almost never met by real policies. The Kaldor-Hicks criterion is weaker: a policy is justified if total gains exceed total losses (winners could hypothetically compensate losers), even if compensation doesn't actually occur. Most cost-benefit analysis uses Kaldor-Hicks."
+      },
+      {
+        "id": "ECO-EL-016",
+        "question": "What does the Revelation Principle establish?",
+        "options": [
+          "Agents always reveal true preferences in markets",
+          "For any mechanism, there exists a truth-telling direct mechanism achieving the same outcome — designers need only focus on incentive-compatible mechanisms",
+          "Information revelation is always beneficial",
+          "Auction design does not affect revenue"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "The Revelation Principle (Myerson) shows that any implementable social choice function can be achieved by a truthful direct mechanism — enormously simplifying mechanism design to incentive-compatible revelation mechanisms."
+      },
+      {
+        "id": "ECO-EL-017",
+        "question": "What does the Myerson-Satterthwaite theorem prove?",
+        "options": [
+          "All markets reach equilibrium",
+          "No mechanism for bilateral trade under private information can simultaneously be efficient, individually rational, and budget-balanced",
+          "Optimal auctions always maximise revenue",
+          "Strategic voting is always possible in multi-candidate elections"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Myerson-Satterthwaite proves that with private information on both sides of a trade, no mechanism can simultaneously achieve: (1) efficiency, (2) individual rationality, and (3) budget balance — formalising the impossibility of privately efficient bilateral trade under asymmetric information."
+      },
+      {
+        "id": "ECO-EL-018",
+        "question": "What distinguishes Walrasian (Hicksian) from Marshallian demand?",
+        "options": [
+          "They are identical",
+          "Walrasian demand holds utility constant (isolates substitution effect); Marshallian demand holds income constant (includes income and substitution effects)",
+          "Walrasian demand applies to factor markets only",
+          "Walrasian demand requires perfect information"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Marshallian demand holds money income constant (includes income + substitution effects). Hicksian/Walrasian demand holds utility constant (isolates substitution effect). The Slutsky equation decomposes the difference."
+      },
+      {
+        "id": "ECO-EL-019",
+        "question": "What does the Envelope Theorem state?",
+        "options": [
+          "Information asymmetry always leads to inefficiency",
+          "The derivative of an optimised value function with respect to a parameter equals the partial derivative of the objective function at the optimum — only direct effects matter",
+          "First-mover advantage determines market outcomes",
+          "All competitive equilibria are unique"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "The Envelope Theorem: at an optimum, the total effect of a parameter change on the value function equals its direct (partial) effect — indirect effects through adjusting decisions cancel out. This simplifies comparative statics throughout economics."
+      },
+      {
+        "id": "ECO-EL-020",
+        "question": "What is Sargent and Wallace's 'Unpleasant Monetarist Arithmetic'?",
+        "options": [
+          "The difficulty of calculating money supply",
+          "Tight monetary policy today may cause higher future inflation if it raises government debt that must eventually be monetised — fiscal dominance over monetary policy",
+          "The impossibility of reducing inflation without recession",
+          "Monetarism always leads to higher unemployment"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Sargent-Wallace (1981): if deficits are unsustainable, tight money now only postpones inflation by building debt — which must later be monetised at greater inflationary cost. This formalised fiscal dominance and underpins the fiscal theory of the price level."
+      }
+    ]
+  }
+}
