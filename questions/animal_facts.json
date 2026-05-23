@@ -1,0 +1,891 @@
+{
+  "name": "Animal Facts",
+  "description": "Wildlife, biology, behaviour, and record-breakers from the animal kingdom.",
+  "tiers": {
+    "easy": [
+      {
+        "id": "ANI-EA-001",
+        "question": "Is a bat a mammal?",
+        "options": [
+          "Yes",
+          "No"
+        ],
+        "answers": [
+          0
+        ],
+        "explanation": "Bats are the only mammals capable of sustained flight. They give birth to live young and nurse them with milk."
+      },
+      {
+        "id": "ANI-EA-002",
+        "question": "Which of these animals are cold-blooded? (Select all that apply)",
+        "options": [
+          "Crocodile",
+          "Snake",
+          "Penguin",
+          "Lizard"
+        ],
+        "answers": [
+          0,
+          1,
+          3
+        ],
+        "explanation": "Crocodiles, snakes, and lizards are all reptiles and cold-blooded (ectothermic). Penguins are birds — warm-blooded."
+      },
+      {
+        "id": "ANI-EA-003",
+        "question": "What is the largest land animal on Earth?",
+        "options": [
+          "Hippopotamus",
+          "African elephant",
+          "White rhinoceros"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "The African elephant is the largest land animal, with bulls reaching up to 6,000 kg and 3.3 m at the shoulder."
+      },
+      {
+        "id": "ANI-EA-004",
+        "question": "How many legs does a spider have?",
+        "options": [
+          "Six",
+          "Eight",
+          "Ten",
+          "Twelve"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Spiders have eight legs. Six-legged animals are insects. Spiders are arachnids — a different class entirely."
+      },
+      {
+        "id": "ANI-EA-005",
+        "question": "Which animals are nocturnal? (Select all that apply)",
+        "options": [
+          "Owl",
+          "Eagle",
+          "Bat",
+          "Hedgehog",
+          "Rabbit"
+        ],
+        "answers": [
+          0,
+          2,
+          3
+        ],
+        "explanation": "Owls, bats, and hedgehogs are nocturnal. Eagles are diurnal (active by day). Rabbits are crepuscular — most active at dawn and dusk."
+      },
+      {
+        "id": "ANI-EA-006",
+        "question": "Do all birds fly?",
+        "options": [
+          "Yes",
+          "No"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "No. Penguins, ostriches, emus, kiwis, and cassowaries are all birds that cannot fly. Penguins instead 'fly' through water."
+      },
+      {
+        "id": "ANI-EA-007",
+        "question": "What is a group of lions called?",
+        "options": [
+          "Pack",
+          "Herd",
+          "Pride",
+          "Flock"
+        ],
+        "answers": [
+          2
+        ],
+        "explanation": "A group of lions is called a pride. A pack is used for wolves; a herd for cattle or elephants; a flock for birds."
+      },
+      {
+        "id": "ANI-EA-008",
+        "question": "Which of these are true fish? (Select all that apply)",
+        "options": [
+          "Shark",
+          "Dolphin",
+          "Salmon",
+          "Whale",
+          "Tuna"
+        ],
+        "answers": [
+          0,
+          2,
+          4
+        ],
+        "explanation": "Sharks, salmon, and tuna are true fish. Dolphins and whales are marine mammals — they breathe air, give birth to live young, and nurse them."
+      },
+      {
+        "id": "ANI-EA-009",
+        "question": "What is the fastest land animal?",
+        "options": [
+          "Lion",
+          "Cheetah",
+          "Pronghorn antelope",
+          "Greyhound"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "The cheetah is the fastest land animal, reaching 112 km/h in short sprints. The pronghorn is the fastest over long distances."
+      },
+      {
+        "id": "ANI-EA-010",
+        "question": "Which animals have a backbone? (Select all that apply)",
+        "options": [
+          "Dog",
+          "Octopus",
+          "Eagle",
+          "Earthworm",
+          "Salmon",
+          "Frog"
+        ],
+        "answers": [
+          0,
+          2,
+          4,
+          5
+        ],
+        "explanation": "Dogs, eagles, salmon, and frogs are all vertebrates. Octopuses and earthworms are invertebrates — they have no backbone."
+      },
+      {
+        "id": "ANI-EA-011",
+        "question": "Do sharks have bones?",
+        "options": [
+          "Yes",
+          "No"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Sharks are cartilaginous fish — their skeletons are made of cartilage, not bone. This makes them lighter and more flexible."
+      },
+      {
+        "id": "ANI-EA-012",
+        "question": "Which of these animals are marsupials? (Select all that apply)",
+        "options": [
+          "Kangaroo",
+          "Koala",
+          "Wombat",
+          "Platypus",
+          "Wallaby"
+        ],
+        "answers": [
+          0,
+          1,
+          2,
+          4
+        ],
+        "explanation": "Kangaroos, koalas, wombats, and wallabies are all marsupials — mammals that raise young in a pouch. The platypus is a monotreme, not a marsupial."
+      },
+      {
+        "id": "ANI-EA-013",
+        "question": "What do herbivores eat?",
+        "options": [
+          "Only meat",
+          "Only plants",
+          "Both plants and meat"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Herbivores eat only plant material. Carnivores eat only meat. Omnivores eat both."
+      },
+      {
+        "id": "ANI-EA-014",
+        "question": "Which of these are apex predators in their ecosystems? (Select all that apply)",
+        "options": [
+          "Great white shark",
+          "Orca",
+          "Polar bear",
+          "Clownfish",
+          "Snow leopard"
+        ],
+        "answers": [
+          0,
+          1,
+          2,
+          4
+        ],
+        "explanation": "Great whites, orcas, polar bears, and snow leopards are all apex predators with no natural predators of their own. The clownfish is prey to many species."
+      },
+      {
+        "id": "ANI-EA-015",
+        "question": "How do amphibians breathe? (Select all that apply)",
+        "options": [
+          "Through lungs",
+          "Through gills (as larvae)",
+          "Through their skin",
+          "Through a blowhole"
+        ],
+        "answers": [
+          0,
+          1,
+          2
+        ],
+        "explanation": "Amphibians breathe through lungs as adults, through gills as larvae (tadpoles), and many also absorb oxygen through their moist skin. Blowholes belong to cetaceans."
+      },
+      {
+        "id": "ANI-EA-016",
+        "question": "Can you beat a fully grown siberian tiger in a fight.",
+        "options": [
+          "No",
+          "Yes",
+          "Maybe",
+          "If I was a polar bear"
+        ],
+        "answers": [
+          0,
+          3
+        ]
+      }
+    ],
+    "medium": [
+      {
+        "id": "ANI-ME-016",
+        "question": "Can a mule reproduce?",
+        "options": [
+          "Yes",
+          "No"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Mules (horse × donkey hybrids) are almost always sterile due to mismatched chromosome numbers — horses have 64, donkeys 62, mules 63."
+      },
+      {
+        "id": "ANI-ME-017",
+        "question": "Which of these animals are venomous? (Select all that apply)",
+        "options": [
+          "Platypus",
+          "Gila monster",
+          "Blue-ringed octopus",
+          "Komodo dragon",
+          "Slow loris"
+        ],
+        "answers": [
+          0,
+          1,
+          2,
+          4
+        ],
+        "explanation": "The platypus (male spur), Gila monster, blue-ringed octopus, and slow loris are genuinely venomous. The Komodo dragon kills with bacteria and anticoagulant proteins in its saliva — technically not venom in the strict sense."
+      },
+      {
+        "id": "ANI-ME-018",
+        "question": "Which sense do sharks primarily use to detect prey from long range?",
+        "options": [
+          "Vision",
+          "Electroreception",
+          "Smell",
+          "Hearing"
+        ],
+        "answers": [
+          2
+        ],
+        "explanation": "Sharks can detect blood in the water from up to a kilometre away via an extraordinary sense of smell. They also use electroreception at close range via the ampullae of Lorenzini."
+      },
+      {
+        "id": "ANI-ME-019",
+        "question": "Which of these animals are known to use tools? (Select all that apply)",
+        "options": [
+          "Chimpanzee",
+          "Crow",
+          "Octopus",
+          "Dolphin",
+          "Sea otter"
+        ],
+        "answers": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "explanation": "All five are documented tool users. Chimps use sticks for termites; crows craft hooked tools; octopuses carry coconut shells; dolphins use sponges to protect their snouts; sea otters use rocks to crack shellfish."
+      },
+      {
+        "id": "ANI-ME-020",
+        "question": "What is the longest snake species in the world?",
+        "options": [
+          "King cobra",
+          "Anaconda",
+          "Reticulated python",
+          "Burmese python"
+        ],
+        "answers": [
+          2
+        ],
+        "explanation": "The reticulated python holds the record for longest snake, with verified specimens exceeding 7 metres. Anacondas are the heaviest."
+      },
+      {
+        "id": "ANI-ME-021",
+        "question": "Which of these statements about honeybees are true? (Select all that apply)",
+        "options": [
+          "Worker bees are female",
+          "Drones fertilise the queen",
+          "The queen can lay over 1,000 eggs a day",
+          "Worker bees live for several years"
+        ],
+        "answers": [
+          0,
+          1,
+          2
+        ],
+        "explanation": "Worker bees are all female; drones (males) exist solely to fertilise the queen; queens can lay 1,000–2,000 eggs daily. Worker bees live only 6–7 weeks in summer."
+      },
+      {
+        "id": "ANI-ME-022",
+        "question": "How does a chameleon change colour?",
+        "options": [
+          "By secreting pigment onto skin",
+          "By expanding and contracting nanocrystals in skin cells",
+          "By pumping blood into specialised skin chambers"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Chameleons change colour by manipulating guanine nanocrystals in iridophore cells. This also communicates mood and social signals — not just camouflage."
+      },
+      {
+        "id": "ANI-ME-023",
+        "question": "Which animals communicate using echolocation? (Select all that apply)",
+        "options": [
+          "Dolphin",
+          "Bat",
+          "Platypus",
+          "Some whales",
+          "Oilbird"
+        ],
+        "answers": [
+          0,
+          1,
+          3,
+          4
+        ],
+        "explanation": "Dolphins, bats, many whale species, and the oilbird (a cave-dwelling bird) all use echolocation to navigate and hunt. The platypus uses electroreception, not echolocation."
+      },
+      {
+        "id": "ANI-ME-024",
+        "question": "What is unique about the axolotl's regeneration?",
+        "options": [
+          "It can only regenerate its tail",
+          "It can regenerate limbs, heart tissue, and parts of its brain",
+          "It can clone itself"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "The axolotl can regenerate entire limbs, cardiac muscle, spinal cord, and portions of its brain — making it one of the most studied animals in regenerative medicine."
+      },
+      {
+        "id": "ANI-ME-025",
+        "question": "Which of these adaptations do polar bears have? (Select all that apply)",
+        "options": [
+          "Black skin to absorb heat",
+          "Hollow fur shafts for insulation",
+          "Webbed front paws for swimming",
+          "A layer of blubber up to 11 cm thick",
+          "White fur that reflects UV light as camouflage"
+        ],
+        "answers": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "explanation": "Polar bears have black skin (heat absorption), hollow fur (insulation), partially webbed front paws, and thick blubber. Their fur is actually translucent, not white — the whiteness is from light scattering, not UV reflection for camouflage."
+      },
+      {
+        "id": "ANI-ME-026",
+        "question": "How do electric eels generate electricity?",
+        "options": [
+          "Via a specialised organ made of electrocyte cells that act as living batteries",
+          "Via static build-up from rapid movement",
+          "Via chemical secretion on skin contact"
+        ],
+        "answers": [
+          0
+        ],
+        "explanation": "Electric eels have three electric organs (the Main organ, Hunter's organ, and Sach's organ) composed of electrocytes — stacked disc-shaped cells that act like batteries in series, generating up to 860 volts."
+      },
+      {
+        "id": "ANI-ME-027",
+        "question": "Which of these are actually not fish despite the name? (Select all that apply)",
+        "options": [
+          "Starfish",
+          "Jellyfish",
+          "Cuttlefish",
+          "Oarfish",
+          "Crayfish"
+        ],
+        "answers": [
+          0,
+          1,
+          2,
+          4
+        ],
+        "explanation": "Starfish (echinoderms), jellyfish (cnidarians), cuttlefish (molluscs), and crayfish (crustaceans) are not fish at all. The oarfish is a genuine fish — the world's longest bony fish."
+      },
+      {
+        "id": "ANI-ME-028",
+        "question": "What is the primary diet of the giant panda?",
+        "options": [
+          "Bamboo",
+          "Fish and bamboo",
+          "Roots and berries"
+        ],
+        "answers": [
+          0
+        ],
+        "explanation": "Giant pandas eat bamboo for 99% of their diet — up to 38 kg per day. Their digestive system is carnivore-type but they evolved to subsist almost entirely on bamboo."
+      },
+      {
+        "id": "ANI-ME-029",
+        "question": "Which senses are absent or extremely reduced in moles? (Select all that apply)",
+        "options": [
+          "Vision",
+          "Touch",
+          "Hearing",
+          "Smell"
+        ],
+        "answers": [
+          0
+        ],
+        "explanation": "Moles have very poor eyesight — their small eyes are often covered by skin and are light-sensitive but barely capable of forming images. Their senses of touch (via the star-nosed organ or Eimer's organs), hearing, and smell are excellent."
+      },
+      {
+        "id": "ANI-ME-030",
+        "question": "Do crocodiles and birds share a common recent ancestor?",
+        "options": [
+          "Yes",
+          "No"
+        ],
+        "answers": [
+          0
+        ],
+        "explanation": "Yes. Crocodilians and birds are both archosaurs — birds are technically the living descendants of theropod dinosaurs, but crocodiles are the closest living relatives of birds among non-avian reptiles."
+      }
+    ],
+    "hard": [
+      {
+        "id": "ANI-HA-031",
+        "question": "Which of the following are correct about cephalopod intelligence? (Select all that apply)",
+        "options": [
+          "Octopuses can solve multi-step puzzles",
+          "Cuttlefish pass marshmallow-test-style delayed gratification tests",
+          "Squid communicate using bioluminescent patterns",
+          "Octopuses have centralised brains like vertebrates"
+        ],
+        "answers": [
+          0,
+          1,
+          2
+        ],
+        "explanation": "Octopuses solve complex puzzles; cuttlefish demonstrate self-control in food delay experiments; squid use chromatophore-based light patterns for communication. Octopus brains are highly distributed — two-thirds of their neurons are in their arms, not a central brain."
+      },
+      {
+        "id": "ANI-HA-032",
+        "question": "What is unique about tardigrades' survival mechanisms? (Select all that apply)",
+        "options": [
+          "They can survive in the vacuum of space",
+          "They enter cryptobiosis to withstand extreme conditions",
+          "They can survive doses of radiation that would kill any mammal",
+          "They live exclusively in marine environments"
+        ],
+        "answers": [
+          0,
+          1,
+          2
+        ],
+        "explanation": "Tardigrades survive in space (vacuum, radiation), enter cryptobiosis (suspended animation), and withstand radiation doses of 570,000 rads. They are found almost everywhere on Earth — not exclusively marine."
+      },
+      {
+        "id": "ANI-HA-033",
+        "question": "The pistol shrimp stuns prey using which mechanism?",
+        "options": [
+          "A venomous sting from its claw",
+          "A cavitation bubble from its snapping claw that briefly reaches the temperature of the sun's surface",
+          "Electrical discharge generated by specialised organs"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "The pistol shrimp snaps its claw so fast it creates a cavitation bubble that collapses at ~8,000°C and 218 decibels — briefly matching the sun's surface temperature. This stuns or kills prey."
+      },
+      {
+        "id": "ANI-HA-034",
+        "question": "Which mechanisms do migratory birds use to navigate? (Select all that apply)",
+        "options": [
+          "Magnetic field sensing via cryptochrome proteins in the eye",
+          "Star map reading using the night sky",
+          "Landmark memory",
+          "Infrared detection of warm air thermals",
+          "Olfactory navigation in some species"
+        ],
+        "answers": [
+          0,
+          1,
+          2,
+          4
+        ],
+        "explanation": "Birds use magnetoreception (cryptochrome proteins), celestial navigation, landmark memory, and olfactory cues. Infrared detection for thermals is not a documented bird navigation mechanism."
+      },
+      {
+        "id": "ANI-HA-035",
+        "question": "What is the function of a shark's ampullae of Lorenzini?",
+        "options": [
+          "Temperature regulation",
+          "Detecting electrical fields generated by prey",
+          "Pressure sensing for depth regulation"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "The ampullae of Lorenzini are electroreceptors — jelly-filled pores on the shark's snout that detect the weak bioelectric fields generated by muscle contractions in prey, allowing sharks to find fish buried in sand."
+      },
+      {
+        "id": "ANI-HA-036",
+        "question": "Which of these adaptations are found in deep-sea bioluminescent organisms? (Select all that apply)",
+        "options": [
+          "Producing light via luciferin-luciferase reactions",
+          "Using light to attract prey (anglerfish)",
+          "Using counterillumination as camouflage from below",
+          "Absorbing all light with melanin-rich skin for stealth",
+          "Reflecting light using specialised mirror cells"
+        ],
+        "answers": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "explanation": "All five are real adaptations. Luciferin reactions produce light; anglerfish use lures; counterillumination matches downwelling light to erase shadows; ultra-black melanin absorbs 99.95% of light; and some fish use mirror cells (reflecting platelets) for display."
+      },
+      {
+        "id": "ANI-HA-037",
+        "question": "Why do naked mole rats not feel certain types of pain?",
+        "options": [
+          "They lack nociceptors entirely",
+          "Their acid-sensing TRPV1 channels respond abnormally, blocking substance P pain signal transmission",
+          "Their brain lacks a pain-processing centre"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Naked mole rats don't feel acid-induced pain because their TRPV1 channels evolved to not trigger substance P (the neurotransmitter that sends pain signals to the brain). They also live in high CO2 burrows where acid-pain would be a constant nuisance."
+      },
+      {
+        "id": "ANI-HA-038",
+        "question": "Which of these are features of mantis shrimp vision? (Select all that apply)",
+        "options": [
+          "Up to 16 types of photoreceptor cells",
+          "Can detect polarised light",
+          "Can see ultraviolet and infrared light",
+          "Have the sharpest colour discrimination of any animal"
+        ],
+        "answers": [
+          0,
+          1,
+          2
+        ],
+        "explanation": "Mantis shrimp have up to 16 photoreceptor types and can see UV and polarised light. Counterintuitively, despite more receptor types, their colour discrimination is actually worse than humans — they appear to use a different parallel processing strategy rather than comparing wavelengths."
+      },
+      {
+        "id": "ANI-HA-039",
+        "question": "How does the bombardier beetle defend itself?",
+        "options": [
+          "By spraying venom from leg glands",
+          "By detonating a boiling chemical spray from its abdomen via an exothermic reaction",
+          "By puffing up to appear larger and releasing foul-smelling secretions"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "The bombardier beetle stores hydroquinone and hydrogen peroxide in separate chambers. When threatened, enzymes mix them explosively, producing a boiling spray (100°C) at ~500 pulses per second with an audible pop."
+      },
+      {
+        "id": "ANI-HA-040",
+        "question": "Which of these statements about whale communication are accurate? (Select all that apply)",
+        "options": [
+          "Humpback whale song is learned and culturally transmitted",
+          "Blue whale vocalisations can travel thousands of kilometres",
+          "Sperm whales use codas — patterned click sequences — for social identity",
+          "All whale species produce the same basic call types"
+        ],
+        "answers": [
+          0,
+          1,
+          2
+        ],
+        "explanation": "Humpback song is culturally transmitted across ocean basins; blue whale calls at 180 dB can travel thousands of km; sperm whale codas encode individual and social identity. Different whale species produce dramatically different vocalisation types."
+      },
+      {
+        "id": "ANI-HA-041",
+        "question": "What is special about the axolotl's developmental biology?",
+        "options": [
+          "It undergoes metamorphosis into a terrestrial form naturally",
+          "It retains larval form into sexual maturity (neoteny)",
+          "It can switch between asexual and sexual reproduction"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "The axolotl is neotenic — it retains its larval aquatic form (including external gills) into adulthood and reproduces without metamorphosing. It can be induced to metamorphose with thyroid hormones."
+      },
+      {
+        "id": "ANI-HA-042",
+        "question": "Which animals reproduce via parthenogenesis? (Select all that apply)",
+        "options": [
+          "Komodo dragon",
+          "Some shark species",
+          "Whiptail lizard",
+          "African clawed frog",
+          "Honey bee (unfertilised eggs → drones)"
+        ],
+        "answers": [
+          0,
+          1,
+          2,
+          4
+        ],
+        "explanation": "Komodo dragons, some sharks, and whiptail lizards can reproduce parthenogenetically. Honey bee drones develop from unfertilised eggs (arrhenotoky, a form of parthenogenesis). The African clawed frog reproduces sexually."
+      },
+      {
+        "id": "ANI-HA-043",
+        "question": "What drives the monarch butterfly's multi-generational migration?",
+        "options": [
+          "Individual butterflies learn the route from parents",
+          "Successive generations navigate using sun position and magnetic sensing, with the route encoded genetically",
+          "Pheromone trails left by previous generations"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "No individual monarch completes the full round trip. The route is encoded genetically and navigation uses a sun compass (time-compensated by their circadian clock) and possibly magnetic sensing. There are no pheromone trails."
+      },
+      {
+        "id": "ANI-HA-044",
+        "question": "Which defence mechanisms do cuttlefish use? (Select all that apply)",
+        "options": [
+          "Rapid colour and texture change via chromatophores and papillae",
+          "Ink ejection to confuse predators",
+          "Mimicking other dangerous animals",
+          "Producing electric shocks"
+        ],
+        "answers": [
+          0,
+          1,
+          2
+        ],
+        "explanation": "Cuttlefish change colour and skin texture almost instantly, eject ink clouds, and mimic venomous animals like the flamboyant cuttlefish. They do not produce electric shocks."
+      },
+      {
+        "id": "ANI-HA-045",
+        "question": "What is the highest recorded lifespan of any animal?",
+        "options": [
+          "Ocean quahog clam — approximately 507 years",
+          "Greenland shark — over 500 years",
+          "Bowhead whale — approximately 200 years"
+        ],
+        "answers": [
+          0
+        ],
+        "explanation": "An ocean quahog clam named Ming was verified at 507 years old. The Greenland shark may live over 400 years. However, some organisms like Hydra are biologically immortal — they do not age — but that's a separate category."
+      },
+      {
+        "id": "ANI-HA-046",
+        "question": "Which of these mechanisms do social insects use to regulate colony temperature? (Select all that apply)",
+        "options": [
+          "Honeybees fan their wings to cool the hive",
+          "Termites build mound structures that passively ventilate",
+          "Army ants huddle to generate and retain heat as a bivouac",
+          "Wasps use evaporative cooling by bringing water"
+        ],
+        "answers": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "explanation": "All four are accurate. Honeybees fan water to cool; termite mounds use convection currents for passive ventilation; army ant bivouacs use metabolic heat; and paper wasps carry water droplets and evaporate them to cool their nests."
+      }
+    ],
+    "elite": [
+      {
+        "id": "ANI-EL-047",
+        "question": "Is the immortal jellyfish (Turritopsis dohrnii) truly biologically immortal?",
+        "options": [
+          "Yes — it cannot die from ageing",
+          "No — it reverts to polyp stage under stress but can still die from predation, disease, or environmental damage"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Turritopsis dohrnii can transdifferentiate back to its polyp stage (biological reversal) under stress, potentially indefinitely — but it can still be eaten, infected, or killed. 'Biologically immortal' means it escapes senescence, not that it's indestructible."
+      },
+      {
+        "id": "ANI-EL-048",
+        "question": "Which of the following are accurate regarding octopus neuroanatomy? (Select all that apply)",
+        "options": [
+          "Two-thirds of neurons are distributed in the eight arms",
+          "Each arm has semi-autonomous neural processing",
+          "The central brain directly controls each arm movement",
+          "Octopuses have three hearts",
+          "Their blood uses haemocyanin (copper-based) rather than haemoglobin"
+        ],
+        "answers": [
+          0,
+          1,
+          3,
+          4
+        ],
+        "explanation": "Octopus neurons are distributed (2/3 in arms); arms process information semi-autonomously; the central brain issues commands but arms execute locally (not direct control of each movement); octopuses have three hearts; and haemocyanin (copper-based, blue blood) is their oxygen carrier."
+      },
+      {
+        "id": "ANI-EL-049",
+        "question": "What genetic mechanism underlies the peppered moth's industrial melanism?",
+        "options": [
+          "A point mutation in the melanin synthesis gene",
+          "A transposable element insertion into the cortex gene that altered wing coloration",
+          "Epigenetic methylation changes in response to soot exposure"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "The melanic (dark) form of the peppered moth arose from a transposable element (TE) insertion into the cortex gene — one of the clearest examples of a TE driving rapid adaptive evolution. It is not a point mutation or epigenetic change."
+      },
+      {
+        "id": "ANI-EL-050",
+        "question": "Which statements about CRISPR-like immune systems in bacteria are accurate? (Select all that apply)",
+        "options": [
+          "CRISPR-Cas is an adaptive immune system",
+          "Bacteria incorporate fragments of viral DNA into their genome as memory",
+          "The Cas9 protein cuts viral DNA using RNA guides",
+          "CRISPR immunity is passed to offspring"
+        ],
+        "answers": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "explanation": "All four are correct. CRISPR-Cas is a bacterial adaptive immune system; bacteria incorporate viral spacer sequences as immunological memory; Cas9 uses guide RNA to cut matching viral DNA; and the immunity is heritable (passed to daughter cells)."
+      },
+      {
+        "id": "ANI-EL-051",
+        "question": "What is the mechanism behind the mantis shrimp's strike — the fastest recorded appendage movement in nature?",
+        "options": [
+          "Directly driven by the fastest-contracting muscle fibres known",
+          "A click mechanism using a latch-and-spring system that stores elastic energy in compressed cuticle",
+          "Hydraulic pressure generated by rapid haemolymph pumping"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "The mantis shrimp uses a latch-mediated spring mechanism — muscles compress a saddle-shaped cuticle (the spring), a latch holds the energy, then releases it all at once. The movement reaches 23 m/s and 1,500 Gs — far beyond what muscle contraction alone could achieve."
+      },
+      {
+        "id": "ANI-EL-052",
+        "question": "Which of these accurately describe deep-sea giant squid (Architeuthis dux)? (Select all that apply)",
+        "options": [
+          "They have the largest eyes of any living animal",
+          "They are apex predators with no natural enemies",
+          "They have been observed alive in natural habitat only since the early 2000s",
+          "Their beak is harder than the surrounding soft tissue",
+          "They use jet propulsion via a muscular mantle"
+        ],
+        "answers": [
+          0,
+          2,
+          3,
+          4
+        ],
+        "explanation": "Giant squid have the largest eyes known (up to 30 cm). They were first filmed alive in 2004. Their beak is rigid chitin — harder than surrounding tissue. They use mantle-based jet propulsion. However, they are prey to sperm whales — which are their primary natural predator."
+      },
+      {
+        "id": "ANI-EL-053",
+        "question": "What is the evolutionary significance of the platypus genome? (Select all that apply)",
+        "options": [
+          "It has both reptilian and mammalian chromosomal features",
+          "Male platypuses have ten sex chromosomes",
+          "It reveals the ancestral state of mammalian immune genes",
+          "The platypus lacks the genes for all milk proteins",
+          "Its venom genes share homology with reptile venom genes"
+        ],
+        "answers": [
+          0,
+          1,
+          2,
+          4
+        ],
+        "explanation": "The platypus genome retains reptilian features (e.g., sex chromosome complexity — males have 10 sex chromosomes), helps reconstruct ancestral mammalian immune genes, and its venom genes convergently evolved homologies with reptile venoms. It does produce milk (via patches, lacking nipples) — it doesn't lack all milk protein genes."
+      },
+      {
+        "id": "ANI-EL-054",
+        "question": "Which mechanisms underpin the tardigrade's resistance to radiation? (Select all that apply)",
+        "options": [
+          "A unique protein (Dsup) that shields DNA from radiation-induced damage",
+          "Cryptobiosis reduces metabolic targets for free radical damage",
+          "Highly efficient DNA double-strand break repair mechanisms",
+          "Replacement of cellular water with trehalose glass"
+        ],
+        "answers": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "explanation": "All four mechanisms contribute. Dsup (Damage Suppressor protein) physically shields DNA; cryptobiosis minimises metabolic activity and free radical production; tardigrades have efficient DSB repair; and they replace cellular water with trehalose, vitrifying cells and preventing structural damage."
+      },
+      {
+        "id": "ANI-EL-055",
+        "question": "What is the function of the lateral line system in fish?",
+        "options": [
+          "Detecting changes in water pressure and flow via mechanoreceptor hair cells to sense nearby movement",
+          "Producing and receiving electrical signals for communication",
+          "Thermoregulating body temperature in open water"
+        ],
+        "answers": [
+          0
+        ],
+        "explanation": "The lateral line is a mechanosensory system — hair cells in canal organs (neuromasts) detect pressure changes and water displacement. This lets fish sense nearby movement, current, and hydrodynamic trails left by other fish or prey."
+      },
+      {
+        "id": "ANI-EL-056",
+        "question": "Which of these statements about eusociality in insects are accurate? (Select all that apply)",
+        "options": [
+          "Eusocial colonies have overlapping generations",
+          "Worker castes are reproductively suppressed",
+          "Eusociality has evolved independently in multiple lineages",
+          "All ant species are eusocial",
+          "Cooperative brood care is a defining feature"
+        ],
+        "answers": [
+          0,
+          1,
+          2,
+          4
+        ],
+        "explanation": "Eusociality requires overlapping generations, reproductive division of labour, and cooperative brood care. It has evolved independently in Hymenoptera, termites, some beetles, thrips, shrimp, and naked mole rats. All known ant species are eusocial, but this is not a universal truth across all ant-like insects."
+      },
+      {
+        "id": "ANI-EL-057",
+        "question": "How do vampire bats avoid immune rejection when sharing blood meals via regurgitation?",
+        "options": [
+          "They have a highly suppressed immune system to tolerate foreign blood",
+          "The recipient bat's immune system recognises roost-mate antigens as self via MHC familiarity from cohabitation",
+          "The blood is pre-digested into nutrients that are immunologically neutral before sharing"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Vampire bats share regurgitated blood meals with roost-mates (reciprocal altruism). Cohabiting bats have prolonged antigen exposure to one another's compounds, and MHC-based immune familiarity reduces rejection responses — though full mechanisms remain under research."
+      }
+    ]
+  }
+}

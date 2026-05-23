@@ -1,0 +1,969 @@
+{
+  "id": "mma-core",
+  "name": "MMA — Core Knowledge",
+  "description": "Fighters, techniques, history, and organisations across the full spectrum of mixed martial arts.",
+  "tiers": {
+    "easy": [
+      {
+        "question": "Is the UFC the only major MMA organisation in the world?",
+        "options": [
+          "Yes",
+          "No"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "No. Other major promotions include Bellator, ONE Championship, PFL, KSW, and Rizin, among many others worldwide.",
+        "id": "MMA-EA-001"
+      },
+      {
+        "question": "What does 'MMA' stand for?",
+        "options": [
+          "Mixed Martial Arts",
+          "Modern Martial Athletics",
+          "Multi-Method Aggression"
+        ],
+        "answers": [
+          0
+        ],
+        "explanation": "MMA stands for Mixed Martial Arts — a full-contact combat sport combining striking and grappling from multiple disciplines.",
+        "id": "MMA-EA-002"
+      },
+      {
+        "question": "Which country is Conor McGregor from?",
+        "options": [
+          "Scotland",
+          "England",
+          "Ireland"
+        ],
+        "answers": [
+          2
+        ],
+        "explanation": "Conor McGregor was born in Dublin, Ireland, and became the first UFC fighter to hold titles in two weight classes simultaneously.",
+        "id": "MMA-EA-003"
+      },
+      {
+        "question": "What weight class competes at 155 lbs?",
+        "options": [
+          "Featherweight",
+          "Lightweight",
+          "Welterweight",
+          "Middleweight"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Lightweight is 155 lbs. Featherweight is 145, Welterweight is 170, and Middleweight is 185.",
+        "id": "MMA-EA-004"
+      },
+      {
+        "question": "Which martial art focuses primarily on ground fighting and submissions?",
+        "options": [
+          "Muay Thai",
+          "Boxing",
+          "Brazilian Jiu-Jitsu",
+          "Karate"
+        ],
+        "answers": [
+          2
+        ],
+        "explanation": "Brazilian Jiu-Jitsu (BJJ) specialises in ground fighting, grappling, and submission holds.",
+        "id": "MMA-EA-005"
+      },
+      {
+        "question": "Which of the following are submission holds? (Select all that apply)",
+        "options": [
+          "Rear naked choke",
+          "Superman punch",
+          "Armbar",
+          "Double-leg takedown",
+          "Triangle choke"
+        ],
+        "answers": [
+          0,
+          2,
+          4
+        ],
+        "explanation": "The rear naked choke, armbar, and triangle choke are all submission holds. The superman punch is a strike; the double-leg is a takedown.",
+        "id": "MMA-EA-006"
+      },
+      {
+        "question": "What does TKO stand for?",
+        "options": [
+          "Total Knockdown Order",
+          "Technical Knockout",
+          "Timed Knockdown Outcome",
+          "Tactical Knockout Option"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "TKO stands for Technical Knockout — the referee stops the fight when a competitor can no longer intelligently defend themselves.",
+        "id": "MMA-EA-007"
+      },
+      {
+        "question": "The UFC Octagon has how many sides?",
+        "options": [
+          "Six",
+          "Eight",
+          "Ten"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "The Octagon is eight-sided — it's the source of the name. The shape was chosen to eliminate corners boxers use for recovery.",
+        "id": "MMA-EA-008"
+      },
+      {
+        "question": "Which of these are legal strikes in the UFC? (Select all that apply)",
+        "options": [
+          "Punches to the head",
+          "Groin strikes",
+          "Elbows to the head",
+          "Eye gouges",
+          "Kicks to a grounded opponent's body"
+        ],
+        "answers": [
+          0,
+          2,
+          4
+        ],
+        "explanation": "Punches, elbows to the head, and kicks to a grounded opponent's body are legal. Groin strikes and eye gouges are fouls.",
+        "id": "MMA-EA-009"
+      },
+      {
+        "question": "Which colour corner is traditionally assigned to the defending champion?",
+        "options": [
+          "Red",
+          "Blue"
+        ],
+        "answers": [
+          0
+        ],
+        "explanation": "The red corner is traditionally for the champion or higher-ranked fighter. The challenger takes the blue corner.",
+        "id": "MMA-EA-010"
+      },
+      {
+        "question": "Muay Thai is called 'The Art of Eight Limbs'. Which country does it originate from?",
+        "options": [
+          "Japan",
+          "China",
+          "Brazil",
+          "Thailand",
+          "Indonesia"
+        ],
+        "answers": [
+          3
+        ],
+        "explanation": "Muay Thai originates from Thailand. The 'eight limbs' are fists, elbows, knees, and shins.",
+        "id": "MMA-EA-011"
+      },
+      {
+        "question": "Which martial arts are primary striking bases in MMA? (Select all that apply)",
+        "options": [
+          "Boxing",
+          "Judo",
+          "Muay Thai",
+          "Brazilian Jiu-Jitsu",
+          "Karate",
+          "Wrestling"
+        ],
+        "answers": [
+          0,
+          2
+        ],
+        "explanation": "Boxing and Muay Thai are the two dominant striking systems in MMA. The others are primarily grappling or throwing arts.",
+        "id": "MMA-EA-012"
+      },
+      {
+        "question": "Who defeated Ronda Rousey to end her undefeated streak in 2015?",
+        "options": [
+          "Miesha Tate",
+          "Cat Zingano",
+          "Holly Holm",
+          "Cris Cyborg"
+        ],
+        "answers": [
+          2
+        ],
+        "explanation": "Holly Holm knocked out Rousey with a head kick in the second round at UFC 193 in Melbourne.",
+        "id": "MMA-EA-013"
+      },
+      {
+        "question": "In what year was the UFC founded?",
+        "options": [
+          "1989",
+          "1991",
+          "1993",
+          "1995",
+          "1997"
+        ],
+        "answers": [
+          2
+        ],
+        "explanation": "The UFC was founded on November 12, 1993, with UFC 1 held at McNichols Sports Arena in Denver, Colorado.",
+        "id": "MMA-EA-014"
+      },
+      {
+        "question": "Which of these fighters are Irish? (Select all that apply)",
+        "options": [
+          "Conor McGregor",
+          "Paddy Pimblett",
+          "Cathal Pendred",
+          "Ian Garry",
+          "Joseph Duffy"
+        ],
+        "answers": [
+          0,
+          2,
+          3,
+          4
+        ],
+        "explanation": "McGregor, Pendred, Ian Garry, and Joseph Duffy are all Irish. Paddy Pimblett is from Liverpool, England.",
+        "id": "MMA-EA-015"
+      }
+    ],
+    "medium": [
+      {
+        "question": "Demetrious Johnson made how many consecutive UFC flyweight title defences — breaking Anderson Silva's record?",
+        "options": [
+          "9",
+          "11",
+          "13"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Demetrious 'Mighty Mouse' Johnson made 11 consecutive flyweight title defences, surpassing Anderson Silva's previous record of 10.",
+        "id": "MMA-ME-016"
+      },
+      {
+        "question": "Which fighters have held UFC titles in two weight classes simultaneously? (Select all that apply)",
+        "options": [
+          "Conor McGregor",
+          "Daniel Cormier",
+          "Amanda Nunes",
+          "Jon Jones",
+          "Henry Cejudo"
+        ],
+        "answers": [
+          0,
+          2
+        ],
+        "explanation": "McGregor held featherweight and lightweight simultaneously; Nunes held bantamweight and featherweight at the same time. Cormier and Cejudo held two belts but not simultaneously in the same moment.",
+        "id": "MMA-ME-017"
+      },
+      {
+        "question": "What is 'sprawl and brawl'?",
+        "options": [
+          "A cage-work drill",
+          "Defending takedowns and fighting on the feet",
+          "A ground submission system",
+          "A defensive guard position"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Sprawl and brawl is a style focused on defending takedowns by sprawling, then preferring to fight standing as a striker.",
+        "id": "MMA-ME-018"
+      },
+      {
+        "question": "Which of these are valid ways a UFC fight can end? (Select all that apply)",
+        "options": [
+          "KO",
+          "Submission",
+          "Doctor stoppage",
+          "Corner stoppage",
+          "Time limit draw",
+          "Disqualification"
+        ],
+        "answers": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "explanation": "All six are valid endings: KO, submission, doctor stoppage (between rounds), corner stoppage (towel), a time-limit draw, and disqualification for repeated fouls.",
+        "id": "MMA-ME-019"
+      },
+      {
+        "question": "Which pioneers co-founded the UFC in 1993? (Select all that apply)",
+        "options": [
+          "Dana White",
+          "Rorion Gracie",
+          "Art Davie",
+          "Bob Meyrowitz"
+        ],
+        "answers": [
+          1,
+          2
+        ],
+        "explanation": "Rorion Gracie and Art Davie co-founded the UFC. Dana White became president in 2001 after the Fertitta brothers purchased it. Bob Meyrowitz owned Semaphore Entertainment Group, which distributed early events.",
+        "id": "MMA-ME-020"
+      },
+      {
+        "question": "In the 10-Point Must System, which round scores are actually valid? (Select all that apply)",
+        "options": [
+          "10-9",
+          "10-8",
+          "10-7",
+          "10-6",
+          "10-5"
+        ],
+        "answers": [
+          0,
+          1,
+          2
+        ],
+        "explanation": "10-9 is the standard round, 10-8 for a dominant/knockdown round, 10-7 is extremely rare but valid. 10-6 and 10-5 do not exist — if a fighter is that compromised, the referee stops the fight.",
+        "id": "MMA-ME-021"
+      },
+      {
+        "question": "GSP held UFC titles in which weight classes? (Select all that apply)",
+        "options": [
+          "Lightweight",
+          "Welterweight",
+          "Middleweight",
+          "Light Heavyweight"
+        ],
+        "answers": [
+          1,
+          2
+        ],
+        "explanation": "GSP was the dominant Welterweight Champion for years, then moved up to capture the Middleweight title against Michael Bisping in 2017.",
+        "id": "MMA-ME-022"
+      },
+      {
+        "question": "Which of the following are associated with Eddie Bravo's 10th Planet system? (Select all that apply)",
+        "options": [
+          "Rubber guard",
+          "Lockdown",
+          "De la Riva guard",
+          "Twister",
+          "Meathook"
+        ],
+        "answers": [
+          0,
+          1,
+          3,
+          4
+        ],
+        "explanation": "Rubber guard, lockdown, the twister, and the meathook are all 10th Planet techniques. De la Riva is a traditional gi-based guard not part of Bravo's no-gi system.",
+        "id": "MMA-ME-023"
+      },
+      {
+        "question": "In Muay Thai, which strikes are part of the 'eight limbs'? (Select all that apply)",
+        "options": [
+          "Punches",
+          "Headbutts",
+          "Elbows",
+          "Knee strikes",
+          "Shin kicks",
+          "Shoulder strikes"
+        ],
+        "answers": [
+          0,
+          2,
+          3,
+          4
+        ],
+        "explanation": "The eight limbs are two fists, two elbows, two knees, and two shins/feet — eight points of contact. Headbutts and shoulder strikes are not included and are illegal in competition.",
+        "id": "MMA-ME-024"
+      },
+      {
+        "question": "Which of these are dominant top positions in BJJ? (Select all that apply)",
+        "options": [
+          "Full guard (bottom)",
+          "Side control (top)",
+          "Mount (top)",
+          "Turtle (bottom)",
+          "Back control (top)"
+        ],
+        "answers": [
+          1,
+          2,
+          4
+        ],
+        "explanation": "Side control, mount, and back control are all dominant top positions. Full guard and turtle are defensive/bottom positions.",
+        "id": "MMA-ME-025"
+      },
+      {
+        "question": "What does 'ground and pound' describe?",
+        "options": [
+          "A submission from back control",
+          "Striking a grounded opponent from top position",
+          "A takedown entry drill"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "'Ground and pound' refers to taking an opponent down and delivering punches, elbows, or hammerfists while they are on the ground.",
+        "id": "MMA-ME-026"
+      },
+      {
+        "question": "What distinguishes a rear naked choke from a triangle choke?",
+        "options": [
+          "One uses legs, one uses arms",
+          "One is legal, one isn't",
+          "One targets the arm, one the neck"
+        ],
+        "answers": [
+          0
+        ],
+        "explanation": "The rear naked choke is applied with the arms from behind. The triangle is applied with the legs from guard, trapping the neck and one arm.",
+        "id": "MMA-ME-027"
+      },
+      {
+        "question": "Which fighter defeated Fedor Emelianenko for the first time in his MMA career?",
+        "options": [
+          "Mirko Cro Cop",
+          "Fabricio Werdum",
+          "Dan Henderson",
+          "Antonio Rodrigo Nogueira"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Fabricio Werdum submitted Fedor with a triangle armbar at Strikeforce in June 2010 — ending his decade-long undefeated streak.",
+        "id": "MMA-ME-028"
+      },
+      {
+        "question": "Why was the Griffin vs. Bonnar fight at TUF 1 Finale historically significant? (Select all that apply)",
+        "options": [
+          "It aired live on free TV (Spike)",
+          "It saved the UFC from near-bankruptcy",
+          "It was a title fight",
+          "Both fighters received UFC contracts",
+          "It went all three rounds"
+        ],
+        "answers": [
+          0,
+          1,
+          3,
+          4
+        ],
+        "explanation": "The fight aired on Spike TV, is credited with saving the UFC financially, resulted in both men getting contracts, and went the full three rounds. It was not a title fight.",
+        "id": "MMA-ME-029"
+      },
+      {
+        "question": "Which of Khabib Nurmagomedov's traits describe his fighting style? (Select all that apply)",
+        "options": [
+          "High-volume leg kicking",
+          "Sambo-influenced takedowns",
+          "Dagestani folk wrestling base",
+          "Relentless top pressure",
+          "Orthodox boxing as primary weapon"
+        ],
+        "answers": [
+          1,
+          2,
+          3
+        ],
+        "explanation": "Khabib's style centres on sambo, Dagestani wrestling, and suffocating top control. He was not known for leg kicking or extended boxing exchanges.",
+        "id": "MMA-ME-030"
+      }
+    ],
+    "hard": [
+      {
+        "question": "Was Mark Coleman primarily a boxer or a wrestler before MMA?",
+        "options": [
+          "Boxer",
+          "Wrestler"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Mark Coleman was an elite Division I and Olympic-level wrestler who brought his wrestling to MMA and pioneered the ground-and-pound style.",
+        "id": "MMA-HA-031"
+      },
+      {
+        "question": "At UFC 1, who did Royce Gracie defeat in the tournament? (Select all that apply)",
+        "options": [
+          "Ken Shamrock",
+          "Gerard Gordeau",
+          "Patrick Smith",
+          "Art Jimmerson",
+          "Dan Severn"
+        ],
+        "answers": [
+          1,
+          2,
+          3
+        ],
+        "explanation": "Royce defeated Gordeau, Patrick Smith, and Art Jimmerson to win the UFC 1 tournament. Shamrock lost to Royce in the superfight — a separate match outside the tournament bracket.",
+        "id": "MMA-HA-032"
+      },
+      {
+        "question": "Which aspects of Nick Diaz's style created psychological disruption? (Select all that apply)",
+        "options": [
+          "Dropping his hands and inviting exchanges",
+          "Constant forward pressure",
+          "Taunt-heavy body language mid-fight",
+          "Pure counter-striking from the outside"
+        ],
+        "answers": [
+          0,
+          1,
+          2
+        ],
+        "explanation": "Diaz combined dropped hands, relentless forward pressure, and in-fight taunting to unsettle opponents. He was the aggressor, not a pure counter-fighter.",
+        "id": "MMA-HA-033"
+      },
+      {
+        "question": "Which are leg lock entries or positions central to modern submission grappling? (Select all that apply)",
+        "options": [
+          "Imanari roll",
+          "Electric chair",
+          "Ashi garami",
+          "D'Arce setup",
+          "Outside heel hook entry",
+          "Heel hook from mount"
+        ],
+        "answers": [
+          0,
+          1,
+          2,
+          4
+        ],
+        "explanation": "The Imanari roll, electric chair, ashi garami, and outside heel hook entry are all leg lock positions/entries. The D'Arce is an upper-body choke; heel hooks from mount are not a standard entry position.",
+        "id": "MMA-HA-034"
+      },
+      {
+        "question": "Jon Jones's controversy record includes which of the following? (Select all that apply)",
+        "options": [
+          "DQ loss for illegal elbows vs. Hamill",
+          "No-contests from failed drug tests",
+          "A loss by submission",
+          "A technical draw"
+        ],
+        "answers": [
+          0,
+          1
+        ],
+        "explanation": "Jones was DQ'd vs Matt Hamill for illegal downward elbows, and multiple fights were overturned to no-contests due to USADA failures. He has never been submitted or drawn.",
+        "id": "MMA-HA-035"
+      },
+      {
+        "question": "Firas Zahabi's Tristar training methodology is best characterised by which principles? (Select all that apply)",
+        "options": [
+          "Daily high-intensity sparring",
+          "Sustainable cardio-based training loads",
+          "Evidence-based periodisation",
+          "Volume over peak intensity"
+        ],
+        "answers": [
+          1,
+          2,
+          3
+        ],
+        "explanation": "Zahabi advocates training at 60–70% intensity most of the time to maximise volume safely. Daily hard sparring is explicitly the opposite of his approach.",
+        "id": "MMA-HA-036"
+      },
+      {
+        "question": "Which attributes correctly describe ADCC rules versus IBJJF? (Select all that apply)",
+        "options": [
+          "ADCC is no-gi",
+          "ADCC allows heel hooks",
+          "ADCC has no points in the first half",
+          "ADCC bans all joint locks",
+          "ADCC uses submission-only overtime"
+        ],
+        "answers": [
+          0,
+          1,
+          2,
+          4
+        ],
+        "explanation": "ADCC is no-gi, allows heel hooks throughout, has a scoreless first period, and uses submission-only overtime. It does not ban joint locks.",
+        "id": "MMA-HA-037"
+      },
+      {
+        "question": "Which statements about the D'Arce choke are accurate? (Select all that apply)",
+        "options": [
+          "The choking arm passes through the armpit",
+          "It is mechanically related to the anaconda choke",
+          "It requires the gi",
+          "It targets the carotid arteries",
+          "It is typically set up from turtle or side control"
+        ],
+        "answers": [
+          0,
+          1,
+          3,
+          4
+        ],
+        "explanation": "The D'Arce passes the arm through the armpit, shares mechanics with the anaconda (both are arm-in chokes), targets the carotids, and is set up from turtle/side control transitions. It is a no-gi technique.",
+        "id": "MMA-HA-038"
+      },
+      {
+        "question": "Which of these describe the 'rubber guard' system? (Select all that apply)",
+        "options": [
+          "Requires exceptional hip flexibility",
+          "Controls opponent posture from guard",
+          "Designed for gi competition",
+          "Developed by Eddie Bravo",
+          "Uses the leg as a control tool over the opponent's neck"
+        ],
+        "answers": [
+          0,
+          1,
+          3,
+          4
+        ],
+        "explanation": "The rubber guard needs extreme hip flexibility, breaks posture from guard, was developed by Bravo, and uses the leg to control the opponent's head/neck. It is a no-gi system, not designed for gi.",
+        "id": "MMA-HA-039"
+      },
+      {
+        "question": "What are valid judge scoring outcomes under the Unified Rules? (Select all that apply)",
+        "options": [
+          "10-9",
+          "10-8",
+          "10-7",
+          "10-6"
+        ],
+        "answers": [
+          0,
+          1,
+          2
+        ],
+        "explanation": "10-9, 10-8, and 10-7 are all valid. 10-6 is not recognised — if a fighter is so compromised, the referee should stop the contest before the round ends.",
+        "id": "MMA-HA-040"
+      },
+      {
+        "question": "The 'dogfight' position in wrestling arises from which scenario?",
+        "options": [
+          "A failed rear naked choke attempt",
+          "A single-leg scramble where both fighters end up on one hand and knee",
+          "A body lock on the cage"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "The dogfight occurs when a single-leg defence results in both fighters on one hand and one knee, facing each other — a scramble point with trips, rolls, and re-shoots as options.",
+        "id": "MMA-HA-041"
+      },
+      {
+        "question": "What does inside heel hook vs outside heel hook exposure mean? (Select all that apply)",
+        "options": [
+          "Inside hooks rotate the tibia internally",
+          "Outside hooks stress the lateral knee (LCL)",
+          "Inside hooks are considered higher risk",
+          "Both hooks damage identical structures"
+        ],
+        "answers": [
+          0,
+          1,
+          2
+        ],
+        "explanation": "Inside heel hooks rotate the tibia inward, stressing MCL, ACL, and popliteal structures simultaneously — making them higher risk. Outside hooks stress the LCL side. They do not target identical structures.",
+        "id": "MMA-HA-042"
+      },
+      {
+        "question": "Which of Khabib's takedown attributes reflect his Sambo/Dagestani background? (Select all that apply)",
+        "options": [
+          "Body lock throws",
+          "Leg grab entries",
+          "Relentless forward pressure after the takedown",
+          "Primarily using wrestling's double-leg as his only shot"
+        ],
+        "answers": [
+          0,
+          1,
+          2
+        ],
+        "explanation": "Body lock throws, leg grabs, and relentless top pressure all reflect Sambo and Dagestani folk wrestling. Khabib was not dependent on a single takedown — he used a diverse arsenal.",
+        "id": "MMA-HA-043"
+      },
+      {
+        "question": "What makes wrist control effective in MMA clinch work? (Select all that apply)",
+        "options": [
+          "Prevents free punching",
+          "Steers takedown direction",
+          "Blocks long-range kicks",
+          "Creates underhook opportunities",
+          "Enables collar ties"
+        ],
+        "answers": [
+          0,
+          1,
+          3,
+          4
+        ],
+        "explanation": "Wrist control neutralises inside punching, steers takedowns, creates underhooks, and enables collar ties. It has no effect on long-range kicks.",
+        "id": "MMA-HA-044"
+      },
+      {
+        "question": "Why was Werdum's win over Fedor a landmark result? (Select all that apply)",
+        "options": [
+          "It ended roughly a decade of Fedor's undefeated run",
+          "The finish was a triangle armbar",
+          "Fedor had never previously been submitted",
+          "Werdum was a significant underdog",
+          "It was Fedor's first professional fight"
+        ],
+        "answers": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "explanation": "Fedor had not lost in around a decade, the finish was a triangle-armbar, it was his first submission loss, and Werdum was considered a major underdog. It was obviously not Fedor's first fight.",
+        "id": "MMA-HA-045"
+      },
+      {
+        "question": "Which fighters pioneered ground-and-pound in early MMA? (Select all that apply)",
+        "options": [
+          "Mark Coleman",
+          "Don Frye",
+          "Dan Severn",
+          "Bas Rutten",
+          "Kevin Randleman"
+        ],
+        "answers": [
+          0,
+          1
+        ],
+        "explanation": "Coleman and Frye are the two most credited with developing ground and pound from their wrestling bases. Severn wrestled but was known for control rather than strikes; Rutten was a striker; Randleman came later.",
+        "id": "MMA-HA-046"
+      }
+    ],
+    "elite": [
+      {
+        "question": "Is John Danaher's grappling system based primarily on strength and athleticism?",
+        "options": [
+          "Yes",
+          "No"
+        ],
+        "answers": [
+          1
+        ],
+        "explanation": "Danaher explicitly frames his system around technique overcoming athleticism — positional hierarchy, problem-solving, and systematic entry sequences, not physical dominance.",
+        "id": "MMA-EL-047"
+      },
+      {
+        "question": "Which accurately describe John Danaher's grappling philosophy? (Select all that apply)",
+        "options": [
+          "Positional hierarchy before submissions",
+          "Problem-solving framework applied to positions",
+          "Strength and aggression as primary tools",
+          "Entry systems that create reliable submission access",
+          "Systematic sequencing from position to finish"
+        ],
+        "answers": [
+          0,
+          1,
+          3,
+          4
+        ],
+        "explanation": "Danaher's system rests on positional hierarchy, a problem-solving framework, systematic entries, and reliable finish sequences. Strength and aggression are explicitly not the foundation — technique overcoming athleticism is.",
+        "id": "MMA-EL-048"
+      },
+      {
+        "question": "The 'electric chair' in leg lock grappling is best described as which of the following? (Select all that apply)",
+        "options": [
+          "Applied from bottom half guard",
+          "A direct heel hook finish",
+          "Stretches the adductor to force a reaction",
+          "An entry into the outside heel hook or sweep",
+          "Part of the 10th Planet lockdown system"
+        ],
+        "answers": [
+          0,
+          2,
+          3,
+          4
+        ],
+        "explanation": "The electric chair is played from bottom half guard, stretches the groin/adductor to disrupt top posture, creates entries into the outside heel hook or old-school sweep, and is central to the 10th Planet lockdown system. It is not itself a finish.",
+        "id": "MMA-EL-049"
+      },
+      {
+        "question": "What are correct statements about ADCC vs IBJJF rules? (Select all that apply)",
+        "options": [
+          "ADCC is no-gi",
+          "ADCC allows heel hooks throughout",
+          "ADCC has a scoreless first half",
+          "ADCC uses submission-only overtime",
+          "IBJJF allows heel hooks in advanced divisions",
+          "ADCC and IBJJF award points identically"
+        ],
+        "answers": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "explanation": "ADCC is no-gi, allows heel hooks, has a scoreless first period, and uses submission-only overtime. IBJJF is primarily gi-based, bans heel hooks in most divisions, and uses points throughout — the two systems are fundamentally different.",
+        "id": "MMA-EL-050"
+      },
+      {
+        "question": "What mechanical facts distinguish inside from outside heel hooks? (Select all that apply)",
+        "options": [
+          "Inside hooks rotate the tibia internally",
+          "Outside hooks apply lateral knee stress",
+          "Inside hooks are considered higher risk",
+          "Outside hooks target the LCL primarily",
+          "Both hooks target the same ligaments from different directions"
+        ],
+        "answers": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "explanation": "Inside heel hooks rotate the tibia inward, stressing MCL, ACL, and popliteal ligaments. Outside hooks apply lateral stress targeting the LCL. Inside hooks are higher risk due to multi-structure exposure. They do not target the same ligaments.",
+        "id": "MMA-EL-051"
+      },
+      {
+        "question": "Which of the following characterise Stephen Thompson's karate-based style? (Select all that apply)",
+        "options": [
+          "Full blading of the stance",
+          "Minimised target profile",
+          "Rhythm manipulation to disrupt timing",
+          "Pressure wrestling as primary weapon",
+          "Long-range counter-striking off opponent attacks"
+        ],
+        "answers": [
+          0,
+          1,
+          2,
+          4
+        ],
+        "explanation": "Thompson fully blades his stance, minimises the target he presents, uses rhythmic footwork to confuse timing, and waits to counter — his style is explicitly striker-based, not pressure wrestling.",
+        "id": "MMA-EL-052"
+      },
+      {
+        "question": "Which statements about the 'lockdown' in 10th Planet BJJ are accurate? (Select all that apply)",
+        "options": [
+          "Used from bottom half guard",
+          "Traps opponent's leg with a figure-four",
+          "Transitions directly into the electric chair",
+          "Named for its immobilising effect on the top player's hips",
+          "It is primarily a finishing position itself"
+        ],
+        "answers": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "explanation": "All four non-last options are correct. The lockdown is a bottom half guard position using a figure-four leg trap, named for how it freezes top-player hip movement, and transitions into the electric chair. It is a positional/entry tool, not itself a finish.",
+        "id": "MMA-EL-053"
+      },
+      {
+        "question": "Why is the Imanari roll an effective leg lock entry? (Select all that apply)",
+        "options": [
+          "It surprises opponents by dropping under strikes",
+          "It bypasses the typical guard-pull exchange",
+          "It lands directly into ashi garami or a related entanglement",
+          "It is specifically designed as a clinch technique",
+          "It creates immediate heel hook or kneebar access"
+        ],
+        "answers": [
+          0,
+          1,
+          2,
+          4
+        ],
+        "explanation": "The Imanari roll works through surprise (dropping under), bypasses normal entries, lands in ashi garami or related positions, and creates immediate leg lock access. It is not specifically a clinch technique.",
+        "id": "MMA-EL-054"
+      },
+      {
+        "question": "Which statements about Khabib's grappling are technically accurate? (Select all that apply)",
+        "options": [
+          "His base is Sambo and Dagestani folk wrestling",
+          "He uses body lock takedowns systematically",
+          "He relies exclusively on the single-leg",
+          "His top control uses pressure and smothering rather than submissions",
+          "He sought quick submission finishes as his primary strategy"
+        ],
+        "answers": [
+          0,
+          1,
+          3
+        ],
+        "explanation": "Khabib's base is Sambo and Dagestani wrestling, he uses body lock takedowns extensively, and his top control is about smothering pressure rather than quick submissions. He used a variety of takedowns, not exclusively the single-leg.",
+        "id": "MMA-EL-055"
+      },
+      {
+        "question": "Which statements about the D'Arce choke are technically correct? (Select all that apply)",
+        "options": [
+          "The choking arm passes through the near-side armpit",
+          "It is mechanically related to the anaconda choke",
+          "It requires the gi lapel to lock",
+          "It targets the carotid arteries",
+          "It is most commonly set up from turtle or side-control transitions",
+          "It can also be applied as a brabo choke from top half guard"
+        ],
+        "answers": [
+          0,
+          1,
+          3,
+          4,
+          5
+        ],
+        "explanation": "The D'Arce passes the arm through the armpit, shares mechanics with the anaconda (both arm-in chokes), targets the carotids, is set up from turtle/side control, and is also known as the brabo choke in certain top half guard configurations. It is a no-gi technique — the gi lapel is not involved.",
+        "id": "MMA-EL-056"
+      },
+      {
+        "question": "Effective framing in BJJ/wrestling defence involves which of the following? (Select all that apply)",
+        "options": [
+          "Placing the forearm at the opponent's hip or shoulder joint",
+          "Creating distance without relying on strength",
+          "Using the frame to enable shrimping or guard recovery",
+          "Grabbing the wrist as the core framing tool"
+        ],
+        "answers": [
+          0,
+          1,
+          2
+        ],
+        "explanation": "Frames use the forearm placed at structural junctions (hip, shoulder, jaw) to create distance through leverage, enabling shrimping and guard recovery. Grabbing the wrist is wrist control — a separate and distinct technique from framing.",
+        "id": "MMA-EL-057"
+      },
+      {
+        "question": "Which of the following statements about MMA judging criteria are correct under the Unified Rules? (Select all that apply)",
+        "options": [
+          "Effective striking is the primary criterion",
+          "Effective grappling is judged alongside striking",
+          "Aggression alone can win a round if striking is equal",
+          "Cage/ring control is a tiebreaker criterion",
+          "A knockdown automatically makes the round 10-8",
+          "Effective striking includes power shots, not just volume",
+          "Judges score each round independently with no carry-over"
+        ],
+        "answers": [
+          0,
+          1,
+          3,
+          5,
+          6
+        ],
+        "explanation": "Effective striking (with power, not just volume), effective grappling, aggression, and cage control are all criteria — in that priority order. Aggression alone does not win a round; it is only a tiebreaker. A knockdown makes a 10-8 likely but is not automatic. Each round is scored independently.",
+        "id": "MMA-EL-058"
+      },
+      {
+        "question": "Which of the following are accurate statements about the ashi garami leg entanglement system in modern grappling? (Select all that apply)",
+        "options": [
+          "It is a family of leg entanglement positions",
+          "Ashi garami translates roughly to 'leg entanglement' in Japanese",
+          "It only refers to a single specific position",
+          "Inside ashi garami and outside ashi garami threaten different knee structures",
+          "It forms the positional foundation of the Danaher leg lock system",
+          "It can only be applied from a seated position",
+          "Transitioning between ashi garami variants is a core skill"
+        ],
+        "answers": [
+          0,
+          1,
+          3,
+          4,
+          6
+        ],
+        "explanation": "Ashi garami is a family of positions (not just one), translates from Japanese as 'leg entanglement', inside and outside variants threaten different knee structures, it is the foundation of Danaher's leg lock system, and transitioning between variants is a key advanced skill. It is not limited to seated entries.",
+        "id": "MMA-EL-059"
+      }
+    ]
+  }
+}
