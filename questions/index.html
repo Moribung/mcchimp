@@ -1,0 +1,1251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Questions — McChimp</title>
+<meta name="description" content="Make, browse and generate question sets for McChimp trivia games.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --black:#0A0A0A;--off:#111213;--surface:#191B1D;
+  --gold:#E8C14A;--gold2:#C89A20;
+  --white:#F2EFE8;--muted:#6B6B6B;--blue:#2A5EAD;--green:#2E8B57;
+  --border:rgba(255,255,255,0.06);--header-h:64px;
+}
+html{scroll-behavior:smooth}
+body{background:var(--black);color:var(--white);font-family:'Barlow',sans-serif;font-size:16px;line-height:1.6;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");opacity:0.028;pointer-events:none;z-index:998;}
+
+/* ── HEADER ── */
+header{position:fixed;top:0;left:0;right:0;z-index:200;height:var(--header-h);display:flex;align-items:center;justify-content:space-between;padding:0 48px;background:rgba(10,10,10,0.97);border-bottom:1px solid var(--border);backdrop-filter:blur(12px);}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:.06em;color:var(--gold);text-decoration:none;}
+.logo span{color:var(--white);opacity:.45}
+nav{display:flex;gap:4px;align-items:center;}
+.nav-item{position:relative;}
+.nav-link{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:0 14px;height:var(--header-h);display:flex;align-items:center;gap:5px;transition:color .15s;cursor:pointer;background:none;border:none;text-decoration:none;white-space:nowrap;}
+.nav-link:hover,.nav-item:hover>.nav-link{color:var(--white);}
+.nav-link.active-page{color:var(--gold);}
+.chevron{font-size:9px;opacity:.5;transition:transform .2s;}
+.nav-item:hover .chevron{transform:rotate(180deg);}
+.dropdown{position:absolute;top:var(--header-h);left:0;min-width:240px;background:#0F1011;border:1px solid var(--border);border-top:none;overflow:hidden;opacity:0;pointer-events:none;transform:translateY(-4px);transition:opacity .15s,transform .15s;z-index:300;box-shadow:0 12px 32px rgba(0,0,0,0.6);}
+.nav-item:hover .dropdown{opacity:1;pointer-events:all;transform:translateY(0);}
+.dropdown a{display:flex;flex-direction:column;padding:14px 20px;text-decoration:none;border-bottom:1px solid var(--border);transition:background .12s;gap:3px;}
+.dropdown a:last-child{border-bottom:none;}
+.dropdown a:hover{background:var(--surface);}
+.dd-label{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--white);}
+.dd-sub{font-size:11px;color:var(--muted);}
+
+/* ── PAGE ── */
+.page-body{padding-top:var(--header-h);}
+
+/* ── PAGE HERO ── */
+.page-hero{padding:64px 48px 0;}
+.page-hero-tag{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:14px;}
+.page-hero h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(52px,8vw,96px);line-height:.92;letter-spacing:.02em;color:var(--white);margin-bottom:16px;}
+.page-hero p{font-size:15px;color:rgba(242,239,232,0.45);max-width:520px;line-height:1.65;}
+
+/* ── TAB BAR ── */
+.tab-bar{display:flex;gap:0;border-bottom:1px solid var(--border);padding:0 48px;margin-top:40px;position:sticky;top:var(--header-h);z-index:100;background:rgba(10,10,10,0.96);backdrop-filter:blur(12px);}
+.tab-btn{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);background:none;border:none;border-bottom:2px solid transparent;padding:16px 20px;cursor:pointer;transition:color .15s,border-color .15s;white-space:nowrap;margin-bottom:-1px;}
+.tab-btn:hover{color:var(--white);}
+.tab-btn.active{color:var(--gold);border-bottom-color:var(--gold);}
+
+/* ── TAB PANELS ── */
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+
+/* ── OVERVIEW PANEL ── */
+.overview{padding:72px 48px;}
+.overview-intro{max-width:680px;margin-bottom:64px;}
+.overview-intro h2{font-family:'Bebas Neue',sans-serif;font-size:clamp(32px,4vw,52px);letter-spacing:.04em;color:var(--white);margin-bottom:16px;line-height:1;}
+.overview-intro p{font-size:15px;color:rgba(242,239,232,0.55);line-height:1.75;margin-bottom:14px;}
+.overview-intro p:last-child{margin-bottom:0;}
+
+/* HOW IT WORKS pills */
+.tier-pills{display:flex;gap:8px;flex-wrap:wrap;margin:20px 0;}
+.pill{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;padding:5px 12px;border-radius:2px;}
+.pill-easy{background:rgba(46,139,87,0.15);color:#4CAF85;border:1px solid rgba(46,139,87,0.3);}
+.pill-medium{background:rgba(232,193,74,0.12);color:var(--gold);border:1px solid rgba(232,193,74,0.3);}
+.pill-hard{background:rgba(42,94,173,0.15);color:#6B9FE4;border:1px solid rgba(42,94,173,0.3);}
+.pill-elite{background:rgba(180,74,232,0.12);color:#C07AEA;border:1px solid rgba(180,74,232,0.3);}
+.mma-badge{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;background:rgba(232,193,74,0.1);color:var(--gold);border:1px solid rgba(232,193,74,0.25);padding:3px 8px;border-radius:2px;vertical-align:middle;margin-left:8px;}
+
+/* TAB CARDS */
+.tab-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;max-width:1000px;}
+.tab-card{background:var(--surface);padding:36px;border:1px solid rgba(255,255,255,0.04);text-decoration:none;display:block;transition:background .2s;cursor:pointer;}
+.tab-card:hover{background:#1E2023;}
+.tab-card:hover .tc-arrow{transform:translate(3px,-3px);}
+.tc-icon{font-size:28px;margin-bottom:16px;display:block;}
+.tc-title{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:.04em;color:var(--white);margin-bottom:8px;line-height:1.1;}
+.tc-desc{font-size:13px;color:rgba(242,239,232,0.45);line-height:1.6;margin-bottom:20px;}
+.tc-arrow{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);display:flex;align-items:center;gap:6px;transition:transform .2s;}
+.tc-arrow::after{content:'\2192';font-size:14px;}
+
+/* ── AI GUIDE TAB ── */
+.guide-wrap{padding:64px 48px;max-width:900px;}
+.guide-actions{display:flex;gap:12px;margin-bottom:48px;flex-wrap:wrap;}
+.btn-gold{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;background:var(--gold);color:var(--black);border:none;padding:12px 24px;border-radius:2px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:background .15s;}
+.btn-gold:hover{background:var(--gold2);}
+.btn-outline{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;background:transparent;color:var(--white);border:1px solid rgba(255,255,255,0.2);padding:12px 24px;border-radius:2px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;transition:border-color .15s,color .15s;}
+.btn-outline:hover{border-color:rgba(255,255,255,0.5);}
+.btn-outline.copied{border-color:var(--green);color:var(--green);}
+.guide-section{margin-bottom:48px;}
+.guide-section h3{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:.04em;color:var(--white);margin-bottom:14px;line-height:1;}
+.guide-section p{font-size:14px;color:rgba(242,239,232,0.55);line-height:1.75;margin-bottom:12px;}
+.guide-section p:last-child{margin-bottom:0;}
+.guide-code{background:var(--off);border:1px solid var(--border);border-radius:4px;padding:20px 24px;font-family:monospace;font-size:12.5px;color:rgba(242,239,232,0.7);line-height:1.75;overflow-x:auto;white-space:pre;margin:16px 0;}
+.guide-table{width:100%;border-collapse:collapse;font-size:13px;margin:16px 0;}
+.guide-table th{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:left;padding:8px 16px;border-bottom:1px solid var(--border);}
+.guide-table td{padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.03);color:rgba(242,239,232,0.6);vertical-align:top;}
+.guide-table td:first-child{font-family:monospace;color:var(--gold);font-size:12px;}
+.guide-table tr:last-child td{border-bottom:none;}
+.field-req{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:2px 6px;border-radius:2px;}
+.field-yes{background:rgba(46,139,87,0.15);color:#4CAF85;}
+.field-rec{background:rgba(232,193,74,0.1);color:var(--gold);}
+.field-no{background:rgba(107,107,107,0.15);color:var(--muted);}
+/* ── QUESTION SETS TAB ── */
+.sets-wrap{padding:64px 48px;}
+.sets-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:2px;max-width:1100px;}
+.set-card{background:var(--surface);border:1px solid rgba(255,255,255,0.04);padding:32px;display:flex;flex-direction:column;gap:0;}
+.set-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:12px;}
+.set-name{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:.04em;color:var(--white);line-height:1.1;}
+.set-desc{font-size:13px;color:rgba(242,239,232,0.45);line-height:1.6;margin-bottom:16px;flex:1;}
+.set-tiers{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px;}
+.set-tier{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:3px 8px;border-radius:2px;}
+.tier-e{background:rgba(46,139,87,0.12);color:#4CAF85;border:1px solid rgba(46,139,87,0.25);}
+.tier-m{background:rgba(232,193,74,0.10);color:var(--gold);border:1px solid rgba(232,193,74,0.25);}
+.tier-h{background:rgba(42,94,173,0.12);color:#6B9FE4;border:1px solid rgba(42,94,173,0.25);}
+.tier-x{background:rgba(180,74,232,0.10);color:#C07AEA;border:1px solid rgba(180,74,232,0.25);}
+.set-actions{display:flex;gap:8px;align-items:center;margin-top:auto;}
+.set-dl{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;background:var(--gold);color:var(--black);border:none;padding:9px 18px;border-radius:2px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;transition:background .15s;white-space:nowrap;}
+.set-dl:hover{background:var(--gold2);}
+.set-preview-btn{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,0.1);padding:9px 16px;border-radius:2px;cursor:pointer;transition:color .15s,border-color .15s;white-space:nowrap;}
+.set-preview-btn:hover{color:var(--white);border-color:rgba(255,255,255,0.3);}
+.set-preview{display:none;margin-top:20px;padding-top:20px;border-top:1px solid var(--border);}
+.set-preview.open{display:block;}
+.preview-label{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+.preview-q{font-size:13px;color:var(--white);margin-bottom:8px;line-height:1.5;}
+.preview-opts{display:flex;flex-direction:column;gap:4px;}
+.preview-opt{font-size:12px;color:rgba(242,239,232,0.45);padding:4px 0;}
+.preview-opt.correct{color:#4CAF85;}
+.sets-loading{color:var(--muted);font-size:14px;padding:64px 0;}
+.sets-error{color:var(--red,#D94040);font-size:13px;padding:32px 0;}
+
+/* ── GENERATOR TAB ── */
+.gen-wrap{display:grid;grid-template-columns:280px 1fr;min-height:60vh;max-width:1200px;margin:0 auto;}
+.gen-sidebar{border-right:1px solid var(--border);padding:32px 24px;display:flex;flex-direction:column;gap:24px;}
+.gen-main{padding:32px 40px;}
+
+/* Metadata */
+.gen-section-label{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;}
+.gen-field{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;}
+.gen-label{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);}
+.gen-input,.gen-textarea{background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:3px;color:var(--white);font-family:'Barlow',sans-serif;font-size:13px;padding:9px 12px;outline:none;transition:border-color .15s;width:100%;}
+.gen-input:focus,.gen-textarea:focus{border-color:rgba(232,193,74,0.5);}
+.gen-input::placeholder,.gen-textarea::placeholder{color:var(--muted);opacity:.5;}
+.gen-textarea{resize:vertical;min-height:60px;line-height:1.5;}
+
+/* Tier switcher */
+.tier-switch{display:flex;flex-direction:column;gap:2px;}
+.tier-switch-btn{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:3px;border:1px solid transparent;cursor:pointer;background:transparent;color:var(--muted);font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;transition:all .15s;width:100%;text-align:left;}
+.tier-switch-btn:hover{background:rgba(255,255,255,0.04);color:var(--white);}
+.tier-switch-btn.active{color:var(--white);border-color:rgba(255,255,255,0.1);background:rgba(255,255,255,0.06);}
+.tier-switch-btn.active.te{border-color:rgba(46,139,87,0.4);background:rgba(46,139,87,0.08);color:#4CAF85;}
+.tier-switch-btn.active.tm{border-color:rgba(232,193,74,0.4);background:rgba(232,193,74,0.08);color:var(--gold);}
+.tier-switch-btn.active.th{border-color:rgba(42,94,173,0.4);background:rgba(42,94,173,0.08);color:#6B9FE4;}
+.tier-switch-btn.active.tx{border-color:rgba(180,74,232,0.4);background:rgba(180,74,232,0.08);color:#C07AEA;}
+.tier-count{font-size:11px;opacity:.6;font-weight:400;}
+
+/* Add question form */
+.gen-form{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:24px;margin-bottom:28px;}
+.gen-form-title{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:.04em;color:var(--white);margin-bottom:20px;}
+.gen-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+.gen-row.single{grid-template-columns:1fr;}
+
+/* Options builder */
+.options-list{display:flex;flex-direction:column;gap:6px;margin-bottom:8px;}
+.option-row{display:flex;align-items:center;gap:8px;}
+.option-correct{width:20px;height:20px;border-radius:3px;border:1px solid var(--border);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;}
+.option-correct.marked{background:rgba(46,139,87,0.2);border-color:rgba(46,139,87,0.5);}
+.option-correct.marked::after{content:'✓';font-size:11px;color:#4CAF85;}
+.option-text{flex:1;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:3px;color:var(--white);font-family:'Barlow',sans-serif;font-size:13px;padding:7px 10px;outline:none;transition:border-color .15s;}
+.option-text:focus{border-color:rgba(232,193,74,0.4);}
+.option-text::placeholder{color:var(--muted);opacity:.4;}
+.option-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:4px 6px;line-height:1;transition:color .15s;flex-shrink:0;}
+.option-del:hover{color:#D94040;}
+.add-option-btn{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;background:transparent;border:1px dashed rgba(255,255,255,0.12);border-radius:3px;color:var(--muted);padding:7px 12px;cursor:pointer;transition:all .15s;width:100%;margin-bottom:12px;}
+.add-option-btn:hover{border-color:rgba(255,255,255,0.3);color:var(--white);}
+.options-hint{font-size:11px;color:var(--muted);margin-bottom:16px;}
+
+/* Difficulty select */
+.diff-select{background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:3px;color:var(--white);font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:600;letter-spacing:.06em;padding:9px 12px;outline:none;cursor:pointer;width:100%;transition:border-color .15s;}
+.diff-select:focus{border-color:rgba(232,193,74,0.5);}
+.diff-select option{background:#1A1C1E;}
+
+/* Add button */
+.gen-add-btn{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;background:var(--gold);color:var(--black);border:none;padding:11px 24px;border-radius:3px;cursor:pointer;transition:background .15s;width:100%;margin-top:4px;}
+.gen-add-btn:hover{background:var(--gold2);}
+.gen-add-btn:disabled{opacity:.4;cursor:not-allowed;}
+
+/* Question list */
+.q-list{display:flex;flex-direction:column;gap:6px;}
+.q-item{background:var(--surface);border:1px solid rgba(255,255,255,0.04);border-radius:4px;padding:16px 18px;display:flex;align-items:flex-start;gap:14px;}
+.q-item:hover{border-color:rgba(255,255,255,0.1);}
+.q-num{font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--muted);min-width:28px;text-align:right;margin-top:2px;}
+.q-body{flex:1;min-width:0;}
+.q-text{font-size:14px;color:var(--white);line-height:1.5;margin-bottom:6px;}
+.q-opts{display:flex;flex-wrap:wrap;gap:4px;}
+.q-opt{font-size:11px;padding:2px 8px;border-radius:2px;background:rgba(255,255,255,0.04);color:var(--muted);}
+.q-opt.ans{background:rgba(46,139,87,0.12);color:#4CAF85;}
+.q-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:2px;line-height:1;transition:color .15s;flex-shrink:0;}
+.q-del:hover{color:#D94040;}
+.q-empty{font-size:13px;color:var(--muted);padding:32px 0;text-align:center;}
+.q-id{font-family:monospace;font-size:10px;color:rgba(255,255,255,0.2);margin-top:4px;}
+
+.gen-action-btn{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:3px;color:var(--muted);padding:9px 14px;cursor:pointer;transition:all .15s;width:100%;text-align:center;display:block;}
+.gen-action-btn:hover{border-color:rgba(255,255,255,0.2);color:var(--white);}
+.gen-dl-btn{background:rgba(232,193,74,0.08);border-color:rgba(232,193,74,0.2);color:var(--gold);}
+.gen-dl-btn:hover{background:rgba(232,193,74,0.15);border-color:rgba(232,193,74,0.4);}
+.gen-clear-btn:hover{border-color:rgba(217,64,64,0.4);color:#D94040;}
+/* Inline edit overlay */
+.q-item{position:relative;}
+.q-edit-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;padding:2px 6px;line-height:1;transition:color .15s;flex-shrink:0;font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:.06em;text-transform:uppercase;}
+.q-edit-btn:hover{color:var(--gold);}
+.q-item-actions{display:flex;gap:4px;align-items:center;flex-shrink:0;}
+.inline-edit{background:var(--off);border:1px solid rgba(232,193,74,0.3);border-radius:4px;padding:16px;margin-top:12px;display:flex;flex-direction:column;gap:10px;}
+.inline-edit textarea,.inline-edit input{background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:3px;color:var(--white);font-family:'Barlow',sans-serif;font-size:13px;padding:7px 10px;outline:none;width:100%;}
+.inline-edit textarea:focus,.inline-edit input:focus{border-color:rgba(232,193,74,0.5);}
+.inline-edit textarea{resize:vertical;min-height:56px;}
+.inline-edit-opts{display:flex;flex-direction:column;gap:5px;}
+.inline-edit-label{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;}
+.inline-edit-actions{display:flex;gap:8px;margin-top:4px;}
+.ie-save{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;background:var(--gold);color:var(--black);border:none;padding:8px 18px;border-radius:3px;cursor:pointer;transition:background .15s;}
+.ie-save:hover{background:var(--gold2);}
+.ie-cancel{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;background:transparent;color:var(--muted);border:1px solid var(--border);padding:8px 14px;border-radius:3px;cursor:pointer;transition:all .15s;}
+.ie-cancel:hover{color:var(--white);border-color:rgba(255,255,255,0.3);}
+/* Validation banner */
+.gen-validation{background:rgba(217,64,64,0.08);border:1px solid rgba(217,64,64,0.3);border-radius:4px;padding:14px 18px;margin-bottom:16px;display:none;}
+.gen-validation.visible{display:block;}
+.gen-validation-title{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#D94040;margin-bottom:8px;}
+.gen-validation ul{list-style:none;display:flex;flex-direction:column;gap:4px;}
+.gen-validation li{font-size:12px;color:rgba(217,64,64,0.8);}
+.gen-validation li::before{content:'— ';}
+@media(max-width:900px){
+  .gen-wrap{grid-template-columns:1fr;}
+  .gen-sidebar{border-right:none;border-bottom:1px solid var(--border);padding:24px;}
+  .gen-main{padding:24px;}
+  .gen-row{grid-template-columns:1fr;}
+}
+
+/* ── PLACEHOLDER PANELS ── */
+.placeholder{padding:120px 48px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:40vh;}
+.placeholder-icon{font-size:48px;margin-bottom:24px;opacity:.4;}
+.placeholder h3{font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:.04em;color:var(--white);margin-bottom:10px;opacity:.4;}
+.placeholder p{font-size:14px;color:var(--muted);max-width:360px;}
+
+/* ── FOOTER ── */
+footer{padding:40px 48px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--border);}
+.footer-logo{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:.06em;color:var(--gold);opacity:.5;}
+.footer-links{display:flex;gap:24px;}
+.footer-links a{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);text-decoration:none;transition:color .2s;}
+.footer-links a:hover{color:var(--white);}
+.footer-copy{font-size:11px;color:rgba(107,107,107,0.5);}
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){
+  header{padding:0 20px;}
+  .page-hero,.overview,.tab-bar{padding-left:24px;padding-right:24px;}
+  .tab-cards{grid-template-columns:1fr;}
+  footer{flex-direction:column;gap:20px;text-align:center;padding:32px 24px;}
+  .footer-links{flex-wrap:wrap;justify-content:center;}
+}
+@media(max-width:600px){
+  .page-hero h1{font-size:52px;}
+  .tab-btn{padding:14px 12px;font-size:11px;}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <a class="logo" href="/">Mc<span>Chimp</span></a>
+  <nav>
+    <a class="nav-link" href="/#games">Games</a>
+    <a class="nav-link" href="/#how">How It Works</a>
+    <div class="nav-item">
+      <a class="nav-link active-page" href="/questions">Questions<span class="chevron">&#9662;</span></a>
+      <div class="dropdown">
+        <a href="/questions#ai-guide"><span class="dd-label">AI Guide</span></a>
+        <a href="/questions#sets"><span class="dd-label">Question Sets</span></a>
+        <a href="/questions#generator"><span class="dd-label">Generator</span></a>
+      </div>
+    </div>
+    <a class="nav-link" href="/#contact">Contact</a>
+  </nav>
+</header>
+
+<div class="page-body">
+
+  <!-- PAGE HERO -->
+  <div class="page-hero">
+    <div class="page-hero-tag">Question Sets</div>
+    <h1>Make Your<br>Own Questions</h1>
+    <p>Every McChimp game runs on a modular question engine. Swap in any topic, any language — as long as it follows the schema, it works instantly.</p>
+  </div>
+
+  <!-- TAB BAR -->
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="overview"  onclick="switchTab('overview')">Overview</button>
+    <button class="tab-btn"        data-tab="ai-guide"  onclick="switchTab('ai-guide')">AI Guide</button>
+    <button class="tab-btn"        data-tab="sets"      onclick="switchTab('sets')">Question Sets</button>
+    <button class="tab-btn"        data-tab="generator" onclick="switchTab('generator')">Generator</button>
+  </div>
+
+  <!-- OVERVIEW TAB -->
+  <div class="tab-panel active" id="tab-overview">
+    <div class="overview">
+
+      <div class="overview-intro">
+        <h2>How the Question System Works</h2>
+        <p>McChimp games don't have fixed question banks hardcoded into them. Instead, every game loads questions from a <strong style="color:var(--white)">modular JSON file</strong> — a structured document you can write yourself, generate with AI, or download from our library.</p>
+        <p>This means you can play any game with <strong style="color:var(--white)">any topic</strong>. An MMA career with driving theory questions. A football career tested on economics. The game engine doesn't care — it only cares about the structure of the file.</p>
+
+        <h2 style="margin-top:40px;">Difficulty Tiers <span class="mma-badge">MMA Game</span></h2>
+        <p>Every question set is organised into four difficulty tiers. The game selects questions based on your current rank and career phase — lower-ranked fights get easier questions, title fights get elite ones.</p>
+        <div class="tier-pills">
+          <span class="pill pill-easy">Easy</span>
+          <span class="pill pill-medium">Medium</span>
+          <span class="pill pill-hard">Hard</span>
+          <span class="pill pill-elite">Elite</span>
+        </div>
+        <p>The game also tracks your personal score on each question (+1 correct, −1 wrong) and <strong style="color:var(--white)">adjusts the effective difficulty dynamically</strong>. A hard question you've answered correctly twice becomes medium difficulty for you specifically.</p>
+
+        <h2 style="margin-top:40px;">Fighter-Owned Questions <span class="mma-badge">MMA Game</span></h2>
+        <p>Each opponent in the division owns a specific question. You face the same question when you rematch them — until you beat them <strong style="color:var(--white)">twice consecutively</strong>, at which point they get a fresh one. The more you know, the easier the rematch becomes.</p>
+      </div>
+
+      <!-- TAB CARDS -->
+      <div class="tab-cards">
+        <div class="tab-card" onclick="switchTab('ai-guide')">
+          
+          <div class="tc-title">AI Guide</div>
+          <p class="tc-desc">Learn how to prompt an AI assistant to generate a fully compatible question set. Includes a downloadable instruction file you can drop straight into any chat.</p>
+          <div class="tc-arrow">Go to AI Guide</div>
+        </div>
+        <div class="tab-card" onclick="switchTab('sets')">
+          
+          <div class="tc-title">Question Sets</div>
+          <p class="tc-desc">Browse and download our native question sets. Each is ready to drop into any McChimp game immediately.</p>
+          <div class="tc-arrow">Browse Sets</div>
+        </div>
+        <div class="tab-card" onclick="switchTab('generator')">
+          
+          <div class="tc-title">Generator</div>
+          <p class="tc-desc">Build a question set from scratch in the browser. Add questions, set difficulty, mark correct answers, then download as JSON.</p>
+          <div class="tc-arrow">Open Generator</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- AI GUIDE TAB ── features 9–12 -->
+  <div class="tab-panel" id="tab-ai-guide">
+    <div class="guide-wrap">
+
+      <div class="guide-section">
+        <h3>How to prompt an AI to make a question set</h3>
+        <p>Any major AI assistant — ChatGPT, Claude, Gemini — can generate a fully compatible McChimp question set if you give it the right instructions. Download the guide below, paste it into your AI chat, describe your topic, and it will produce a ready-to-use JSON file.</p>
+        <p>The guide covers the exact schema, field rules, difficulty tiers, ID format, and quantity guidelines. The AI does the rest.</p>
+      </div>
+
+      <div class="guide-actions">
+        <a id="download-guide-btn" class="btn-gold" download="mcchimp_question_guide.md">
+          &#11015; Download Guide (.md)
+        </a>
+        <button class="btn-outline" id="copy-guide-btn" onclick="copyGuide()">
+          Copy to Clipboard
+        </button>
+      </div>
+
+      <!-- SCHEMA -->
+      <div class="guide-section">
+        <h3>File Format</h3>
+        <p>A question module is a single <code style="color:var(--gold)">.json</code> file. You do not need all four tiers — include whichever you have questions for.</p>
+        <div class="guide-code">{
+  "name": "Module Name",
+  "description": "One-line description (optional)",
+  "tiers": {
+    "easy":   [ ...questions ],
+    "medium": [ ...questions ],
+    "hard":   [ ...questions ],
+    "elite":  [ ...questions ]
+  }
+}</div>
+      </div>
+
+      <!-- QUESTION OBJECT -->
+      <div class="guide-section">
+        <h3>Question Object</h3>
+        <div class="guide-code">{
+  "id": "PREFIX-TI-001",
+  "question": "What is the question text?",
+  "options": ["Option A", "Option B", "Option C", "Option D"],
+  "answers": [0],
+  "explanation": "Shown after the answer is revealed. Optional."
+}</div>
+        <table class="guide-table">
+          <thead><tr><th>Field</th><th>Required</th><th>Rules</th></tr></thead>
+          <tbody>
+            <tr><td>id</td><td><span class="field-req field-rec">Recommended</span></td><td>Stable string, unique within module. Format: <code>ABC-EA-001</code>. Used for score tracking.</td></tr>
+            <tr><td>question</td><td><span class="field-req field-yes">Required</span></td><td>Plain text. No length limit but keep it readable.</td></tr>
+            <tr><td>options</td><td><span class="field-req field-yes">Required</span></td><td>Array of 2–7 strings.</td></tr>
+            <tr><td>answers</td><td><span class="field-req field-yes">Required</span></td><td>Array of zero-based indices into options. At least one.</td></tr>
+            <tr><td>explanation</td><td><span class="field-req field-no">Optional</span></td><td>Shown after the answer is revealed. Good for teaching.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- TIERS -->
+      <div class="guide-section">
+        <h3>Difficulty Tiers</h3>
+        <p>The tier a question lives in determines when it appears. The game also shifts effective tier at runtime based on your history with each question (+1 correct, −1 wrong) — write each question at its genuine difficulty and let the system handle the rest.</p>
+        <table class="guide-table">
+          <thead><tr><th>Tier</th><th>When it appears</th></tr></thead>
+          <tbody>
+            <tr><td>easy</td><td>Early career, lower-ranked opponents</td></tr>
+            <tr><td>medium</td><td>Mid-career, mid-ranked opponents</td></tr>
+            <tr><td>hard</td><td>Top organisations, ranked opponents</td></tr>
+            <tr><td>elite</td><td>Title fights and championship bouts</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- MULTI-SELECT -->
+      <div class="guide-section">
+        <h3>Single-Answer vs Multi-Select</h3>
+        <p>Questions can have one or more correct answers. Wrong selections subtract a point — guessing is penalised.</p>
+        <div class="guide-code">// Single answer
+"answers": [2]
+
+// Multi-select — question text should say "Select all that apply."
+"answers": [0, 2, 3, 4]</div>
+      </div>
+
+      <!-- ID FORMAT -->
+      <div class="guide-section">
+        <h3>ID Format Convention</h3>
+        <p><code style="color:var(--gold)">PREFIX-TI-NNN</code> — e.g. <code style="color:var(--gold)">SCI-HA-007</code></p>
+        <table class="guide-table">
+          <thead><tr><th>Part</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td>PREFIX</td><td>2–4 uppercase letters for the module (MMA, HIS, SCI)</td></tr>
+            <tr><td>TI</td><td>EA (easy) · ME (medium) · HA (hard) · EL (elite)</td></tr>
+            <tr><td>NNN</td><td>Zero-padded number: 001, 002…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- QUANTITY -->
+      <div class="guide-section">
+        <h3>Quantity Guidelines</h3>
+        <p>More questions means less repetition in long careers. A module with fewer than ~40 total will see repeats.</p>
+        <table class="guide-table">
+          <thead><tr><th>Tier</th><th>Minimum useful</th><th>Comfortable</th></tr></thead>
+          <tbody>
+            <tr><td>easy</td><td>10</td><td>20+</td></tr>
+            <tr><td>medium</td><td>10</td><td>20+</td></tr>
+            <tr><td>hard</td><td>10</td><td>20+</td></tr>
+            <tr><td>elite</td><td>5</td><td>15+</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- QUESTION SETS TAB ── features 13-17 -->
+  <div class="tab-panel" id="tab-sets">
+    <div class="sets-wrap">
+      <div class="sets-grid" id="sets-grid">
+        <p class="sets-loading">Loading question sets&#8230;</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- GENERATOR TAB — Part 1: metadata + tier view + add form + list -->
+  <div class="tab-panel" id="tab-generator">
+    <div class="gen-wrap">
+
+      <!-- SIDEBAR: metadata + tier switcher -->
+      <div class="gen-sidebar">
+
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div class="gen-section-label" style="margin-bottom:0;">Total: <span id="gen-total">0</span> questions</div>
+          <label class="gen-action-btn" style="cursor:pointer;" title="Load an existing JSON set into the editor">
+            &#11014; Upload JSON
+            <input type="file" accept=".json" id="gen-upload-input" onchange="genHandleUpload(event)" style="display:none;">
+          </label>
+          <button class="gen-action-btn gen-dl-btn" onclick="genDownload()" id="gen-dl-btn">&#11015; Download JSON</button>
+          <button class="gen-action-btn gen-clear-btn" onclick="genClear()">Clear All</button>
+        </div>
+
+        <div>
+          <div class="gen-section-label">Set Details</div>
+          <div class="gen-field">
+            <label class="gen-label">Name</label>
+            <input class="gen-input" id="gen-name" placeholder="e.g. European History" oninput="genNameChanged()">
+          </div>
+          <div class="gen-field">
+            <label class="gen-label">ID Prefix <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;">(3–4 letters, used in question IDs)</span></label>
+            <input class="gen-input" id="gen-prefix" placeholder="e.g. HIS" maxlength="4" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z]/g,'')">
+          </div>
+          <div class="gen-field">
+            <label class="gen-label">Description</label>
+            <textarea class="gen-textarea" id="gen-desc" placeholder="One sentence describing the set"></textarea>
+          </div>
+        </div>
+
+        <div>
+          <div class="gen-section-label">Difficulty Tier</div>
+          <div class="tier-switch">
+            <button class="tier-switch-btn active te" data-tier="easy"   onclick="genSwitchTier('easy')">  Easy   <span class="tier-count" id="tc-easy">0</span></button>
+            <button class="tier-switch-btn tm"        data-tier="medium" onclick="genSwitchTier('medium')">Medium <span class="tier-count" id="tc-medium">0</span></button>
+            <button class="tier-switch-btn th"        data-tier="hard"   onclick="genSwitchTier('hard')">  Hard   <span class="tier-count" id="tc-hard">0</span></button>
+            <button class="tier-switch-btn tx"        data-tier="elite"  onclick="genSwitchTier('elite')"> Elite  <span class="tier-count" id="tc-elite">0</span></button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- MAIN: add form + question list -->
+      <div class="gen-main">
+
+        <!-- ADD QUESTION FORM -->
+        <div class="gen-form">
+          <div class="gen-validation" id="gen-validation">
+            <div class="gen-validation-title">Please fix these issues before downloading</div>
+            <ul id="gen-validation-list"></ul>
+          </div>
+          <div class="gen-form-title">Add Question</div>
+
+          <div class="gen-row single gen-field">
+            <label class="gen-label">Question Text</label>
+            <textarea class="gen-textarea" id="gen-q-text" placeholder="Enter your question here&#8230;" style="min-height:72px;"></textarea>
+          </div>
+
+          <div class="gen-field">
+            <label class="gen-label">Answer Options <span style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;">— click checkmark to mark correct</span></label>
+            <div class="options-list" id="gen-options-list"></div>
+            <button class="add-option-btn" onclick="genAddOption()" id="gen-add-opt-btn">+ Add Option</button>
+            <p class="options-hint">At least 2 options required. At least 1 must be marked correct.</p>
+          </div>
+
+          <div class="gen-row">
+            <div class="gen-field" style="margin-bottom:0">
+              <label class="gen-label">Difficulty</label>
+              <select class="diff-select" id="gen-diff">
+                <option value="easy">Easy</option>
+                <option value="medium">Medium</option>
+                <option value="hard">Hard</option>
+                <option value="elite">Elite</option>
+              </select>
+            </div>
+            <div class="gen-field" style="margin-bottom:0">
+              <label class="gen-label">Explanation <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;">(optional)</span></label>
+              <input class="gen-input" id="gen-explanation" placeholder="Shown after answer reveal">
+            </div>
+          </div>
+
+          <button class="gen-add-btn" onclick="genAddQuestion()" id="gen-add-btn">Add Question</button>
+          <div id="gen-add-err" style="color:#D94040;font-size:12px;margin-top:8px;display:none;"></div>
+        </div>
+
+        <!-- QUESTION LIST -->
+        <div class="gen-section-label" id="gen-list-label">Easy questions</div>
+        <div class="q-list" id="gen-q-list">
+          <div class="q-empty">No questions yet. Add one above.</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="footer-logo">McChimp</div>
+    <div class="footer-links">
+      <a href="/">Home</a>
+      <a href="/#games">Games</a>
+      <a href="/mma">MMA Trivia</a>
+      <a href="/football">Football Trivia</a>
+      <a href="/questions">Questions</a>
+      <a href="mailto:multiplechoicechimp@gmail.com">Contact</a>
+      <a href="/privacy">Privacy Policy</a>
+    </div>
+    <div class="footer-copy">&#169; 2026 McChimp</div>
+  </footer>
+
+</div>
+
+<script>
+const TABS = ['overview','ai-guide','sets','generator'];
+
+function switchTab(name) {
+  if (!TABS.includes(name)) name = 'overview';
+  document.querySelectorAll('.tab-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.tab === name));
+  document.querySelectorAll('.tab-panel').forEach(p =>
+    p.classList.toggle('active', p.id === 'tab-' + name));
+  // replaceState can fail in sandboxed iframes — guard it
+  try {
+    const url = name === 'overview' ? location.pathname : location.pathname + '#' + name;
+    history.replaceState(null, '', url);
+  } catch(e) { /* sandboxed environment — skip history update */ }
+}
+
+// Open correct tab from URL hash on load
+(function() {
+  const hash = location.hash.replace('#', '');
+  switchTab(TABS.includes(hash) ? hash : 'overview');
+})();
+
+// ── Question Sets tab ──────────────────────────────────────────────────────
+async function loadSets() {
+  const grid = document.getElementById('sets-grid');
+  if (!grid) return;
+
+  let files;
+  try {
+    const res = await fetch('/questions/index.json');
+    if (!res.ok) throw new Error('index.json not found');
+    files = await res.json();
+  } catch(e) {
+    grid.innerHTML = '<p class="sets-error">Could not load question sets. Make sure index.json exists in /questions/.</p>';
+    return;
+  }
+
+  // Fetch all set files in parallel
+  const results = await Promise.all(files.map(async filename => {
+    try {
+      const res = await fetch('/questions/' + filename);
+      if (!res.ok) throw new Error('not found');
+      const data = await res.json();
+      return { filename, data };
+    } catch(e) {
+      return { filename, data: null };
+    }
+  }));
+
+  if (!results.length) {
+    grid.innerHTML = '<p class="sets-loading">No question sets found.</p>';
+    return;
+  }
+
+  grid.innerHTML = results.map(({ filename, data }) => {
+    if (!data) return `<div class="set-card"><div class="set-name">${filename}</div><p class="set-desc" style="color:var(--red,#D94040)">Could not load this file.</p></div>`;
+
+    const tiers = data.tiers || {};
+    const counts = {
+      easy:   (tiers.easy   || []).length,
+      medium: (tiers.medium || []).length,
+      hard:   (tiers.hard   || []).length,
+      elite:  (tiers.elite  || []).length,
+    };
+    const total = counts.easy + counts.medium + counts.hard + counts.elite;
+
+    // Pick one sample question from the first non-empty tier
+    let sample = null;
+    for (const t of ['easy','medium','hard','elite']) {
+      if (tiers[t] && tiers[t].length) { sample = tiers[t][0]; break; }
+    }
+
+    const tierBadges = [
+      counts.easy   ? `<span class="set-tier tier-e">Easy &middot; ${counts.easy}</span>`   : '',
+      counts.medium ? `<span class="set-tier tier-m">Medium &middot; ${counts.medium}</span>` : '',
+      counts.hard   ? `<span class="set-tier tier-h">Hard &middot; ${counts.hard}</span>`   : '',
+      counts.elite  ? `<span class="set-tier tier-x">Elite &middot; ${counts.elite}</span>` : '',
+    ].join('');
+
+    const previewHtml = sample ? `
+      <div class="preview-label">Sample question</div>
+      <div class="preview-q">${escHtml(sample.question)}</div>
+      <div class="preview-opts">
+        ${(sample.options || []).map((opt, i) => `
+          <div class="preview-opt${(sample.answers||[]).includes(i) ? ' correct' : ''}">
+            ${(sample.answers||[]).includes(i) ? '&#10003; ' : ''}${escHtml(opt)}
+          </div>`).join('')}
+      </div>` : '<p class="set-desc">No questions to preview.</p>';
+
+    const cardId = 'set-' + filename.replace(/[^a-z0-9]/gi, '-');
+
+    return `<div class="set-card" id="${cardId}">
+      <div class="set-card-top">
+        <div class="set-name">${escHtml(data.name || filename)}</div>
+        <span style="font-size:13px;color:var(--muted);white-space:nowrap;">${total} q</span>
+      </div>
+      ${data.description ? `<p class="set-desc">${escHtml(data.description)}</p>` : ''}
+      <div class="set-tiers">${tierBadges}</div>
+      <div class="set-actions">
+        <a class="set-dl" href="/questions/${filename}" download="${filename}">&#11015; Download JSON</a>
+        <button class="set-preview-btn" onclick="togglePreview('${cardId}', this)">Preview</button>
+      </div>
+      <div class="set-preview" id="preview-${cardId}">${previewHtml}</div>
+    </div>`;
+  }).join('');
+}
+
+function togglePreview(cardId, btn) {
+  const el = document.getElementById('preview-' + cardId);
+  if (!el) return;
+  const open = el.classList.toggle('open');
+  btn.textContent = open ? 'Hide' : 'Preview';
+}
+
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Load sets when the tab is first opened (lazy)
+let setsLoaded = false;
+const origSwitch = switchTab;
+switchTab = function(name) {
+  origSwitch(name);
+  if (name === 'sets' && !setsLoaded) { setsLoaded = true; loadSets(); }
+};
+// Also load if sets tab is active on page load
+if (location.hash === '#sets') loadSets();
+
+// AI Guide content
+const GUIDE_MD = `# McChimp — Question File Guide
+
+## File format
+
+A question module is a single .json file:
+
+{
+  "name": "Module Name",
+  "description": "One-line description (optional)",
+  "tiers": {
+    "easy":   [ ...questions ],
+    "medium": [ ...questions ],
+    "hard":   [ ...questions ],
+    "elite":  [ ...questions ]
+  }
+}
+
+You do not need all four tiers.
+
+## Question object
+
+{
+  "id": "PREFIX-TI-001",
+  "question": "What is the question text?",
+  "options": ["Option A", "Option B", "Option C", "Option D"],
+  "answers": [0],
+  "explanation": "Shown after the answer is revealed. Optional."
+}
+
+Fields:
+- id (recommended): stable string, unique within module. Format: ABC-EA-001
+- question (required): plain text
+- options (required): array of 2–7 strings
+- answers (required): array of zero-based indices. At least one.
+- explanation (optional): shown after reveal
+
+## Difficulty tiers
+
+easy   → early career / lower-ranked opponents
+medium → mid-career / mid-ranked opponents
+hard   → top organisations / ranked opponents
+elite  → title fights and championships
+
+The game shifts effective tier at runtime based on player history (+1 correct, −1 wrong). Write each question at its genuine difficulty — do not compensate for this.
+
+## Single-answer vs multi-select
+
+Single: "answers": [2]
+Multi:  "answers": [0, 2, 3, 4]
+        Question text should say "Select all that apply."
+        Wrong selections subtract a point — guessing is penalised.
+
+## ID format: PREFIX-TI-NNN
+
+PREFIX: 2–4 uppercase letters (MMA, HIS, SCI)
+TI: EA (easy) / ME (medium) / HA (hard) / EL (elite)
+NNN: zero-padded number (001, 002...)
+Example: SCI-HA-007
+
+IDs must be unique within a module.
+
+## Quantity guidelines
+
+| Tier   | Minimum | Comfortable |
+|--------|---------|-------------|
+| easy   | 10      | 20+         |
+| medium | 10      | 20+         |
+| hard   | 10      | 20+         |
+| elite  | 5       | 15+         |
+
+Fewer than ~40 total questions will cause repeats in a long career.
+
+## Minimal valid example
+
+{
+  "name": "My Module",
+  "tiers": {
+    "easy": [
+      {
+        "id": "MY-EA-001",
+        "question": "What does MMA stand for?",
+        "options": ["Mixed Martial Arts", "Modern Martial Arts", "Mixed Match Athletics"],
+        "answers": [0],
+        "explanation": "MMA stands for Mixed Martial Arts."
+      }
+    ]
+  }
+}
+`;
+
+// Set up download button (uses Blob URL — works without a server)
+(function() {
+  const btn = document.getElementById('download-guide-btn');
+  if (!btn) return;
+  const blob = new Blob([GUIDE_MD], { type: 'text/markdown' });
+  btn.href = URL.createObjectURL(blob);
+})();
+
+function copyGuide() {
+  const btn = document.getElementById('copy-guide-btn');
+  navigator.clipboard.writeText(GUIDE_MD).then(() => {
+    btn.textContent = '✓ Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = 'Copy to Clipboard';
+      btn.classList.remove('copied');
+    }, 2000);
+  }).catch(() => {
+    // Fallback for browsers without clipboard API
+    const ta = document.createElement('textarea');
+    ta.value = GUIDE_MD;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    btn.textContent = '✓ Copied!';
+    setTimeout(() => { btn.textContent = 'Copy to Clipboard'; }, 2000);
+  });
+}
+
+// ── GENERATOR STATE ──────────────────────────────────────────────────────────
+const genState = {
+  tiers: { easy: [], medium: [], hard: [], elite: [] },
+  activeTier: 'easy',
+};
+let optionCount = 0;
+
+const TIER_LABELS = { easy:'Easy', medium:'Medium', hard:'Hard', elite:'Elite' };
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+function genInit() {
+  // Start with 4 blank options
+  for (let i = 0; i < 4; i++) genAddOption();
+  genRenderList();
+  genUpdateCounts();
+  // Sync difficulty select with active tier
+  document.getElementById('gen-diff').value = genState.activeTier;
+}
+
+// ── TIER SWITCHING ────────────────────────────────────────────────────────────
+function genSwitchTier(tier) {
+  genState.activeTier = tier;
+  document.querySelectorAll('.tier-switch-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.tier === tier);
+  });
+  document.getElementById('gen-diff').value = tier;
+  document.getElementById('gen-list-label').textContent = TIER_LABELS[tier] + ' questions';
+  genRenderList();
+}
+
+// ── OPTIONS BUILDER ───────────────────────────────────────────────────────────
+function genAddOption() {
+  const list = document.getElementById('gen-options-list');
+  const addBtn = document.getElementById('gen-add-opt-btn');
+  if (list.children.length >= 7) return;
+
+  const idx = list.children.length;
+  const row = document.createElement('div');
+  row.className = 'option-row';
+  row.dataset.idx = idx;
+  row.innerHTML = `
+    <button type="button" class="option-correct" onclick="genToggleCorrect(this)" title="Mark as correct answer"></button>
+    <input class="option-text" placeholder="Option ${idx + 1}" data-opt-idx="${idx}">
+    <button type="button" class="option-del" onclick="genRemoveOption(this)" title="Remove option">&#215;</button>`;
+  list.appendChild(row);
+
+  if (list.children.length >= 7) addBtn.style.display = 'none';
+  else addBtn.style.display = '';
+}
+
+function genRemoveOption(btn) {
+  const list = document.getElementById('gen-options-list');
+  if (list.children.length <= 2) return; // minimum 2
+  btn.closest('.option-row').remove();
+  // Re-index placeholders
+  Array.from(list.children).forEach((row, i) => {
+    const input = row.querySelector('.option-text');
+    input.placeholder = 'Option ' + (i + 1);
+    input.dataset.optIdx = i;
+    row.dataset.idx = i;
+  });
+  document.getElementById('gen-add-opt-btn').style.display = '';
+}
+
+function genToggleCorrect(btn) {
+  btn.classList.toggle('marked');
+}
+
+function genGetOptions() {
+  const rows = document.querySelectorAll('#gen-options-list .option-row');
+  const options = [], answers = [];
+  rows.forEach((row, i) => {
+    const val = row.querySelector('.option-text').value.trim();
+    options.push(val);
+    if (row.querySelector('.option-correct').classList.contains('marked')) answers.push(i);
+  });
+  return { options, answers };
+}
+
+// ── AUTO ID ───────────────────────────────────────────────────────────────────
+function genNameChanged() {
+  // Auto-fill prefix from name if prefix is still empty
+  const nameEl   = document.getElementById('gen-name');
+  const prefixEl = document.getElementById('gen-prefix');
+  if (prefixEl && !prefixEl.value.trim()) {
+    prefixEl.value = nameEl.value.trim().toUpperCase().replace(/[^A-Z]/g,'').slice(0,4);
+  }
+}
+
+function genMakeId(tier) {
+  const prefixEl = document.getElementById('gen-prefix');
+  const nameEl   = document.getElementById('gen-name');
+  const prefix = (prefixEl && prefixEl.value.trim())
+    || (nameEl && nameEl.value.trim().toUpperCase().replace(/[^A-Z]/g,'').slice(0,4))
+    || 'SET';
+  const ti = { easy:'EA', medium:'ME', hard:'HA', elite:'EL' }[tier] || 'EA';
+  const count = genState.tiers[tier].length + 1;
+  return `${prefix}-${ti}-${String(count).padStart(3,'0')}`;
+}
+
+// ── ADD QUESTION ──────────────────────────────────────────────────────────────
+function genAddQuestion() {
+  const errEl = document.getElementById('gen-add-err');
+  errEl.style.display = 'none';
+
+  const text = document.getElementById('gen-q-text').value.trim();
+  const tier = document.getElementById('gen-diff').value;
+  const explanation = document.getElementById('gen-explanation').value.trim();
+  const { options, answers } = genGetOptions();
+
+  // Validate
+  if (!text) return genShowErr('Question text is required.');
+  const filledOpts = options.filter(o => o.length > 0);
+  if (filledOpts.length < 2) return genShowErr('At least 2 options are required.');
+  if (answers.length === 0) return genShowErr('At least one correct answer must be marked.');
+  // Check marked answers have text
+  for (const ai of answers) {
+    if (!options[ai] || !options[ai].trim()) return genShowErr('A marked correct answer has no text.');
+  }
+
+  const name = document.getElementById('gen-name').value.trim();
+  const id = genMakeId(tier);
+
+  const q = { id, question: text, options: options.map(o => o || ''), answers };
+  if (explanation) q.explanation = explanation;
+
+  genState.tiers[tier].push(q);
+
+  // Switch to the tier we just added to
+  genSwitchTier(tier);
+  genUpdateCounts();
+  genRenderList();
+  genClearForm();
+}
+
+function genShowErr(msg) {
+  const el = document.getElementById('gen-add-err');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function genClearForm() {
+  document.getElementById('gen-q-text').value = '';
+  document.getElementById('gen-explanation').value = '';
+  document.getElementById('gen-add-err').style.display = 'none';
+  // Reset options to 4 blank
+  const list = document.getElementById('gen-options-list');
+  list.innerHTML = '';
+  document.getElementById('gen-add-opt-btn').style.display = '';
+  for (let i = 0; i < 4; i++) genAddOption();
+}
+
+// ── RENDER LIST ───────────────────────────────────────────────────────────────
+function genRenderList() {
+  const container = document.getElementById('gen-q-list');
+  const qs = genState.tiers[genState.activeTier];
+
+  if (!qs.length) {
+    container.innerHTML = '<div class="q-empty">No ' + TIER_LABELS[genState.activeTier].toLowerCase() + ' questions yet.</div>';
+    return;
+  }
+
+  container.innerHTML = qs.map((q, i) => {
+    const optHtml = (q.options || []).map((opt, oi) =>
+      `<span class="q-opt${q.answers.includes(oi) ? ' ans' : ''}">${escHtml(opt)}</span>`
+    ).join('');
+    return `<div class="q-item">
+      <div class="q-num">${i + 1}</div>
+      <div class="q-body">
+        <div class="q-text">${escHtml(q.question)}</div>
+        <div class="q-opts">${optHtml}</div>
+        ${q.id ? `<div class="q-id">${q.id}</div>` : ''}
+      </div>
+      <div class="q-item-actions">
+        <button class="q-edit-btn" onclick="genToggleEdit('${genState.activeTier}', ${i}, this)">Edit</button>
+        <button class="q-del" onclick="genDeleteQ('${genState.activeTier}', ${i})" title="Delete">&#215;</button>
+      </div>
+    </div>
+    <div class="inline-edit" id="ie-${genState.activeTier}-${i}" style="display:none;"></div>`;
+  }).join('');
+}
+
+// ── DELETE ────────────────────────────────────────────────────────────────────
+function genDeleteQ(tier, idx) {
+  genState.tiers[tier].splice(idx, 1);
+  genUpdateCounts();
+  genRenderList();
+}
+
+// ── COUNTS ────────────────────────────────────────────────────────────────────
+function genUpdateCounts() {
+  let total = 0;
+  for (const t of ['easy','medium','hard','elite']) {
+    const c = genState.tiers[t].length;
+    document.getElementById('tc-' + t).textContent = c;
+    total += c;
+  }
+  document.getElementById('gen-total').textContent = total;
+}
+
+// Initialise generator when tab first opens
+let genInitDone = false;
+const _origSwitch = switchTab;
+switchTab = function(name) {
+  _origSwitch(name);
+  if (name === 'generator' && !genInitDone) { genInitDone = true; genInit(); }
+};
+if (location.hash === '#generator') { genInitDone = true; genInit(); }
+
+
+// ── INLINE EDIT ───────────────────────────────────────────────────────────────
+function genToggleEdit(tier, idx, btn) {
+  const elId = `ie-${tier}-${idx}`;
+  const el = document.getElementById(elId);
+  if (!el) return;
+  const isOpen = el.style.display !== 'none';
+  // Close all open editors
+  document.querySelectorAll('.inline-edit').forEach(e => e.style.display = 'none');
+  document.querySelectorAll('.q-edit-btn').forEach(b => b.textContent = 'Edit');
+  if (isOpen) return;
+
+  const q = genState.tiers[tier][idx];
+  if (!q) return;
+
+  const optRows = (q.options || []).map((opt, oi) => `
+    <div class="option-row" data-ei="${oi}">
+      <button type="button" class="option-correct${q.answers.includes(oi) ? ' marked' : ''}" onclick="genToggleCorrect(this)"></button>
+      <input class="option-text" value="${escHtml(opt)}" placeholder="Option ${oi+1}">
+      <button type="button" class="option-del" onclick="genRemoveOption(this)">&#215;</button>
+    </div>`).join('');
+
+  el.innerHTML = `
+    <div>
+      <div class="inline-edit-label">Question Text</div>
+      <textarea id="ie-q-text">${escHtml(q.question)}</textarea>
+    </div>
+    <div>
+      <div class="inline-edit-label">Options — checkmark = correct</div>
+      <div class="options-list" id="ie-opts-list">${optRows}</div>
+      <button class="add-option-btn" onclick="genAddOptionTo('ie-opts-list')">+ Add Option</button>
+    </div>
+    <div>
+      <div class="inline-edit-label">Explanation (optional)</div>
+      <input id="ie-explanation" value="${escHtml(q.explanation||'')}">
+    </div>
+    <div class="inline-edit-actions">
+      <button class="ie-save" onclick="genSaveEdit('${tier}', ${idx})">Save</button>
+      <button class="ie-cancel" onclick="genCancelEdit('${tier}', ${idx})">Cancel</button>
+    </div>`;
+  el.style.display = 'block';
+  btn.textContent = 'Cancel';
+}
+
+function genAddOptionTo(listId) {
+  const list = document.getElementById(listId);
+  if (!list || list.children.length >= 7) return;
+  const idx = list.children.length;
+  const row = document.createElement('div');
+  row.className = 'option-row';
+  row.innerHTML = `
+    <button type="button" class="option-correct" onclick="genToggleCorrect(this)"></button>
+    <input class="option-text" placeholder="Option ${idx+1}">
+    <button type="button" class="option-del" onclick="genRemoveOption(this)">&#215;</button>`;
+  list.appendChild(row);
+}
+
+function genSaveEdit(tier, idx) {
+  const el = document.getElementById(`ie-${tier}-${idx}`);
+  const text = el.querySelector('#ie-q-text').value.trim();
+  const explanation = el.querySelector('#ie-explanation').value.trim();
+  const rows = el.querySelectorAll('#ie-opts-list .option-row');
+  const options = [], answers = [];
+  rows.forEach((row, i) => {
+    const val = row.querySelector('.option-text').value.trim();
+    options.push(val);
+    if (row.querySelector('.option-correct').classList.contains('marked')) answers.push(i);
+  });
+
+  if (!text) return;
+  if (options.filter(o=>o).length < 2) return;
+  if (!answers.length) return;
+
+  const q = genState.tiers[tier][idx];
+  q.question = text;
+  q.options   = options;
+  q.answers   = answers;
+  if (explanation) q.explanation = explanation;
+  else delete q.explanation;
+
+  el.style.display = 'none';
+  genRenderList();
+}
+
+function genCancelEdit(tier, idx) {
+  const el = document.getElementById(`ie-${tier}-${idx}`);
+  if (el) el.style.display = 'none';
+  document.querySelectorAll('.q-edit-btn').forEach(b => b.textContent = 'Edit');
+}
+
+// ── UPLOAD JSON ───────────────────────────────────────────────────────────────
+function genHandleUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      // Populate metadata
+      if (data.name) document.getElementById('gen-name').value = data.name;
+      if (data.description) document.getElementById('gen-desc').value = data.description;
+      // Auto-set prefix from first question ID if present
+      const firstQ = (data.tiers?.easy||data.tiers?.medium||data.tiers?.hard||data.tiers?.elite||[])[0];
+      if (firstQ?.id) {
+        const prefix = firstQ.id.split('-')[0] || '';
+        if (prefix) document.getElementById('gen-prefix').value = prefix;
+      } else {
+        genNameChanged();
+      }
+      // Load tiers
+      genState.tiers = { easy:[], medium:[], hard:[], elite:[] };
+      for (const t of ['easy','medium','hard','elite']) {
+        if (Array.isArray(data.tiers?.[t])) {
+          genState.tiers[t] = data.tiers[t].map(q => ({
+            id: q.id || '',
+            question: q.question || '',
+            options:  q.options  || [],
+            answers:  q.answers  || [],
+            ...(q.explanation ? { explanation: q.explanation } : {})
+          }));
+        }
+      }
+      genUpdateCounts();
+      genSwitchTier(genState.activeTier);
+      document.getElementById('gen-upload-input').value = '';
+    } catch(err) {
+      alert('Could not parse JSON: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+// ── VALIDATE ──────────────────────────────────────────────────────────────────
+function genValidate() {
+  const issues = [];
+  const name = document.getElementById('gen-name').value.trim();
+  if (!name) issues.push('Set name is required.');
+  let totalQ = 0;
+  for (const t of ['easy','medium','hard','elite']) {
+    const qs = genState.tiers[t];
+    totalQ += qs.length;
+    qs.forEach((q, i) => {
+      if (!q.question.trim()) issues.push(`${TIER_LABELS[t]} Q${i+1}: question text is empty.`);
+      if ((q.options||[]).filter(o=>o.trim()).length < 2) issues.push(`${TIER_LABELS[t]} Q${i+1}: needs at least 2 options.`);
+      if (!(q.answers||[]).length) issues.push(`${TIER_LABELS[t]} Q${i+1}: no correct answer marked.`);
+    });
+  }
+  if (totalQ === 0) issues.push('Add at least one question before downloading.');
+  return issues;
+}
+
+// ── DOWNLOAD ──────────────────────────────────────────────────────────────────
+function genDownload() {
+  const issues = genValidate();
+  const banner  = document.getElementById('gen-validation');
+  const bannerList = document.getElementById('gen-validation-list');
+
+  if (issues.length) {
+    bannerList.innerHTML = issues.map(i => `<li>${escHtml(i)}</li>`).join('');
+    banner.classList.add('visible');
+    banner.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    return;
+  }
+  banner.classList.remove('visible');
+
+  const name = document.getElementById('gen-name').value.trim();
+  const desc = document.getElementById('gen-desc').value.trim();
+  const out  = { name };
+  if (desc) out.description = desc;
+  out.tiers = {};
+  for (const t of ['easy','medium','hard','elite']) {
+    if (genState.tiers[t].length) out.tiers[t] = genState.tiers[t];
+  }
+
+  const blob = new Blob([JSON.stringify(out, null, 2)], { type:'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = name.toLowerCase().replace(/[^a-z0-9]+/g, '_') + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── CLEAR ─────────────────────────────────────────────────────────────────────
+function genClear() {
+  // confirm() skipped — always proceed (sandboxed environments block it)
+  genState.tiers = { easy:[], medium:[], hard:[], elite:[] };
+  document.getElementById('gen-name').value = '';
+  document.getElementById('gen-desc').value = '';
+  document.getElementById('gen-prefix').value = '';
+  document.getElementById('gen-validation').classList.remove('visible');
+  genClearForm();
+  genUpdateCounts();
+  genSwitchTier('easy');
+}
+
+</script>
+</body>
+</html>

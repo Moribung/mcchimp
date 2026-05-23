@@ -54,7 +54,9 @@ header{
   align-items:center;
   justify-content:space-between;
   padding:20px 48px;
-  background:linear-gradient(to bottom,rgba(10,10,10,0.95),transparent);
+  background:rgba(10,10,10,0.97);
+  border-bottom:1px solid rgba(255,255,255,0.06);
+  backdrop-filter:blur(12px);
 }
 
 .logo{
@@ -355,7 +357,7 @@ h1 em::after{
 /* ── HOW IT WORKS ── */
 .how-grid{
   display:grid;
-  grid-template-columns:repeat(3,1fr);
+  grid-template-columns:repeat(4,1fr);
   gap:2px;
   max-width:1100px;
 }
@@ -463,6 +465,18 @@ footer{
   border-top:1px solid rgba(255,255,255,0.06);
 }
 
+.nav-item{position:relative;display:inline-flex;}
+.nav-link-q{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-decoration:none;padding:0;display:flex;align-items:center;gap:4px;transition:color .15s;}
+.nav-link-q:hover,.nav-item:hover .nav-link-q{color:var(--white);}
+.chevron{font-size:9px;opacity:.5;transition:transform .2s;}
+.nav-item:hover .chevron{transform:rotate(180deg);}
+.dropdown{position:absolute;top:100%;left:0;min-width:240px;background:#0F1011;border:1px solid rgba(255,255,255,0.08);overflow:hidden;opacity:0;pointer-events:none;transform:translateY(-4px);transition:opacity .15s,transform .15s;z-index:300;box-shadow:0 12px 32px rgba(0,0,0,0.6);}
+.nav-item:hover .dropdown{opacity:1;pointer-events:all;transform:translateY(0);}
+.dropdown a{display:flex;flex-direction:column;padding:14px 20px;text-decoration:none;border-bottom:1px solid rgba(255,255,255,0.05);transition:background .12s;gap:3px;}
+.dropdown a:last-child{border-bottom:none;}
+.dropdown a:hover{background:#191B1D;}
+.dd-label{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--white);}
+.dd-sub{font-size:11px;color:rgba(242,239,232,0.35);}
 .footer-logo{
   font-family:'Bebas Neue',sans-serif;
   font-size:22px;
@@ -508,7 +522,8 @@ footer{
   nav{gap:20px}
   .hero{padding:100px 24px 60px}
   .section{padding:80px 24px}
-  .games-grid,.how-grid{grid-template-columns:1fr}
+  .games-grid{grid-template-columns:1fr}
+  .how-grid{grid-template-columns:1fr 1fr}
   .signup-section{flex-direction:column;gap:40px;padding:80px 24px;align-items:flex-start}
   .signup-form{width:100%}
   .signup-form input{width:100%;flex:1}
@@ -530,6 +545,14 @@ footer{
   <nav>
     <a href="#games">Games</a>
     <a href="#how">How it works</a>
+    <div class="nav-item">
+      <a class="nav-link-q" href="/questions">Questions&#8202;<span class="chevron">&#9662;</span></a>
+      <div class="dropdown">
+        <a href="/questions#ai-guide"><span class="dd-label">AI Guide</span></a>
+        <a href="/questions#sets"><span class="dd-label">Question Sets</span></a>
+        <a href="/questions#generator"><span class="dd-label">Generator</span></a>
+      </div>
+    </div>
     <a href="#contact">Contact</a>
   </nav>
 </header>
@@ -601,20 +624,26 @@ footer{
 
     <div class="how-card">
       <div class="how-num">01 / Answer</div>
-      <div class="how-title">Every Fight is a Question</div>
-      <p class="how-desc">You pick answers under a countdown timer. Nail it fast and clean — you win by KO. Scrape by and you go the distance. Miss completely and you get stopped.</p>
+      <div class="how-title">Every Match is a Question</div>
+      <p class="how-desc">Answer a trivia question under a countdown timer. Get it right and your team converts. Get it wrong and the opponent does. Speed and accuracy determine the scoreline — not luck.</p>
     </div>
 
     <div class="how-card">
-      <div class="how-num">02 / Climb</div>
+      <div class="how-num">02 / Compete</div>
       <div class="how-title">Build a Real Career</div>
-      <p class="how-desc">Start unranked in the regional circuit. Win fights, climb the rankings, earn promotion to bigger organisations. Your record is a direct reflection of your knowledge.</p>
+      <p class="how-desc">Fight your way up from the regional circuit to a world title, or guide a club from the second division to the top of the table. Every promotion, every win, every trophy — earned through knowledge.</p>
     </div>
 
     <div class="how-card">
       <div class="how-num">03 / Adapt</div>
       <div class="how-title">Questions Learn From You</div>
-      <p class="how-desc">Questions you answer correctly become easier over time. Questions you miss get harder. The game calibrates dynamically — so it's always the right challenge level.</p>
+      <p class="how-desc">Questions you get right become easier over time. Questions you miss get harder. The difficulty calibrates to your knowledge — not a fixed curve, but a moving target shaped by your own history.</p>
+    </div>
+
+    <div class="how-card">
+      <div class="how-num">04 / Decide</div>
+      <div class="how-title">Tactics Change Everything</div>
+      <p class="how-desc">Play aggressive and face more questions per match — higher risk, higher reward. Sit back defensively and face fewer. Every game lets you choose how much you want to stake on your knowledge.</p>
     </div>
 
   </div>
