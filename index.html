@@ -470,7 +470,7 @@ footer{
 .nav-link-q:hover,.nav-item:hover .nav-link-q{color:var(--white);}
 .chevron{font-size:9px;opacity:.5;transition:transform .2s;}
 .nav-item:hover .chevron{transform:rotate(180deg);}
-.dropdown{position:absolute;top:100%;left:0;min-width:240px;background:#0F1011;border:1px solid rgba(255,255,255,0.08);overflow:hidden;opacity:0;pointer-events:none;transform:translateY(-4px);transition:opacity .15s,transform .15s;z-index:300;box-shadow:0 12px 32px rgba(0,0,0,0.6);}
+.dropdown{position:absolute;top:100%;right:0;min-width:0;width:max-content;background:#0F1011;border:1px solid rgba(255,255,255,0.08);overflow:hidden;opacity:0;pointer-events:none;transform:translateY(-4px);transition:opacity .15s,transform .15s;z-index:300;box-shadow:0 12px 32px rgba(0,0,0,0.6);}
 .nav-item:hover .dropdown{opacity:1;pointer-events:all;transform:translateY(0);}
 .dropdown a{display:flex;flex-direction:column;padding:14px 20px;text-decoration:none;border-bottom:1px solid rgba(255,255,255,0.05);transition:background .12s;gap:3px;}
 .dropdown a:last-child{border-bottom:none;}
@@ -517,6 +517,17 @@ footer{
 .delay-4{animation-delay:.5s}
 
 /* ── RESPONSIVE ── */
+.hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;background:none;border:none;padding:4px;}
+.hamburger span{display:block;width:22px;height:2px;background:var(--white);border-radius:2px;transition:all .25s;}
+.hamburger.open span:nth-child(1){transform:translateY(7px) rotate(45deg);}
+.hamburger.open span:nth-child(2){opacity:0;}
+.hamburger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg);}
+.mobile-nav{display:none;position:fixed;top:0;right:0;background:rgba(10,10,10,0.98);border-left:1px solid rgba(255,255,255,0.06);border-bottom:1px solid rgba(255,255,255,0.06);z-index:150;flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:0;padding:80px 40px 32px;min-width:220px;}
+.mobile-nav.open{display:flex;}
+.mobile-nav a,.mobile-nav button{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:.06em;color:var(--white);text-decoration:none;background:none;border:none;cursor:pointer;padding:6px 0;transition:color .15s;display:block;width:100%;}
+.mobile-nav a:hover,.mobile-nav button:hover{color:var(--gold);}
+.mobile-nav-close{position:absolute;top:20px;right:20px;background:none;border:none;color:var(--muted);cursor:pointer;font-size:22px;line-height:1;transition:color .15s;}.mobile-nav-close:hover{color:var(--white);}
+
 @media(max-width:900px){
   header{padding:16px 24px}
   nav{gap:20px}
@@ -532,8 +543,8 @@ footer{
 }
 
 @media(max-width:600px){
-  nav .nav-cta{display:none}
-  nav a:not(.nav-cta){display:none}
+  nav > a, nav > .nav-item { display:none; }
+  .hamburger { display:flex; }
   h1{font-size:64px}
 }
 </style>
@@ -555,6 +566,9 @@ footer{
     </div>
     <a href="#contact">Contact</a>
   </nav>
+  <button class="hamburger" id="hamburger" onclick="toggleMobileNav()" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
 </header>
 
 <!-- HERO -->
@@ -694,5 +708,24 @@ document.querySelectorAll('.game-card,.how-card').forEach(el => {
 });
 </script>
 
+<div class="mobile-nav" id="mobile-nav">
+  <button class="mobile-nav-close" onclick="toggleMobileNav()">&#215;</button>
+  <a href="#games"               onclick="toggleMobileNav()">Games</a>
+  <a href="#how"                 onclick="toggleMobileNav()">How It Works</a>
+  <a href="/questions"           onclick="toggleMobileNav()">Questions</a>
+  <a href="/questions#ai-guide"  onclick="toggleMobileNav()" style="font-size:20px;color:var(--muted);padding:3px 0;padding-left:12px;">AI Guide</a>
+  <a href="/questions#sets"      onclick="toggleMobileNav()" style="font-size:20px;color:var(--muted);padding:3px 0;padding-left:12px;">Question Sets</a>
+  <a href="/questions#generator" onclick="toggleMobileNav()" style="font-size:20px;color:var(--muted);padding:3px 0;padding-left:12px;">Generator</a>
+  <a href="#contact"             onclick="toggleMobileNav()">Contact</a>
+</div>
+<script>
+function toggleMobileNav(){
+  const nav = document.getElementById('mobile-nav');
+  const btn = document.getElementById('hamburger');
+  nav.classList.toggle('open');
+  btn.classList.toggle('open');
+  
+}
+</script>
 </body>
 </html>
