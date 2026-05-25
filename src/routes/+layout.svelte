@@ -53,7 +53,7 @@
     <a href="/#contact">Contact</a>
     {#if $session}
   <div class="nav-item">
-    <a class="nav-link-q nav-login" href="/account">{displayName || 'Account'}&#8202;<span class="chevron">&#9662;</span></a>
+    <a class="nav-link-q nav-login" href="/dashboard">{displayName || 'Account'}&#8202;<span class="chevron">&#9662;</span></a>
     <div class="dropdown">
       <a href="/dashboard"><span class="dd-label">Dashboard</span></a>
       <a href="/account"><span class="dd-label">Settings</span></a>
