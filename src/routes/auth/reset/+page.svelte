@@ -1,25 +1,38 @@
 <script>
   import { supabase } from '$lib/supabase';
+  import { goto } from '$app/navigation';
+  import { onMount } from 'svelte';
 
-  let email = $state('');
+  let password = $state('');
+  let confirmPassword = $state('');
   let error = $state('');
-  let submitted = $state(false);
   let loading = $state(false);
+  let ready = $state(false);
+
+  onMount(async () => {
+    // Supabase puts the token in the URL hash — getSession picks it up automatically
+    const { data } = await supabase.auth.getSession();
+    if (data.session) {
+      ready = true;
+    } else {
+      goto('/auth/forgot');
+    }
+  });
 
   async function handleSubmit() {
     error = '';
-    if (!email) { error = 'Please enter your email address.'; return; }
+    if (!password) { error = 'Please enter a new password.'; return; }
+    if (password.length < 8) { error = 'Password must be at least 8 characters.'; return; }
+    if (password !== confirmPassword) { error = 'Passwords do not match.'; return; }
+
     loading = true;
-
-    const { error: authError } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: 'https://mcchimp.com/auth/reset'
-    });
-
+    const { error: updateError } = await supabase.auth.updateUser({ password });
     loading = false;
-    if (authError) {
-      error = authError.message;
+
+    if (updateError) {
+      error = updateError.message;
     } else {
-      submitted = true;
+      goto('/account');
     }
   }
 </script>
@@ -33,16 +46,11 @@
 
     <a href="/" class="auth-logo">Mc<span>Chimp</span></a>
 
-    {#if submitted}
-      <div class="success-state">
-        <div class="success-icon">✓</div>
-        <h1>Check your email</h1>
-        <p>If an account exists for <strong>{email}</strong>, we've sent a password reset link. Check your inbox and spam folder.</p>
-        <a href="/auth/login" class="btn-back">Back to Login</a>
-      </div>
+    {#if !ready}
+      <p class="auth-sub">Verifying your reset link…</p>
     {:else}
-      <h1>Reset password</h1>
-      <p class="auth-sub">Enter your email and we'll send you a reset link.</p>
+      <h1>New Password</h1>
+      <p class="auth-sub">Enter your new password below.</p>
 
       <div class="auth-form">
         {#if error}
@@ -50,23 +58,30 @@
         {/if}
 
         <div class="field">
-          <label for="email">Email</label>
+          <label for="password">New Password</label>
           <input
-            id="email"
-            type="email"
-            bind:value={email}
-            placeholder="you@example.com"
-            autocomplete="email"
+            id="password"
+            type="password"
+            bind:value={password}
+            placeholder="Min. 8 characters"
+            autocomplete="new-password"
+          />
+        </div>
+
+        <div class="field">
+          <label for="confirm">Confirm Password</label>
+          <input
+            id="confirm"
+            type="password"
+            bind:value={confirmPassword}
+            placeholder="Repeat new password"
+            autocomplete="new-password"
           />
         </div>
 
         <button class="btn-submit" onclick={handleSubmit} disabled={loading}>
-          {loading ? 'Sending…' : 'Send Reset Link'}
+          {loading ? 'Saving…' : 'Set New Password'}
         </button>
-      </div>
-
-      <div class="auth-footer">
-        <a href="/auth/login">← Back to Login</a>
       </div>
     {/if}
 
@@ -156,56 +171,4 @@
   }
   .btn-submit:hover:not(:disabled) { background: var(--gold2); }
   .btn-submit:disabled { opacity: .5; cursor: not-allowed; }
-  .auth-footer {
-    text-align: center;
-    font-size: 13px;
-    color: var(--muted);
-    margin-top: 28px;
-  }
-  .auth-footer a { color: var(--muted); text-decoration: none; transition: color .15s; }
-  .auth-footer a:hover { color: var(--white); }
-  .coming-soon-note {
-    margin-top: 20px;
-    padding: 12px 16px;
-    background: rgba(232,193,74,0.05);
-    border: 1px solid rgba(232,193,74,0.15);
-    border-radius: 3px;
-    font-size: 12px;
-    color: rgba(232,193,74,0.6);
-    text-align: center;
-    line-height: 1.5;
-  }
-  .success-state { text-align: center; }
-  .success-icon {
-    width: 52px;
-    height: 52px;
-    border-radius: 50%;
-    background: rgba(46,139,87,0.15);
-    border: 1px solid rgba(46,139,87,0.3);
-    color: #4CAF85;
-    font-size: 22px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 24px;
-  }
-  .success-state h1 { margin-bottom: 12px; }
-  .success-state p { font-size: 14px; color: var(--muted); line-height: 1.6; margin-bottom: 32px; }
-  .success-state p strong { color: var(--white); }
-  .btn-back {
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: 14px;
-    font-weight: 700;
-    letter-spacing: .1em;
-    text-transform: uppercase;
-    background: transparent;
-    color: var(--white);
-    border: 1px solid rgba(255,255,255,0.15);
-    padding: 12px 32px;
-    border-radius: 3px;
-    text-decoration: none;
-    display: inline-block;
-    transition: border-color .15s;
-  }
-  .btn-back:hover { border-color: rgba(255,255,255,0.4); }
 </style>

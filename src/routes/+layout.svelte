@@ -1,13 +1,31 @@
 <script>
   import { page } from '$app/stores';
+  import { session } from '$lib/stores/session';
+  import { supabase } from '$lib/supabase';
 
   let { children } = $props();
 
   let mobileNavOpen = $state(false);
+  let displayName = $state('');
 
   function toggleMobileNav() {
     mobileNavOpen = !mobileNavOpen;
   }
+
+  $effect(() => {
+    if ($session) {
+      supabase
+        .from('profiles')
+        .select('display_name')
+        .eq('id', $session.user.id)
+        .single()
+        .then(({ data }) => {
+          if (data) displayName = data.display_name;
+        });
+    } else {
+      displayName = '';
+    }
+  });
 </script>
 
 <svelte:head>
@@ -33,7 +51,17 @@
       </div>
     </div>
     <a href="/#contact">Contact</a>
-    <a href="/auth/login" class="nav-login">Login</a>
+    {#if $session}
+  <div class="nav-item">
+    <a class="nav-link-q nav-login" href="/account">{displayName || 'Account'}&#8202;<span class="chevron">&#9662;</span></a>
+    <div class="dropdown">
+      <a href="/dashboard"><span class="dd-label">Dashboard</span></a>
+      <a href="/account"><span class="dd-label">Settings</span></a>
+    </div>
+  </div>
+  {:else}
+  <a href="/auth/login" class="nav-login">Login</a>
+  {/if}
   </nav>
   <button class="hamburger" class:open={mobileNavOpen} onclick={toggleMobileNav} aria-label="Menu">
     <span></span><span></span><span></span>
@@ -49,7 +77,13 @@
   <a href="/questions#sets"      onclick={toggleMobileNav} style="font-size:20px;color:var(--muted);padding:3px 0;padding-left:12px;">Question Sets</a>
   <a href="/questions#generator" onclick={toggleMobileNav} style="font-size:20px;color:var(--muted);padding:3px 0;padding-left:12px;">Generator</a>
   <a href="/#contact"            onclick={toggleMobileNav}>Contact</a>
-  <a href="/auth/login"          onclick={toggleMobileNav} class="mobile-login">Login</a>
+  {#if $session}
+  <a href="/account" onclick={toggleMobileNav}>{displayName || 'Account'}</a>
+  <a href="/dashboard" onclick={toggleMobileNav} style="font-size:20px;color:var(--muted);padding:3px 0;padding-left:12px;">Dashboard</a>
+  <a href="/account" onclick={toggleMobileNav} style="font-size:20px;color:var(--muted);padding:3px 0;padding-left:12px;">Settings</a>
+  {:else}
+  <a href="/auth/login" onclick={toggleMobileNav} class="mobile-login">Login</a>
+  {/if}
 </div>
 
 {@render children()}
@@ -280,19 +314,24 @@
   .footer-copy { font-size: 12px; color: rgba(107,107,107,0.6); letter-spacing: .04em; }
 
   .nav-login {
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: 13px !important;
-    font-weight: 700 !important;
-    letter-spacing: .1em;
-    text-transform: uppercase;
-    color: var(--gold) !important;
-    border: 1px solid rgba(232,193,74,0.4);
-    padding: 7px 18px !important;
-    border-radius: 2px;
-    text-decoration: none;
-    transition: background .2s, border-color .2s;
-    margin-left: 8px;
-  }
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--gold) !important;
+  border: 1px solid rgba(232,193,74,0.4);
+  padding: 7px 18px !important;
+  border-radius: 2px;
+  text-decoration: none;
+  transition: background .2s, border-color .2s;
+  margin-left: 8px;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-block;
+}
   .nav-login:hover {
     background: rgba(232,193,74,0.08) !important;
     border-color: var(--gold);
@@ -305,7 +344,7 @@
     footer { flex-direction: column; gap: 24px; text-align: center; padding: 40px 24px; }
     .footer-links { flex-wrap: wrap; justify-content: center; }
   }
-  @media (max-width: 600px) {
+  @media (max-width: 768px) {
     nav > a, nav > .nav-item, nav > .nav-login { display: none; }
     .hamburger { display: flex; }
   }

@@ -1,6 +1,7 @@
 <script>
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
+  import { fetchAllSets } from '$lib/questions';
 
   // ── TAB STATE ──
   const TABS = ['overview', 'ai-guide', 'sets', 'generator'];
@@ -16,12 +17,10 @@
   }
 
   onMount(() => {
-    // Set initial tab from hash
     const hash = window.location.hash.replace('#', '');
     if (TABS.includes(hash)) activeTab = hash;
     if (hash === 'sets') loadSets();
 
-    // Listen for hash changes (e.g. nav dropdown clicks)
     function handleHash() {
       const h = window.location.hash.replace('#', '');
       if (TABS.includes(h)) switchTab(h);
@@ -29,7 +28,6 @@
     }
     window.addEventListener('hashchange', handleHash);
 
-    // Guide download blob
     const blob = new Blob([GUIDE_MD], { type: 'text/markdown' });
     guideDownloadUrl = URL.createObjectURL(blob);
 
@@ -39,25 +37,14 @@
   // ── QUESTION SETS ──
   let setsLoaded = false;
   let sets = $state([]);
-  let setsStatus = $state('idle'); // idle | loading | error
+  let setsStatus = $state('idle');
   let previewOpen = $state({});
 
   async function loadSets() {
     setsLoaded = true;
     setsStatus = 'loading';
     try {
-      const res = await fetch('/questions/index.json');
-      if (!res.ok) throw new Error('index.json not found');
-      const files = await res.json();
-      const results = await Promise.all(files.map(async filename => {
-        try {
-          const r = await fetch('/questions/' + filename);
-          if (!r.ok) throw new Error();
-          const data = await r.json();
-          return { filename, data };
-        } catch { return { filename, data: null }; }
-      }));
-      sets = results;
+      sets = await fetchAllSets();
       setsStatus = 'done';
     } catch(e) {
       setsStatus = 'error';
@@ -86,95 +73,7 @@
   }
 
   // ── AI GUIDE ──
-  const GUIDE_MD = `# McChimp — Question File Guide
-
-## File format
-
-A question module is a single .json file:
-
-{
-  "name": "Module Name",
-  "description": "One-line description (optional)",
-  "tiers": {
-    "easy":   [ ...questions ],
-    "medium": [ ...questions ],
-    "hard":   [ ...questions ],
-    "elite":  [ ...questions ]
-  }
-}
-
-You do not need all four tiers.
-
-## Question object
-
-{
-  "id": "PREFIX-TI-001",
-  "question": "What is the question text?",
-  "options": ["Option A", "Option B", "Option C", "Option D"],
-  "answers": [0],
-  "explanation": "Shown after the answer is revealed. Optional."
-}
-
-Fields:
-- id (recommended): stable string, unique within module. Format: ABC-EA-001
-- question (required): plain text
-- options (required): array of 2–7 strings
-- answers (required): array of zero-based indices. At least one.
-- explanation (optional): shown after reveal
-
-## Difficulty tiers
-
-easy   → early career / lower-ranked opponents
-medium → mid-career / mid-ranked opponents
-hard   → top organisations / ranked opponents
-elite  → title fights and championships
-
-The game shifts effective tier at runtime based on player history (+1 correct, −1 wrong). Write each question at its genuine difficulty — do not compensate for this.
-
-## Single-answer vs multi-select
-
-Single: "answers": [2]
-Multi:  "answers": [0, 2, 3, 4]
-        Question text should say "Select all that apply."
-        Wrong selections subtract a point — guessing is penalised.
-
-## ID format: PREFIX-TI-NNN
-
-PREFIX: 2–4 uppercase letters (MMA, HIS, SCI)
-TI: EA (easy) / ME (medium) / HA (hard) / EL (elite)
-NNN: zero-padded number (001, 002...)
-Example: SCI-HA-007
-
-IDs must be unique within a module.
-
-## Quantity guidelines
-
-| Tier   | Minimum | Comfortable |
-|--------|---------|-------------|
-| easy   | 10      | 20+         |
-| medium | 10      | 20+         |
-| hard   | 10      | 20+         |
-| elite  | 5       | 15+         |
-
-Fewer than ~40 total questions will cause repeats in a long career.
-
-## Minimal valid example
-
-{
-  "name": "My Module",
-  "tiers": {
-    "easy": [
-      {
-        "id": "MY-EA-001",
-        "question": "What does MMA stand for?",
-        "options": ["Mixed Martial Arts", "Modern Martial Arts", "Mixed Match Athletics"],
-        "answers": [0],
-        "explanation": "MMA stands for Mixed Martial Arts."
-      }
-    ]
-  }
-}
-`;
+  const GUIDE_MD = "# McChimp — Question File Guide\n\n## File format\n\nA question module is a single .json file:\n\n{\n  \"name\": \"Module Name\",\n  \"description\": \"One-line description (optional)\",\n  \"tiers\": {\n    \"easy\":   [ ...questions ],\n    \"medium\": [ ...questions ],\n    \"hard\":   [ ...questions ],\n    \"elite\":  [ ...questions ]\n  }\n}\n\nYou do not need all four tiers.\n\n## Question object\n\n{\n  \"id\": \"PREFIX-TI-001\",\n  \"question\": \"What is the question text?\",\n  \"options\": [\"Option A\", \"Option B\", \"Option C\", \"Option D\"],\n  \"answers\": [0],\n  \"explanation\": \"Shown after the answer is revealed. Optional.\"\n}\n\nFields:\n- id (recommended): stable string, unique within module. Format: ABC-EA-001\n- question (required): plain text\n- options (required): array of 2-7 strings\n- answers (required): array of zero-based indices. At least one.\n- explanation (optional): shown after reveal\n\n## Difficulty tiers\n\neasy   -> early career / lower-ranked opponents\nmedium -> mid-career / mid-ranked opponents\nhard   -> top organisations / ranked opponents\nelite  -> title fights and championships\n\nThe game shifts effective tier at runtime based on player history (+1 correct, -1 wrong). Write each question at its genuine difficulty.\n\n## Single-answer vs multi-select\n\nSingle: \"answers\": [2]\nMulti:  \"answers\": [0, 2, 3, 4]\n        Question text should say \"Select all that apply.\"\n        Wrong selections subtract a point - guessing is penalised.\n\n## ID format: PREFIX-TI-NNN\n\nPREFIX: 2-4 uppercase letters (MMA, HIS, SCI)\nTI: EA (easy) / ME (medium) / HA (hard) / EL (elite)\nNNN: zero-padded number (001, 002...)\nExample: SCI-HA-007\n\nIDs must be unique within a module.\n\n## Quantity guidelines\n\n| Tier   | Minimum | Comfortable |\n|--------|---------|-------------|\n| easy   | 10      | 20+         |\n| medium | 10      | 20+         |\n| hard   | 10      | 20+         |\n| elite  | 5       | 15+         |\n\nFewer than ~40 total questions will cause repeats in a long career.\n\n## Minimal valid example\n\n{\n  \"name\": \"My Module\",\n  \"tiers\": {\n    \"easy\": [\n      {\n        \"id\": \"MY-EA-001\",\n        \"question\": \"What does MMA stand for?\",\n        \"options\": [\"Mixed Martial Arts\", \"Modern Martial Arts\", \"Mixed Match Athletics\"],\n        \"answers\": [0],\n        \"explanation\": \"MMA stands for Mixed Martial Arts.\"\n      }\n    ]\n  }\n}\n";
 
   let guideDownloadUrl = $state('');
   let copiedGuide = $state(false);
@@ -215,7 +114,7 @@ Fewer than ~40 total questions will cause repeats in a long career.
   ]);
   let genAddErr = $state('');
   let genValidationIssues = $state([]);
-  let editingQ = $state(null); // { tier, idx }
+  let editingQ = $state(null);
   let editText = $state('');
   let editOptions = $state([]);
   let editExplanation = $state('');
@@ -445,21 +344,21 @@ Fewer than ~40 total questions will cause repeats in a long career.
   </div>
 
   <div class="tab-cards">
-    <div class="tab-card" onclick={() => switchTab('ai-guide')} role="button" tabindex="0">
+    <button class="tab-card" onclick={() => switchTab('ai-guide')}>
       <div class="tc-title">AI Guide</div>
       <p class="tc-desc">Learn how to prompt an AI assistant to generate a fully compatible question set. Includes a downloadable instruction file.</p>
       <div class="tc-arrow">Go to AI Guide</div>
-    </div>
-    <div class="tab-card" onclick={() => switchTab('sets')} role="button" tabindex="0">
+    </button>
+    <button class="tab-card" onclick={() => switchTab('sets')}>
       <div class="tc-title">Question Sets</div>
       <p class="tc-desc">Browse and download our native question sets. Each is ready to drop into any McChimp game immediately.</p>
       <div class="tc-arrow">Browse Sets</div>
-    </div>
-    <div class="tab-card" onclick={() => switchTab('generator')} role="button" tabindex="0">
+    </button>
+    <button class="tab-card" onclick={() => switchTab('generator')}>
       <div class="tc-title">Generator</div>
       <p class="tc-desc">Build a question set from scratch in the browser. Add questions, set difficulty, mark correct answers, then download as JSON.</p>
       <div class="tc-arrow">Open Generator</div>
-    </div>
+    </button>
   </div>
 </div>
 {/if}
@@ -645,16 +544,16 @@ Fewer than ~40 total questions will cause repeats in a long career.
     <div>
       <div class="gen-section-label">Set Details</div>
       <div class="gen-field">
-        <label class="gen-label">Name</label>
-        <input class="gen-input" bind:value={genName} oninput={genNameChanged} placeholder="e.g. European History">
+        <label class="gen-label" for="gen-name">Name</label>
+        <input id="gen-name" class="gen-input" bind:value={genName} oninput={genNameChanged} placeholder="e.g. European History">
       </div>
       <div class="gen-field">
-        <label class="gen-label">ID Prefix <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;">(3–4 letters)</span></label>
-        <input class="gen-input" bind:value={genPrefix} placeholder="e.g. HIS" maxlength="4" style="text-transform:uppercase;" oninput={() => genPrefix = genPrefix.toUpperCase().replace(/[^A-Z]/g,'')}>
+        <label class="gen-label" for="gen-prefix">ID Prefix <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;">(3–4 letters)</span></label>
+        <input id="gen-prefix" class="gen-input" bind:value={genPrefix} placeholder="e.g. HIS" maxlength="4" style="text-transform:uppercase;" oninput={() => genPrefix = genPrefix.toUpperCase().replace(/[^A-Z]/g,'')}>
       </div>
       <div class="gen-field">
-        <label class="gen-label">Description</label>
-        <textarea class="gen-textarea" bind:value={genDesc} placeholder="One sentence describing the set"></textarea>
+        <label class="gen-label" for="gen-desc">Description</label>
+        <textarea id="gen-desc" class="gen-textarea" bind:value={genDesc} placeholder="One sentence describing the set"></textarea>
       </div>
     </div>
 
@@ -693,13 +592,13 @@ Fewer than ~40 total questions will cause repeats in a long career.
       <div class="gen-form-title">Add Question</div>
 
       <div class="gen-field">
-        <label class="gen-label">Question Text</label>
-        <textarea class="gen-textarea" bind:value={genQText} placeholder="Enter your question here…" style="min-height:72px;"></textarea>
+        <label class="gen-label" for="gen-qtext">Question Text</label>
+        <textarea id="gen-qtext" class="gen-textarea" bind:value={genQText} placeholder="Enter your question here…" style="min-height:72px;"></textarea>
       </div>
 
       <div class="gen-field">
-        <label class="gen-label">Answer Options <span style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;">— click checkmark to mark correct</span></label>
-        <div class="options-list">
+        <label class="gen-label" for="gen-options">Answer Options <span style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;">— click checkmark to mark correct</span></label>
+        <div id="gen-options" class="options-list">
           {#each genOptions as opt, i}
             <div class="option-row">
               <button
@@ -707,7 +606,7 @@ Fewer than ~40 total questions will cause repeats in a long career.
                 class="option-correct"
                 class:marked={opt.correct}
                 onclick={() => genToggleCorrect(i)}
-                title="Mark as correct answer"
+                aria-label="Mark as correct answer"
               ></button>
               <input class="option-text" bind:value={opt.text} placeholder="Option {i + 1}">
               <button type="button" class="option-del" onclick={() => genRemoveOption(i)}>&#215;</button>
@@ -722,8 +621,8 @@ Fewer than ~40 total questions will cause repeats in a long career.
 
       <div class="gen-row">
         <div class="gen-field" style="margin-bottom:0">
-          <label class="gen-label">Difficulty</label>
-          <select class="diff-select" bind:value={genDiff}>
+          <label class="gen-label" for="gen-diff">Difficulty</label>
+          <select id="gen-diff" class="diff-select" bind:value={genDiff}>
             <option value="easy">Easy</option>
             <option value="medium">Medium</option>
             <option value="hard">Hard</option>
@@ -731,8 +630,8 @@ Fewer than ~40 total questions will cause repeats in a long career.
           </select>
         </div>
         <div class="gen-field" style="margin-bottom:0">
-          <label class="gen-label">Explanation <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;">(optional)</span></label>
-          <input class="gen-input" bind:value={genExplanation} placeholder="Shown after answer reveal">
+          <label class="gen-label" for="gen-explanation">Explanation <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;">(optional)</span></label>
+          <input id="gen-explanation" class="gen-input" bind:value={genExplanation} placeholder="Shown after answer reveal">
         </div>
       </div>
 
@@ -771,6 +670,7 @@ Fewer than ~40 total questions will cause repeats in a long career.
                           class="option-correct"
                           class:marked={opt.correct}
                           onclick={() => editOptions = editOptions.map((o,j) => j===oi ? {...o,correct:!o.correct} : o)}
+                          aria-label="Mark as correct answer"
                         ></button>
                         <input class="option-text" bind:value={opt.text}>
                       </div>
@@ -845,7 +745,7 @@ Fewer than ~40 total questions will cause repeats in a long career.
   .pill-elite { background: rgba(180,74,232,0.12); color: #C07AEA; border: 1px solid rgba(180,74,232,0.3); }
   .mma-badge { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; background: rgba(232,193,74,0.1); color: var(--gold); border: 1px solid rgba(232,193,74,0.25); padding: 3px 8px; border-radius: 2px; vertical-align: middle; margin-left: 8px; }
   .tab-cards { display: grid; grid-template-columns: repeat(3,1fr); gap: 2px; max-width: 1000px; }
-  .tab-card { background: var(--surface); padding: 36px; border: 1px solid rgba(255,255,255,0.04); cursor: pointer; transition: background .2s; }
+  .tab-card { background: var(--surface); padding: 36px; border: 1px solid rgba(255,255,255,0.04); cursor: pointer; transition: background .2s; text-align: left; width: 100%; display: block; }
   .tab-card:hover { background: #1E2023; }
   .tab-card:hover .tc-arrow { transform: translate(3px,-3px); }
   .tc-title { font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: .04em; color: var(--white); margin-bottom: 8px; }

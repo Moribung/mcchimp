@@ -1,20 +1,33 @@
 <script>
+  import { supabase } from '$lib/supabase';
+  import { goto } from '$app/navigation';
+
   let email = $state('');
   let password = $state('');
   let displayName = $state('');
   let error = $state('');
   let loading = $state(false);
 
-  function handleSubmit() {
+  async function handleSubmit() {
     error = '';
     if (!email || !password || !displayName) { error = 'Please fill in all fields.'; return; }
     if (password.length < 8) { error = 'Password must be at least 8 characters.'; return; }
     loading = true;
-    // Phase 1: Supabase auth goes here
-    setTimeout(() => {
+
+    const { error: authError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { display_name: displayName }
+      }
+    });
+
+    if (authError) {
+      error = authError.message;
       loading = false;
-      error = 'Accounts are coming soon — check back shortly.';
-    }, 600);
+    } else {
+      goto('/auth/verify');
+    }
   }
 </script>
 
@@ -93,11 +106,6 @@
     <div class="auth-footer">
       Already have an account? <a href="/auth/login">Login</a>
     </div>
-
-    <div class="coming-soon-note">
-      ⚡ Accounts are coming soon. Games are fully playable without an account.
-    </div>
-
   </div>
 </div>
 
@@ -237,17 +245,5 @@
     color: var(--gold);
     text-decoration: none;
     font-weight: 600;
-  }
-  .auth-footer a:hover { text-decoration: underline; }
-  .coming-soon-note {
-    margin-top: 20px;
-    padding: 12px 16px;
-    background: rgba(232,193,74,0.05);
-    border: 1px solid rgba(232,193,74,0.15);
-    border-radius: 3px;
-    font-size: 12px;
-    color: rgba(232,193,74,0.6);
-    text-align: center;
-    line-height: 1.5;
   }
 </style>
