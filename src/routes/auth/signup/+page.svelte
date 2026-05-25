@@ -55,7 +55,7 @@
           bind:value={displayName}
           placeholder="e.g. Jake The Hammer"
           autocomplete="nickname"
-          maxlength="32"
+          maxlength="20"
         />
       </div>
 

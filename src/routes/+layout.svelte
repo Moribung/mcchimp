@@ -78,7 +78,7 @@
   <a href="/questions#generator" onclick={toggleMobileNav} style="font-size:20px;color:var(--muted);padding:3px 0;padding-left:12px;">Generator</a>
   <a href="/#contact"            onclick={toggleMobileNav}>Contact</a>
   {#if $session}
-  <a href="/account" onclick={toggleMobileNav}>{displayName || 'Account'}</a>
+  <a href="/dashboard" onclick={toggleMobileNav} style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{displayName || 'Account'}</a>
   <a href="/dashboard" onclick={toggleMobileNav} style="font-size:20px;color:var(--muted);padding:3px 0;padding-left:12px;">Dashboard</a>
   <a href="/account" onclick={toggleMobileNav} style="font-size:20px;color:var(--muted);padding:3px 0;padding-left:12px;">Settings</a>
   {:else}
