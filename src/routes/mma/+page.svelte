@@ -1,8 +1,43 @@
 <script>
   import { onMount } from 'svelte';
-  onMount(() => {
+  import { supabase } from '$lib/supabase';
+
+  let displayName = $state('');
+  let loggedIn = $state(false);
+
+  onMount(async () => {
     document.body.classList.add('game-page');
-    return () => document.body.classList.remove('game-page');
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      loggedIn = true;
+      const { data } = await supabase
+        .from('profiles')
+        .select('display_name')
+        .eq('id', session.user.id)
+        .single();
+      if (data) displayName = data.display_name;
+    }
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session) {
+        loggedIn = true;
+        const { data } = await supabase
+          .from('profiles')
+          .select('display_name')
+          .eq('id', session.user.id)
+          .single();
+        if (data) displayName = data.display_name;
+      } else {
+        loggedIn = false;
+        displayName = '';
+      }
+    });
+
+    return () => {
+      document.body.classList.remove('game-page');
+      subscription.unsubscribe();
+    };
   });
 </script>
 
@@ -14,7 +49,11 @@
 <div class="back-bar">
   <a href="/games" class="back-btn">← Back to Games</a>
   <span class="back-title">MMA Career Trivia</span>
-  <a href="/auth/login" class="back-login">Login</a>
+  {#if loggedIn}
+    <a href="/account" class="back-login" style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{displayName || 'Account'}</a>
+  {:else}
+    <a href="/auth/login" class="back-login">Login</a>
+  {/if}
 </div>
 
 <div class="game-wrap">
