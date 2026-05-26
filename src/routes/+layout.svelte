@@ -30,7 +30,7 @@
 
 <svelte:head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>McChimp — Know Your Sport</title>
   <meta name="description" content="Sports trivia games that actually test you. MMA, Football and more." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -43,25 +43,28 @@
     <a href="/games">Games</a>
     <a href="/#how">How it works</a>
     <div class="nav-item">
-      <a class="nav-link-q" href="/questions" onclick={() => { if (window.location.pathname === '/questions') { window.location.hash = ''; history.replaceState(null, '', '/questions'); window.dispatchEvent(new HashChangeEvent('hashchange')); } }}>Questions&#8202;<span class="chevron">&#9662;</span></a>
+      <a class="nav-link-q" href="/questions">Questions&#8202;<span class="chevron">&#9662;</span></a>
       <div class="dropdown">
-        <a href="/questions#ai-guide"><span class="dd-label">AI Guide</span></a>
-        <a href="/questions#sets"><span class="dd-label">Question Sets</span></a>
-        <a href="/questions#generator"><span class="dd-label">Generator</span></a>
+        <a href="/questions/sets"><span class="dd-label">Question Sets</span></a>
+        <a href="/questions/guide"><span class="dd-label">AI Guide</span></a>
+        <a href="/questions/generator"><span class="dd-label">Generator</span></a>
+        {#if $session}
+          <a href="/questions/library"><span class="dd-label">My Library</span></a>
+        {/if}
       </div>
     </div>
     <a href="/#contact">Contact</a>
     {#if $session}
-  <div class="nav-item">
-    <a class="nav-link-q nav-login" href="/account">{displayName || 'Account'}&#8202;<span class="chevron">&#9662;</span></a>
-    <div class="dropdown">
-      <a href="/dashboard"><span class="dd-label">Dashboard</span></a>
-      <a href="/account"><span class="dd-label">Settings</span></a>
-    </div>
-  </div>
-  {:else}
-  <a href="/auth/login" class="nav-login">Login</a>
-  {/if}
+      <div class="nav-item">
+        <a class="nav-link-q nav-login" href="/account">{displayName || 'Account'}&#8202;<span class="chevron">&#9662;</span></a>
+        <div class="dropdown">
+          <a href="/dashboard"><span class="dd-label">Dashboard</span></a>
+          <a href="/account"><span class="dd-label">Settings</span></a>
+        </div>
+      </div>
+    {:else}
+      <a href="/auth/login" class="nav-login">Login</a>
+    {/if}
   </nav>
   <button class="hamburger" class:open={mobileNavOpen} onclick={toggleMobileNav} aria-label="Menu">
     <span></span><span></span><span></span>
@@ -70,19 +73,22 @@
 
 <div class="mobile-nav" class:open={mobileNavOpen}>
   <button class="mobile-nav-close" onclick={toggleMobileNav}>&#215;</button>
-  <a href="/games"              onclick={toggleMobileNav}>Games</a>
-  <a href="/#how"                onclick={toggleMobileNav}>How It Works</a>
-  <a href="/questions"           onclick={toggleMobileNav}>Questions</a>
-  <a href="/questions#ai-guide"  onclick={toggleMobileNav} style="font-size:20px;color:var(--muted);padding:3px 0;padding-left:12px;">AI Guide</a>
-  <a href="/questions#sets"      onclick={toggleMobileNav} style="font-size:20px;color:var(--muted);padding:3px 0;padding-left:12px;">Question Sets</a>
-  <a href="/questions#generator" onclick={toggleMobileNav} style="font-size:20px;color:var(--muted);padding:3px 0;padding-left:12px;">Generator</a>
-  <a href="/#contact"            onclick={toggleMobileNav}>Contact</a>
+  <a href="/games" onclick={toggleMobileNav}>Games</a>
+  <a href="/#how" onclick={toggleMobileNav}>How It Works</a>
+  <a href="/questions" onclick={toggleMobileNav}>Questions</a>
+  <a href="/questions/sets"      onclick={toggleMobileNav} style="font-size:20px;color:var(--muted);padding:3px 0;padding-left:12px;">Question Sets</a>
+  <a href="/questions/guide"     onclick={toggleMobileNav} style="font-size:20px;color:var(--muted);padding:3px 0;padding-left:12px;">AI Guide</a>
+  <a href="/questions/generator" onclick={toggleMobileNav} style="font-size:20px;color:var(--muted);padding:3px 0;padding-left:12px;">Generator</a>
   {#if $session}
-  <a href="/dashboard" onclick={toggleMobileNav} style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{displayName || 'Account'}</a>
-  <a href="/dashboard" onclick={toggleMobileNav} style="font-size:20px;color:var(--muted);padding:3px 0;padding-left:12px;">Dashboard</a>
-  <a href="/account" onclick={toggleMobileNav} style="font-size:20px;color:var(--muted);padding:3px 0;padding-left:12px;">Settings</a>
+    <a href="/questions/library" onclick={toggleMobileNav} style="font-size:20px;color:var(--muted);padding:3px 0;padding-left:12px;">My Library</a>
+  {/if}
+  <a href="/#contact" onclick={toggleMobileNav}>Contact</a>
+  {#if $session}
+    <a href="/dashboard" onclick={toggleMobileNav} style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{displayName || 'Account'}</a>
+    <a href="/dashboard" onclick={toggleMobileNav} style="font-size:20px;color:var(--muted);padding:3px 0;padding-left:12px;">Dashboard</a>
+    <a href="/account"   onclick={toggleMobileNav} style="font-size:20px;color:var(--muted);padding:3px 0;padding-left:12px;">Settings</a>
   {:else}
-  <a href="/auth/login" onclick={toggleMobileNav} class="mobile-login">Login</a>
+    <a href="/auth/login" onclick={toggleMobileNav} class="mobile-login">Login</a>
   {/if}
 </div>
 
@@ -144,6 +150,7 @@
     align-items: center;
     justify-content: space-between;
     padding: 20px 48px;
+    padding-top: max(20px, env(safe-area-inset-top));
     background: rgba(10,10,10,0.97);
     border-bottom: 1px solid rgba(255,255,255,0.06);
     backdrop-filter: blur(12px);
@@ -314,24 +321,24 @@
   .footer-copy { font-size: 12px; color: rgba(107,107,107,0.6); letter-spacing: .04em; }
 
   .nav-login {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-size: 13px !important;
-  font-weight: 700 !important;
-  letter-spacing: .1em;
-  text-transform: uppercase;
-  color: var(--gold) !important;
-  border: 1px solid rgba(232,193,74,0.4);
-  padding: 7px 18px !important;
-  border-radius: 2px;
-  text-decoration: none;
-  transition: background .2s, border-color .2s;
-  margin-left: 8px;
-  max-width: 140px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  display: inline-block;
-}
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--gold) !important;
+    border: 1px solid rgba(232,193,74,0.4);
+    padding: 7px 18px !important;
+    border-radius: 2px;
+    text-decoration: none;
+    transition: background .2s, border-color .2s;
+    margin-left: 8px;
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-block;
+  }
   .nav-login:hover {
     background: rgba(232,193,74,0.08) !important;
     border-color: var(--gold);
@@ -348,5 +355,5 @@
     nav > a, nav > .nav-item, nav > .nav-login { display: none; }
     .hamburger { display: flex; }
   }
-:global(body.game-page) header { display: none; }
+  :global(body.game-page) header { display: none; }
 </style>

@@ -3,6 +3,7 @@
   import { session } from '$lib/stores/session';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
+  import { PUBLIC_SUPABASE_URL } from '$env/static/public';
 
   let profile = $state(null);
   let loading = $state(true);
@@ -95,10 +96,27 @@
   async function handleDeleteAccount() {
     if (deleteConfirm !== 'DELETE') return;
     deleting = true;
-    // Phase 1: calls edge function to delete auth user
-    // For now just sign out
-    await supabase.auth.signOut();
-    goto('/');
+
+    const { data: { session: currentSession } } = await supabase.auth.getSession();
+
+    const res = await fetch(`${PUBLIC_SUPABASE_URL}/functions/v1/delete-account`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${currentSession.access_token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    const result = await res.json();
+
+    if (result.success) {
+      await supabase.auth.signOut();
+      goto('/');
+    } else {
+      deleting = false;
+      error = result.error || 'Could not delete account. Please contact support.';
+      showDeleteModal = false;
+    }
   }
 
   async function downloadData() {
