@@ -16,9 +16,8 @@
   let length     = $state(0);
   let selectedId = $state(null);
 
-  // Module switcher (mid-career)
+  // Mid-career switcher
   let switcherSelectedId = $state(null);
-
   const inCareer   = $derived(gs.career !== null && gs.screen !== 'end');
   const isSwitcher = $derived(inCareer && gs.screen === 'menu');
 
@@ -37,20 +36,35 @@
     return TIER_ORDER.reduce((n, t) => n + (mod.tiers?.[t] || []).length, 0);
   }
 
-  // ── Library picker ────────────────────────────────────
-  let libraryOpen    = $state(false);
-  let libraryLoading = $state(false);
-  let libraryError   = $state('');
-  let libraryItems   = $state([]);
-  let libraryPicked  = $state(null);  // { id, name, data }
+  // ── Selected module display ───────────────────────────
+  const selectedMod = $derived(selectedId ? gs.loadedModules?.[selectedId] : null);
 
-  async function openLibrary() {
+  // ── Browse modal ──────────────────────────────────────
+  let browseOpen    = $state(false);
+  let browseTab     = $state('public');   // 'public' | 'library'
+  let browsePicked  = $state(null);
+
+  // Public sets (from availableModules, already loaded)
+  const publicSets = $derived(
+    gs.availableModules.filter(m => m.tag !== 'library' && m.tag !== 'uploaded')
+  );
+
+  // Library tab state
+  let libLoading = $state(false);
+  let libError   = $state('');
+  let libItems   = $state([]);
+
+  async function openBrowse(tab = 'public') {
+    browseTab   = tab;
+    browsePicked = null;
+    browseOpen  = true;
+    if (tab === 'library') await loadLibrary();
+  }
+
+  async function loadLibrary() {
     const sess = get(session);
-    if (!sess) { libraryError = 'Log in to access your library.'; libraryOpen = true; return; }
-    libraryOpen    = true;
-    libraryLoading = true;
-    libraryError   = '';
-    libraryItems   = [];
+    if (!sess) { libError = 'Log in to access your library.'; return; }
+    libLoading = true; libError = ''; libItems = [];
     try {
       const { data, error } = await supabase
         .from('user_question_sets')
@@ -58,38 +72,44 @@
         .eq('user_id', sess.user.id)
         .order('created_at', { ascending: false });
       if (error) throw error;
-      libraryItems = data || [];
+      libItems = data || [];
     } catch (e) {
-      libraryError = '⚠ Could not load library: ' + e.message;
+      libError = '⚠ Could not load library: ' + e.message;
     } finally {
-      libraryLoading = false;
+      libLoading = false;
     }
   }
 
-  function pickLibraryItem(item) {
-    libraryPicked = item;
+  async function switchTab(tab) {
+    browseTab    = tab;
+    browsePicked = null;
+    if (tab === 'library' && libItems.length === 0 && !libError) await loadLibrary();
   }
 
-  function confirmLibraryPick() {
-    if (!libraryPicked) return;
-    const id  = 'lib_' + libraryPicked.id;
-    const mod = { id, filename: null, tag: 'library', name: libraryPicked.name,
-      description: libraryPicked.description ?? '', ...libraryPicked.data };
-    // Add to available modules if not already there
-    if (!gs.loadedModules[id]) {
-      gs.availableModules = [...gs.availableModules, mod];
-      gs.loadedModules[id] = mod;
+  function pickPublicSet(mod) { browsePicked = { source: 'public', mod }; }
+
+  function pickLibraryItem(item) { browsePicked = { source: 'library', item }; }
+
+  function confirmBrowsePick() {
+    if (!browsePicked) return;
+    if (browsePicked.source === 'public') {
+      selectedId = browsePicked.mod.id;
+    } else {
+      const item = browsePicked.item;
+      const id   = 'lib_' + item.id;
+      if (!gs.loadedModules[id]) {
+        const mod = { id, filename: null, tag: 'library', name: item.name,
+          description: item.description ?? '', ...item.data };
+        gs.availableModules = [...gs.availableModules, mod];
+        gs.loadedModules[id] = mod;
+      }
+      selectedId = id;
     }
-    selectedId    = id;
-    libraryOpen   = false;
-    libraryPicked = null;
+    browseOpen   = false;
+    browsePicked = null;
   }
 
-  function closeLibrary() {
-    libraryOpen   = false;
-    libraryPicked = null;
-    libraryError  = '';
-  }
+  function closeBrowse() { browseOpen = false; browsePicked = null; }
 
   // ── Start ─────────────────────────────────────────────
   function onStart() {
@@ -101,7 +121,7 @@
     }
   }
 
-  // ── Switcher actions ──────────────────────────────────
+  // ── Switcher ──────────────────────────────────────────
   function onSwitchConfirm() {
     if (!switcherSelectedId || switcherSelectedId === gs.activeModId) return;
     gs.activeModId = switcherSelectedId;
@@ -133,50 +153,61 @@
     selectedId = null;
   }
 
-  // ── Keyboard: Escape closes library ──────────────────
   function onKeydown(e) {
-    if (e.key === 'Escape' && libraryOpen) closeLibrary();
+    if (e.key === 'Escape' && browseOpen) closeBrowse();
   }
 </script>
 
 <svelte:window onkeydown={onKeydown} />
 
-<!-- ══ MODULE SWITCHER ═══════════════════════════════════ -->
+<!-- ══ MID-CAREER SWITCHER ════════════════════════════════ -->
 {#if isSwitcher}
   <div class="msw-wrap">
     <div class="msw-headline">Switch Module</div>
-    <p class="msw-sub">
-      Current: {gs.loadedModules[gs.activeModId]?.name ?? '—'}.
-      Your career continues unchanged.
-    </p>
+    <p class="msw-sub">Current: {gs.loadedModules[gs.activeModId]?.name ?? '—'}. Career continues.</p>
+
+    <!-- Default sets -->
+    <div class="msw-section-label">Default Sets</div>
     <div class="msw-list">
-      {#each gs.availableModules as mod (mod.id)}
+      {#each gs.availableModules.filter(m => m.tag !== 'library' && m.tag !== 'uploaded') as mod (mod.id)}
         <button class="msw-card" class:selected={switcherSelectedId === mod.id}
           onclick={() => switcherSelectedId = mod.id}>
           <div class="msw-card-name">{mod.name}</div>
-          <div class="msw-card-desc">{mod.description ?? ''} · {totalQuestions(mod)} questions</div>
+          <div class="msw-card-desc">{totalQuestions(mod)} questions</div>
         </button>
       {/each}
     </div>
+
+    <!-- Browse more -->
+    <button class="browse-btn-full" onclick={() => openBrowse('public')}>
+      <span class="browse-btn-icon">🌐</span>
+      <span class="browse-btn-text">
+        <strong>Browse More Sets</strong>
+        <span>Public &amp; library sets</span>
+      </span>
+      <span style="color:var(--text-muted)">→</span>
+    </button>
+
     <div class="msw-divider"></div>
     <div class="msw-actions">
       <button class="btn btn-primary"
         disabled={!switcherSelectedId || switcherSelectedId === gs.activeModId}
         onclick={onSwitchConfirm}>Switch &amp; Resume</button>
       <button class="btn btn-ghost" onclick={onResume}>Resume Without Switching</button>
-      <button class="btn btn-ghost btn-danger" onclick={onReset}>Reset &amp; Return to Main Menu</button>
+      <button class="btn btn-ghost btn-danger" onclick={onReset}>Reset Career</button>
     </div>
   </div>
 
-<!-- ══ MAIN MENU ═════════════════════════════════════════ -->
+<!-- ══ MAIN MENU ════════════════════════════════════════════ -->
 {:else}
   <div class="menu-wrap">
     <h1 class="module-headline">Choose Your<br>Question Module</h1>
     <p class="module-sub">Select a topic. Your career rides on it.</p>
 
-    <!-- Built-in modules -->
+    <!-- Default sets -->
+    <div class="section-label">Default Sets</div>
     <div class="module-list">
-      {#each gs.availableModules as mod (mod.id)}
+      {#each gs.availableModules.filter(m => m.tag !== 'library' && m.tag !== 'uploaded') as mod (mod.id)}
         {@const tiers = countTiers(mod)}
         <button class="module-card" class:selected={selectedId === mod.id}
           onclick={() => selectedId = mod.id}>
@@ -192,32 +223,65 @@
             </div>
           </div>
           <div class="module-card-meta">
-            <span class="module-tag" class:tag-builtin={mod.tag !== 'library' && mod.tag !== 'uploaded'}
-              class:tag-library={mod.tag === 'library'}
-              class:tag-uploaded={mod.tag === 'uploaded'}>
-              {mod.tag === 'library' ? 'Library' : mod.tag === 'uploaded' ? 'Uploaded' : 'Built-in'}
-            </span>
-            <span class="module-q-count">{totalQuestions(mod)} questions</span>
+            <span class="module-tag tag-default">Default</span>
+            <span class="module-q-count">{totalQuestions(mod)} q</span>
           </div>
         </button>
       {/each}
-
       {#if gs.availableModules.length === 0}
         <p class="loading-hint">Loading modules…</p>
       {/if}
+
+      <!-- Selected non-default set shown inline with the list -->
+      {#if selectedMod && selectedMod.tag !== 'default' && selectedMod.tag !== undefined && !gs.availableModules.filter(m => m.tag !== 'library' && m.tag !== 'uploaded').find(m => m.id === selectedId)}
+        {@const tiers = countTiers(selectedMod)}
+        <button class="module-card selected" onclick={() => {}}>
+          <div class="module-card-left">
+            <div class="module-card-name">{selectedMod.name}</div>
+            <div class="module-card-desc">{selectedMod.description ?? ''}</div>
+            <div class="tier-badges">
+              {#each tiers as t}
+                <span class="tier-badge"
+                  style="background:{DIFF_BG[t]};color:{DIFF_COLORS[t]}"
+                >{DIFF_LABELS[t]} ×{selectedMod.tiers[t].length}</span>
+              {/each}
+            </div>
+          </div>
+          <div class="module-card-meta">
+            <span class="module-tag {selectedMod.tag === 'library' ? 'tag-library' : 'tag-public'}">
+              {selectedMod.tag === 'library' ? 'Library' : 'Public'}
+            </span>
+            <span class="module-q-count">{totalQuestions(selectedMod)} q</span>
+            <span class="selected-clear" role="button" tabindex="0"
+              onclick={(e) => { e.stopPropagation(); selectedId = null; }}
+              onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); selectedId = null; } }}
+              aria-label="Clear">✕</span>
+          </div>
+        </button>
+      {/if}
     </div>
 
-    <!-- Library picker button -->
-    <button class="library-btn" onclick={openLibrary}>
-      <span class="library-btn-icon">📚</span>
-      <span class="library-btn-text">
-        <strong>Use a set from My Library</strong>
-        <span>Browse your saved question sets</span>
-      </span>
-      <span class="library-btn-arrow">→</span>
-    </button>
+    <!-- Browse more -->
+    <div class="browse-row">
+      <button class="browse-btn-full" onclick={() => openBrowse('public')}>
+        <span class="browse-btn-icon">🌐</span>
+        <span class="browse-btn-text">
+          <strong>Public Sets</strong>
+          <span>Community question sets</span>
+        </span>
+        <span style="color:var(--text-muted)">→</span>
+      </button>
+      <button class="browse-btn-full" onclick={() => openBrowse('library')}>
+        <span class="browse-btn-icon">📚</span>
+        <span class="browse-btn-text">
+          <strong>My Library</strong>
+          <span>Your saved question sets</span>
+        </span>
+        <span style="color:var(--text-muted)">→</span>
+      </button>
+    </div>
 
-    <!-- Mode selector -->
+    <!-- Mode toggle -->
     <div class="mode-row">
       <button class="mode-btn" class:active={mode === 'career'} onclick={() => mode = 'career'}>
         <div class="mode-btn-title">Career</div>
@@ -225,16 +289,16 @@
       </button>
       <button class="mode-btn sparring-btn" class:active={mode === 'sparring'} onclick={() => mode = 'sparring'}>
         <div class="mode-btn-title">Sparring</div>
-        <div class="mode-btn-desc">Unlimited · all tiers · score meter visible · no record</div>
+        <div class="mode-btn-desc">Unlimited · all tiers · score meter · no record</div>
       </button>
     </div>
 
-    <!-- Difficulty + length (career only) -->
+    <!-- Difficulty + length (career) -->
     {#if mode === 'career'}
       <div class="config-section">
         <div class="config-label">Difficulty</div>
         <div class="diff-row">
-          {#each [['easy','Easy','60 seconds'],['medium','Medium','45 seconds'],['hard','Hard','30 seconds']] as [d, label, sub]}
+          {#each [['easy','Easy','60s'],['medium','Medium','45s'],['hard','Hard','30s']] as [d, label, sub]}
             <button class="diff-btn"
               class:active-easy={d === 'easy' && difficulty === 'easy'}
               class:active-medium={d === 'medium' && difficulty === 'medium'}
@@ -245,7 +309,6 @@
             </button>
           {/each}
         </div>
-
         <div class="config-label">Career length</div>
         <div class="length-row">
           {#each LENGTHS as opt}
@@ -259,7 +322,7 @@
       </div>
     {/if}
 
-    <div class="btn-row">
+    <div class="btn-row" style="margin-top:28px;">
       <button class="btn btn-primary" disabled={!selectedId} onclick={onStart}>
         {mode === 'sparring' ? 'Start Sparring' : 'Start Career'}
       </button>
@@ -267,131 +330,146 @@
   </div>
 {/if}
 
-<!-- ══ LIBRARY MODAL ════════════════════════════════════ -->
-{#if libraryOpen}
+<!-- ══ BROWSE MODAL ═════════════════════════════════════════ -->
+{#if browseOpen}
   <div class="lib-overlay" role="dialog" aria-modal="true"
-    onclick={closeLibrary} onkeydown={(e) => e.stopPropagation()}>
+    onclick={closeBrowse} onkeydown={(e) => e.key === 'Escape' && closeBrowse()}>
     <div class="lib-modal" onclick={(e) => e.stopPropagation()}
       role="document" onkeydown={(e) => e.stopPropagation()}>
 
       <div class="lib-header">
-        <div class="lib-title">My Library</div>
-        <button class="lib-close" onclick={closeLibrary}>✕</button>
+        <div class="lib-tabs">
+          <button class="lib-tab" class:active={browseTab === 'public'}
+            onclick={() => switchTab('public')}>🌐 Public Sets</button>
+          <button class="lib-tab" class:active={browseTab === 'library'}
+            onclick={() => switchTab('library')}>📚 My Library</button>
+        </div>
+        <button class="lib-close" onclick={closeBrowse}>✕</button>
       </div>
 
-      {#if libraryLoading}
-        <div class="lib-loading">Loading your question sets…</div>
-
-      {:else if libraryError}
-        <div class="lib-error">{libraryError}</div>
-        {#if !get(session)}
-          <a href="/auth/login" class="btn btn-primary" style="margin-top:14px;display:inline-block">Log In</a>
+      <!-- Public sets tab -->
+      {#if browseTab === 'public'}
+        {#if publicSets.length === 0}
+          <div class="lib-empty">No public sets available yet.</div>
+        {:else}
+          <div class="lib-list">
+            {#each publicSets as mod (mod.id)}
+              {@const tiers = countTiers(mod)}
+              <button class="lib-item"
+                class:selected={browsePicked?.source === 'public' && browsePicked?.mod?.id === mod.id}
+                onclick={() => pickPublicSet(mod)}>
+                <div class="lib-item-name">{mod.name}</div>
+                <div class="lib-item-meta">
+                  {mod.description ?? ''} · {totalQuestions(mod)} questions
+                  <div class="tier-badges" style="margin-top:4px;">
+                    {#each tiers as t}
+                      <span class="tier-badge" style="background:{DIFF_BG[t]};color:{DIFF_COLORS[t]}">{DIFF_LABELS[t]}</span>
+                    {/each}
+                  </div>
+                </div>
+              </button>
+            {/each}
+          </div>
         {/if}
 
-      {:else if libraryItems.length === 0}
-        <div class="lib-empty">
-          <p>No question sets in your library yet.</p>
-          <a href="/questions/library" target="_blank" class="lib-link">Go to My Library →</a>
-        </div>
-
+      <!-- Library tab -->
       {:else}
-        <div class="lib-list">
-          {#each libraryItems as item}
-            <button class="lib-item" class:selected={libraryPicked?.id === item.id}
-              onclick={() => pickLibraryItem(item)}>
-              <div class="lib-item-name">{item.name}</div>
-              <div class="lib-item-meta">
-                {item.description ?? ''}
-                {#if item.question_count}
-                  · {item.question_count} questions
-                {/if}
-              </div>
-            </button>
-          {/each}
-        </div>
-
-        <div class="lib-footer">
-          <button class="btn btn-primary" disabled={!libraryPicked} onclick={confirmLibraryPick}>
-            Use This Set
-          </button>
-          <button class="btn btn-ghost" onclick={closeLibrary}>Cancel</button>
-        </div>
+        {#if libLoading}
+          <div class="lib-loading">Loading your library…</div>
+        {:else if libError}
+          <div class="lib-error">{libError}</div>
+          {#if !get(session)}
+            <a href="/auth/login" class="btn btn-primary" style="margin:14px 20px;display:inline-block">Log In</a>
+          {/if}
+        {:else if libItems.length === 0}
+          <div class="lib-empty">
+            <p>No sets in your library yet.</p>
+            <a href="/questions/library" target="_blank" class="lib-link">Go to My Library →</a>
+          </div>
+        {:else}
+          <div class="lib-list">
+            {#each libItems as item (item.id)}
+              <button class="lib-item"
+                class:selected={browsePicked?.source === 'library' && browsePicked?.item?.id === item.id}
+                onclick={() => pickLibraryItem(item)}>
+                <div class="lib-item-name">{item.name}</div>
+                <div class="lib-item-meta">
+                  {item.description ?? ''}
+                  {#if item.question_count} · {item.question_count} questions{/if}
+                </div>
+              </button>
+            {/each}
+          </div>
+        {/if}
       {/if}
 
+      <div class="lib-footer">
+        <button class="btn btn-primary" disabled={!browsePicked} onclick={confirmBrowsePick}>
+          Use This Set
+        </button>
+        <button class="btn btn-ghost" onclick={closeBrowse}>Cancel</button>
+      </div>
     </div>
   </div>
 {/if}
 
 <style>
-  /* ── Page layout ─────────────────────────────────────── */
-  .menu-wrap {
-    max-width: 560px;
-    margin: 0 auto;
-    padding: 32px 0 48px;
-  }
+  .menu-wrap { max-width: 560px; margin: 0 auto; padding: 32px 0 48px; }
 
-  .module-headline {
-    font-family: var(--font-display);
-    font-size: 42px;
-    letter-spacing: 0.02em;
-    line-height: 1.05;
-    margin-bottom: 6px;
-  }
-  .module-sub {
-    color: var(--text-muted);
-    font-size: 13px;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    margin-bottom: 28px;
-  }
+  .module-headline { font-family: var(--font-display); font-size: 42px; letter-spacing: 0.02em; line-height: 1.05; margin-bottom: 6px; }
+  .module-sub { color: var(--text-muted); font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 20px; }
 
-  /* ── Module list ─────────────────────────────────────── */
-  .module-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+  /* Section label */
+  .section-label { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; margin-top: 4px; }
 
+  /* Module list */
+  .module-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
   .module-card {
-    background: var(--surface2); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 16px 18px; cursor: pointer;
-    transition: border-color 0.15s, background 0.15s;
+    background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 14px 16px; cursor: pointer; transition: border-color 0.15s, background 0.15s;
     display: flex; align-items: center; justify-content: space-between; gap: 12px;
     text-align: left; width: 100%; color: var(--text); font-family: var(--font-body);
   }
   .module-card:hover    { border-color: var(--border-hover); }
   .module-card.selected { border-color: var(--accent); background: var(--accent-dim); }
   .module-card-left  { flex: 1; }
-  .module-card-name  { font-family: var(--font-display); font-size: 18px; letter-spacing: 0.04em; margin-bottom: 3px; }
-  .module-card-desc  { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
+  .module-card-name  { font-family: var(--font-display); font-size: 17px; letter-spacing: 0.04em; margin-bottom: 2px; }
+  .module-card-desc  { font-size: 11px; color: var(--text-muted); line-height: 1.4; }
   .module-card-meta  { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
-  .module-tag        { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; padding: 3px 8px; border-radius: 3px; font-weight: 600; }
-  .tag-builtin  { background: rgba(74,158,232,0.15); color: var(--blue); }
+  .module-tag        { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; padding: 2px 8px; border-radius: 3px; font-weight: 600; }
+  .tag-default  { background: rgba(74,158,232,0.15); color: var(--blue); }
   .tag-library  { background: rgba(74,232,122,0.15); color: var(--green); }
-  .tag-uploaded { background: rgba(180,74,232,0.15); color: #b44ae8; }
-  .module-q-count    { font-size: 11px; color: var(--text-muted); letter-spacing: 0.06em; }
-  .tier-badges  { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
-  .tier-badge   { font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; padding: 2px 6px; border-radius: 2px; font-weight: 600; }
+  .tag-public   { background: rgba(180,74,232,0.15); color: #b44ae8; }
+  .module-q-count { font-size: 11px; color: var(--text-muted); }
+  .selected-clear {
+    background: none; border: none; color: var(--text-muted); cursor: pointer;
+    font-size: 14px; padding: 2px 4px; transition: color 0.15s; line-height: 1;
+  }
+  .selected-clear:hover { color: var(--red); }
+  .tier-badges  { display: flex; gap: 4px; margin-top: 5px; flex-wrap: wrap; }
+  .tier-badge   { font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; padding: 2px 5px; border-radius: 2px; font-weight: 600; }
   .loading-hint { color: var(--text-muted); font-size: 13px; }
 
-  /* ── Library button ──────────────────────────────────── */
-  .library-btn {
-    width: 100%; background: var(--surface2); border: 1px dashed var(--border-hover);
-    border-radius: var(--radius); padding: 14px 18px; cursor: pointer; margin-bottom: 28px;
-    display: flex; align-items: center; gap: 14px; font-family: var(--font-body);
+  /* Browse buttons — match module card style */
+  .browse-row { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+  .browse-btn-full {
+    flex: 1; min-width: 200px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px 16px; cursor: pointer;
+    display: flex; align-items: center; gap: 12px; font-family: var(--font-body);
     text-align: left; color: var(--text); transition: border-color 0.15s, background 0.15s;
   }
-  .library-btn:hover { border-color: var(--accent-border); background: var(--accent-dim); }
-  .library-btn-icon { font-size: 20px; flex-shrink: 0; }
-  .library-btn-text { flex: 1; display: flex; flex-direction: column; gap: 2px; }
-  .library-btn-text strong { font-size: 13px; font-weight: 600; color: var(--accent); }
-  .library-btn-text span   { font-size: 11px; color: var(--text-muted); }
-  .library-btn-arrow { color: var(--text-muted); font-size: 14px; }
+  .browse-btn-full:hover { border-color: var(--border-hover); background: rgba(255,255,255,0.03); }
+  .browse-btn-icon { font-size: 18px; flex-shrink: 0; }
+  .browse-btn-text { flex: 1; display: flex; flex-direction: column; gap: 1px; }
+  .browse-btn-text strong { font-size: 14px; font-weight: 600; color: var(--text); font-family: var(--font-display); letter-spacing: 0.04em; }
+  .browse-btn-text span   { font-size: 11px; color: var(--text-muted); }
+  .browse-btn { background: transparent; border: none; color: var(--accent); cursor: pointer; font-family: var(--font-body); font-size: 13px; font-weight: 600; padding: 6px 0; display: inline-block; }
+  .browse-btn:hover { text-decoration: underline; }
 
-  /* ── Mode toggle ─────────────────────────────────────── */
-  .mode-row { display: flex; gap: 10px; margin-bottom: 28px; }
-  .mode-btn {
-    flex: 1; background: var(--surface2); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 14px 16px; cursor: pointer;
-    font-family: var(--font-body); font-size: 13px; font-weight: 500;
-    color: var(--text-muted); text-align: left; transition: border-color 0.15s, background 0.15s;
-  }
+  /* Mode */
+  .mode-row { display: flex; gap: 10px; margin-bottom: 24px; }
+  .mode-btn { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; cursor: pointer; font-family: var(--font-body); font-size: 13px; font-weight: 500; color: var(--text-muted); text-align: left; transition: border-color 0.15s, background 0.15s; }
   .mode-btn:hover  { border-color: var(--border-hover); color: var(--text); }
   .mode-btn.active { border-color: var(--accent); background: var(--accent-dim); color: var(--text); }
   .mode-btn.sparring-btn.active { border-color: #b44ae8; background: rgba(180,74,232,0.12); }
@@ -400,109 +478,68 @@
   .mode-btn.active .mode-btn-title { color: var(--accent); }
   .mode-btn.sparring-btn.active .mode-btn-title { color: #b44ae8; }
 
-  /* ── Config section ──────────────────────────────────── */
-  .config-section { margin-bottom: 28px; }
-  .config-label { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; }
-  .diff-row  { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; }
+  /* Config */
+  .config-section { margin-bottom: 4px; }
+  .config-label { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; }
+  .diff-row  { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
   .length-row { display: flex; gap: 8px; flex-wrap: wrap; }
-
-  .diff-btn {
-    background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius);
-    padding: 10px 14px; cursor: pointer; font-family: var(--font-body); font-size: 13px;
-    font-weight: 500; color: var(--text-muted); transition: border-color 0.15s, background 0.15s, color 0.15s;
-    flex: 1; min-width: 80px; text-align: center;
-  }
-  .diff-btn:hover        { border-color: var(--border-hover); color: var(--text); }
+  .diff-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 14px; cursor: pointer; font-family: var(--font-body); font-size: 13px; font-weight: 500; color: var(--text-muted); transition: border-color 0.15s; flex: 1; min-width: 80px; text-align: center; }
+  .diff-btn:hover { border-color: var(--border-hover); color: var(--text); }
   .diff-btn.active-easy   { border-color: var(--green);  background: rgba(74,232,122,0.10); color: var(--green);  font-weight: 600; }
   .diff-btn.active-medium { border-color: var(--accent); background: var(--accent-dim);     color: var(--accent); font-weight: 600; }
   .diff-btn.active-hard   { border-color: var(--red);    background: rgba(232,74,74,0.10);  color: var(--red);    font-weight: 600; }
-  .diff-btn-label { font-family: var(--font-display); font-size: 18px; letter-spacing: 0.04em; display: block; margin-bottom: 2px; }
+  .diff-btn-label { font-family: var(--font-display); font-size: 18px; letter-spacing: 0.04em; display: block; margin-bottom: 1px; }
   .diff-btn-sub   { font-size: 10px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); }
-
-  .length-btn {
-    background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius);
-    padding: 10px 14px; cursor: pointer; font-family: var(--font-body); font-size: 13px;
-    font-weight: 500; color: var(--text-muted); flex: 1; min-width: 70px; text-align: center;
-    transition: border-color 0.15s, background 0.15s, color 0.15s;
-  }
+  .length-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 14px; cursor: pointer; font-family: var(--font-body); font-size: 13px; font-weight: 500; color: var(--text-muted); flex: 1; min-width: 70px; text-align: center; transition: border-color 0.15s; }
   .length-btn:hover  { border-color: var(--border-hover); color: var(--text); }
   .length-btn.active { border-color: var(--accent); background: var(--accent-dim); color: var(--accent); font-weight: 600; }
-  .length-btn-fights { font-family: var(--font-display); font-size: 20px; letter-spacing: 0.04em; display: block; margin-bottom: 2px; color: var(--text); }
+  .length-btn-fights { font-family: var(--font-display); font-size: 20px; letter-spacing: 0.04em; display: block; margin-bottom: 1px; color: var(--text); }
   .length-btn.active .length-btn-fights { color: var(--accent); }
   .length-btn-sub { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.07em; }
 
-  .btn-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 28px; }
-
-  /* ── Module switcher ─────────────────────────────────── */
-  .msw-wrap    { max-width: 520px; }
+  /* Switcher */
+  .msw-wrap { max-width: 520px; }
   .msw-headline { font-family: var(--font-display); font-size: 32px; letter-spacing: 0.04em; margin-bottom: 6px; }
-  .msw-sub     { font-size: 13px; color: var(--text-muted); margin-bottom: 24px; }
-  .msw-list    { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
-  .msw-card {
-    background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius);
-    padding: 14px 16px; cursor: pointer; transition: border-color 0.15s;
-    text-align: left; width: 100%; color: var(--text); font-family: var(--font-body);
-  }
+  .msw-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; }
+  .msw-section-label { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; }
+  .msw-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+  .msw-card { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; cursor: pointer; transition: border-color 0.15s; text-align: left; width: 100%; color: var(--text); font-family: var(--font-body); }
   .msw-card:hover    { border-color: var(--border-hover); }
   .msw-card.selected { border-color: var(--accent); background: var(--accent-dim); }
-  .msw-card-name { font-weight: 600; font-size: 14px; margin-bottom: 2px; }
+  .msw-card-name { font-weight: 600; font-size: 13px; margin-bottom: 1px; }
   .msw-card-desc { font-size: 11px; color: var(--text-muted); }
   .msw-divider   { height: 1px; background: var(--border); margin: 16px 0; }
   .msw-actions   { display: flex; flex-direction: column; gap: 10px; }
   .btn-danger    { border-color: rgba(232,74,74,0.35) !important; color: var(--red) !important; }
 
-  /* ── Library modal ───────────────────────────────────── */
-  .lib-overlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.80);
-    display: flex; align-items: center; justify-content: center;
-    z-index: 9999;
-  }
-  .lib-modal {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); width: 90%; max-width: 480px;
-    max-height: 80vh; display: flex; flex-direction: column;
-    overflow: hidden;
-  }
-  .lib-header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 16px 20px; border-bottom: 1px solid var(--border); flex-shrink: 0;
-  }
-  .lib-title  { font-family: var(--font-display); font-size: 26px; letter-spacing: 0.04em; color: var(--accent); }
-  .lib-close  {
-    background: none; border: none; color: var(--text-muted); cursor: pointer;
-    font-size: 18px; line-height: 1; transition: color 0.15s; padding: 4px;
-  }
+  /* Browse/library modal */
+  .lib-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.80); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+  .lib-modal   { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); width: 90%; max-width: 520px; max-height: 82vh; display: flex; flex-direction: column; overflow: hidden; }
+  .lib-header  { display: flex; align-items: center; justify-content: space-between; padding: 0 16px 0 0; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .lib-tabs    { display: flex; flex: 1; }
+  .lib-tab     { flex: 1; background: none; border: none; border-bottom: 2px solid transparent; color: var(--text-muted); font-family: var(--font-body); font-size: 13px; font-weight: 600; padding: 14px 16px; cursor: pointer; transition: color 0.15s, border-color 0.15s; }
+  .lib-tab:hover { color: var(--text); }
+  .lib-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .lib-close   { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 18px; transition: color 0.15s; padding: 4px 8px; }
   .lib-close:hover { color: var(--text); }
   .lib-loading { padding: 32px 20px; text-align: center; color: var(--text-muted); font-size: 13px; }
   .lib-error   { padding: 20px; color: var(--red); font-size: 13px; }
   .lib-empty   { padding: 32px 20px; text-align: center; color: var(--text-muted); font-size: 13px; }
-  .lib-link    { display: inline-block; margin-top: 12px; color: var(--accent); font-size: 13px; text-decoration: none; }
+  .lib-link    { display: inline-block; margin-top: 10px; color: var(--accent); font-size: 13px; text-decoration: none; }
   .lib-link:hover { text-decoration: underline; }
-
-  .lib-list {
-    flex: 1; overflow-y: auto; padding: 12px;
-    display: flex; flex-direction: column; gap: 8px;
-  }
+  .lib-list    { flex: 1; overflow-y: auto; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
   .lib-list::-webkit-scrollbar { width: 4px; }
   .lib-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-
-  .lib-item {
-    background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius);
-    padding: 14px 16px; cursor: pointer; text-align: left; width: 100%;
-    color: var(--text); font-family: var(--font-body); transition: border-color 0.15s, background 0.15s;
-  }
+  .lib-item    { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; cursor: pointer; text-align: left; width: 100%; color: var(--text); font-family: var(--font-body); transition: border-color 0.15s, background 0.15s; }
   .lib-item:hover    { border-color: var(--border-hover); }
   .lib-item.selected { border-color: var(--accent); background: var(--accent-dim); }
   .lib-item-name { font-weight: 600; font-size: 14px; margin-bottom: 3px; }
   .lib-item-meta { font-size: 11px; color: var(--text-muted); }
-
-  .lib-footer {
-    display: flex; gap: 10px; padding: 14px 20px;
-    border-top: 1px solid var(--border); flex-shrink: 0;
-  }
+  .lib-footer  { display: flex; gap: 10px; padding: 12px 16px; border-top: 1px solid var(--border); flex-shrink: 0; }
 
   @media (max-width: 768px) {
-    .menu-wrap  { padding: 20px 0 32px; }
+    .menu-wrap { padding: 20px 0 32px; }
+    .browse-row { flex-direction: column; }
     .diff-row, .length-row { gap: 6px; }
     .diff-btn, .length-btn { padding: 8px 10px; min-width: 0; }
   }

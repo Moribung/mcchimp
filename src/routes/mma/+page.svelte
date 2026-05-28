@@ -49,7 +49,13 @@
       if (!f) continue;
       const rankNum = i === CHAMP_SLOT ? 'C' : i < RANKED_START ? '–' : `#${CHAMP_SLOT - i}`;
       const isNext  = !isPlayer && gs.currentOpponent && typeof gs.currentOpponent.divisionSlot === 'number' && i === gs.currentOpponent.divisionSlot;
-      rows.push({ i, f, fid, isPlayer, isChamp: i === CHAMP_SLOT, isNext, rankNum });
+      // Movement — only meaningful on prefight screen after NPC round
+      let mv = null;
+      if (!isPlayer && f.prevSlot != null && f.prevSlot !== i) {
+        mv = { delta: Math.abs(i - f.prevSlot), dir: i > f.prevSlot ? 'up' : 'down' };
+      }
+      const isNew = !isPlayer && !!f.isNew;
+      rows.push({ i, f, fid, isPlayer, isChamp: i === CHAMP_SLOT, isNext, rankNum, mv, isNew });
     }
     return rows;
   })());
@@ -177,7 +183,7 @@
     const sess = get(session);
     if (!sess || !gs.career) return;
     const legacy = calcLegacyTitle(gs.wins, gs.fightIndex);
-    const record = `${gs.wins}-${gs.draws}-${gs.losses}`;
+    const record = `${gs.wins}-${gs.losses}-${gs.draws}`;
     try {
       await archiveCareer(sess.user.id, 'mma', {
         fighterName: gs.career.fighterName,
@@ -245,9 +251,9 @@
       <div class="score-display">
         <span class="score-w">{gs.wins}W</span>
         <span class="score-sep">–</span>
-        <span class="score-d">{gs.draws}D</span>
-        <span class="score-sep">–</span>
         <span class="score-l">{gs.losses}L</span>
+        <span class="score-sep">–</span>
+        <span class="score-d">{gs.draws}D</span>
       </div>
     {/if}
   </header>
@@ -378,6 +384,16 @@
                       {row.f.name}
                       {#if row.isPlayer}<span class="rt-you">YOU</span>{/if}
                       {#if row.isNext}<span class="rt-next-badge">NEXT</span>{/if}
+                      {#if gs.screen === 'prefight'}
+                        {#if row.isNew}<span class="rt-new">NEW</span>{/if}
+                        {#if row.mv}
+                          {#if row.mv.dir === 'up'}
+                            <span class="rt-mv-up">▲{row.mv.delta}</span>
+                          {:else}
+                            <span class="rt-mv-dn">▼{row.mv.delta}</span>
+                          {/if}
+                        {/if}
+                      {/if}
                     </td>
                     <td class="rt-rec">{row.f.record}</td>
                   </tr>
@@ -585,6 +601,10 @@
     max-width: 480px;
     border-left: 1px solid var(--border);
     padding: 20px 16px 40px;
+    position: sticky;
+    top: 0;
+    max-height: 100vh;
+    overflow-y: auto;
   }
   .mma-wrap.sparring.in-game .career-col { display: none; }
   .mma-wrap.sparring.in-game .game-col   { max-width: 760px; margin: 0 auto; }
@@ -631,6 +651,9 @@
   .rt-clickable:hover .rt-name { color: var(--accent); }
   .rt-you        { font-size: 7px; letter-spacing: 0.1em; text-transform: uppercase; background: var(--accent); color: #0d0d0f; padding: 1px 4px; border-radius: 2px; font-weight: 700; margin-left: 5px; vertical-align: middle; }
   .rt-next-badge { font-size: 7px; letter-spacing: 0.1em; text-transform: uppercase; background: rgba(232,74,74,0.2); color: var(--red); border: 1px solid rgba(232,74,74,0.4); padding: 1px 4px; border-radius: 2px; font-weight: 700; margin-left: 5px; vertical-align: middle; }
+  .rt-new        { font-size: 9px; font-weight: 700; color: var(--blue); margin-left: 4px; letter-spacing: 0.08em; text-transform: uppercase; vertical-align: middle; }
+  .rt-mv-up      { font-size: 10px; font-weight: 700; color: var(--green); margin-left: 4px; vertical-align: middle; }
+  .rt-mv-dn      { font-size: 10px; font-weight: 700; color: var(--red);   margin-left: 4px; vertical-align: middle; }
 
   /* Callout modal */
   .callout-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.80); display: flex; align-items: center; justify-content: center; z-index: 9999; }

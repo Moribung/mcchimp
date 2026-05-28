@@ -12,6 +12,55 @@ import { CHAMP_SLOT, TIER_ORDER, QSCORE_UP_THRESHOLD, QSCORE_DOWN_THRESHOLD } fr
 import { gf, migrateDivSlots } from './fighters.js';
 import { shuffle } from './utils.js';
 
+/* ── Question normalisation ──────────────────────────── */
+/**
+ * Coerce any question format to the standard internal shape.
+ * Handles v1 formats (answer as number, answers as number, correct field)
+ * and fills in defaults for true_false.
+ * Returns null if the question is unsupported/broken and should be skipped.
+ */
+export function normaliseQuestion(q) {
+  if (!q || typeof q !== 'object') return null;
+
+  const type = q.type || 'multi_select';
+
+  // Skip types not yet renderable
+  if (type === 'image') return null;
+  if (type === 'ordered') return null;
+
+  // Warn on unknown types
+  const KNOWN = ['multi_select', 'multiple_choice', 'true_false', 'typed', 'fill_gap'];
+  if (!KNOWN.includes(type)) {
+    console.warn(`[questions] Unknown question type "${type}" — skipping`);
+    return null;
+  }
+
+  // Normalise answers to number[]
+  let answers = q.answers;
+  if (answers === undefined || answers === null) {
+    // v1: answer as single number
+    if (typeof q.answer === 'number') answers = [q.answer];
+    else if (typeof q.correct === 'number') answers = [q.correct];
+    else if (type === 'typed' || type === 'fill_gap') answers = q.answers || [];
+    else return null; // can't determine answers
+  }
+  if (typeof answers === 'number') answers = [answers];
+  if (!Array.isArray(answers)) return null;
+
+  // true_false: fill in options if missing
+  let options = q.options;
+  if (type === 'true_false' && (!options || options.length === 0)) {
+    options = ['True', 'False'];
+  }
+
+  // typed / fill_gap: no options needed
+  if (type !== 'typed' && type !== 'fill_gap') {
+    if (!options || options.length < 2) return null;
+  }
+
+  return { ...q, type, answers, options: options || [] };
+}
+
 /* ── Active module accessor ──────────────────────────── */
 export function getActiveMod(state) {
   if (!state.activeModId || !state.loadedModules) return null;
@@ -33,10 +82,15 @@ export function ensureQPool(state) {
   state._qById = {};
 
   for (const t of TIER_ORDER) {
-    const qs = shuffle([...(mod.tiers[t] || [])].map(q => ({ ...q, _tier: t })));
+    const raw = mod.tiers[t] || [];
+    const qs  = shuffle(
+      raw
+        .map(q => normaliseQuestion({ ...q, _tier: t }))
+        .filter(Boolean)
+    );
     state._qPool[t] = qs;
     qs.forEach(q => {
-      state._qById[q._id || q.question] = q;
+      state._qById[q._id || q.id || q.question] = q;
     });
   }
 }
