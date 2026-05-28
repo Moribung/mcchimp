@@ -6,7 +6,7 @@
   let { children } = $props();
 
   let mobileNavOpen = $state(false);
-  let displayName = $state('');
+  let displayName   = $state('');
 
   function toggleMobileNav() {
     mobileNavOpen = !mobileNavOpen;
@@ -24,6 +24,16 @@
         });
     } else {
       displayName = '';
+    }
+  });
+
+  // Add/remove game-page class on body based on route.
+  // The /mma route manages its own layout — hide the global header there.
+  $effect(() => {
+    const isGamePage = $page.url.pathname.startsWith('/mma') ||
+                       $page.url.pathname.startsWith('/football');
+    if (typeof document !== 'undefined') {
+      document.body.classList.toggle('game-page', isGamePage);
     }
   });
 </script>
@@ -355,5 +365,8 @@
     nav > a, nav > .nav-item, nav > .nav-login { display: none; }
     .hamburger { display: flex; }
   }
+
+  /* Hide global header + footer on game pages — they manage their own layout */
   :global(body.game-page) header { display: none; }
+  :global(body.game-page) footer { display: none; }
 </style>
