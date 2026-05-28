@@ -47,13 +47,13 @@
 </script>
 
 <svelte:head>
-  <title>Football Trivia — McChimp</title>
-  <meta name="description" content="Manage a football career across the pyramid. Tactics, transfers, and trivia." />
+  <title>MMA Career Trivia (Classic) — McChimp</title>
+  <meta name="description" content="The original MMA Career Trivia iframe version." />
 </svelte:head>
 
 <div class="back-bar">
   <a href="/games" class="back-btn">← Back to Games</a>
-  <span class="back-title">Football Trivia</span>
+  <span class="back-title">MMA Career Trivia (Classic)</span>
   {#if loggedIn}
     <a href="/account" class="back-login" style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{displayName || 'Account'}</a>
   {:else}
@@ -62,7 +62,7 @@
 </div>
 
 <div class="game-wrap">
-  <iframe src="/embeds/football.html" title="Football Trivia" allowfullscreen></iframe>
+  <iframe src="/embeds/mma.html" title="MMA Career Trivia (Classic)" allowfullscreen></iframe>
 </div>
 
 <style>
