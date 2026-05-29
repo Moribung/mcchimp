@@ -283,8 +283,6 @@ Note: no type field — defaults to multi_select.
         <tr><td>true_false</td><td>One only</td><td>No</td><td><span class="status-live">✅ Live</span></td></tr>
         <tr><td>typed</td><td>N answers</td><td>Yes</td><td><span class="status-live">✅ Live</span></td></tr>
         <tr><td>fill_gap</td><td>N gaps</td><td>Yes</td><td><span class="status-live">✅ Live</span></td></tr>
-        <tr><td>ordered</td><td>All in order</td><td>No</td><td><span class="status-soon">⏳ Coming soon</span></td></tr>
-        <tr><td>image</td><td>One only</td><td>No</td><td><span class="status-soon">⏳ Needs Storage</span></td></tr>
       </tbody>
     </table>
   </div>
@@ -376,37 +374,6 @@ Note: no type field — defaults to multi_select.
     </table>
   </div>
 
-  <!-- ORDERED -->
-  <div class="guide-section">
-    <h3>ordered <span class="soon-badge">Coming Soon</span></h3>
-    <p>User arranges answers into the correct sequence. Each answer has an optional description shown after the reveal. You can write these now — the renderer will support them in a future update.</p>
-    <div class="guide-code">{`{
-  "id": "MMA-HA-001",
-  "type": "ordered",
-  "question": "Put these champions in order of first title win.",
-  "answers": [
-    { "value": "Brock Lesnar", "description": "Won title in 2008" },
-    { "value": "Cain Velasquez", "description": "Won title in 2010" },
-    { "value": "Stipe Miocic", "description": "Won title in 2016" },
-    { "value": "Francis Ngannou", "description": "Won title in 2021" }
-  ]
-}`}</div>
-  </div>
-
-  <!-- IMAGE -->
-  <div class="guide-section">
-    <h3>image <span class="soon-badge">Needs Storage</span></h3>
-    <p>An image is shown to the user, answered as multiple choice. Requires Supabase Storage to be configured. You can write these now — they will be skipped by the renderer until Storage is set up.</p>
-    <div class="guide-code">{`{
-  "id": "MMA-HA-002",
-  "type": "image",
-  "question": "Who is this fighter?",
-  "image_url": "https://your-storage-url/fighter.jpg",
-  "options": ["Jon Jones", "Daniel Cormier", "Alexander Gustafsson", "Glover Teixeira"],
-  "answers": [0]
-}`}</div>
-  </div>
-
   <!-- ID FORMAT -->
   <div class="guide-section">
     <h3>ID Format</h3>
@@ -461,9 +428,7 @@ Note: no type field — defaults to multi_select.
   .field-rec { background: rgba(232,193,74,0.1); color: var(--gold); }
   .field-no { background: rgba(107,107,107,0.15); color: var(--muted); }
   .default-badge { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; background: rgba(46,139,87,0.15); color: #4CAF85; border: 1px solid rgba(46,139,87,0.3); padding: 3px 8px; border-radius: 2px; vertical-align: middle; }
-  .soon-badge { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; background: rgba(107,107,107,0.1); color: var(--muted); border: 1px solid rgba(107,107,107,0.2); padding: 3px 8px; border-radius: 2px; vertical-align: middle; }
   .status-live { color: #4CAF85; font-size: 12px; }
-  .status-soon { color: var(--muted); font-size: 12px; }
 
   @media (max-width: 900px) { .guide-wrap { padding: 40px 24px; } }
 </style>

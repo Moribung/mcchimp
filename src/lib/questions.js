@@ -25,6 +25,23 @@ export async function fetchSet(filename) {
 }
 
 /**
+ * Fetch the list of additional public (non-default) question set filenames.
+ * These are browseable in the Public Sets tab but not auto-loaded as defaults.
+ * Missing/invalid catalog → empty list.
+ * @returns {Promise<string[]>}
+ */
+export async function fetchPublicCatalog() {
+  try {
+    const res = await fetch('/questions/public.json');
+    if (!res.ok) return [];
+    const list = await res.json();
+    return Array.isArray(list) ? list : [];
+  } catch {
+    return [];
+  }
+}
+
+/**
  * Fetch all question sets listed in the index.
  * Returns an array of { filename, data } objects.
  * Failed sets return { filename, data: null }.

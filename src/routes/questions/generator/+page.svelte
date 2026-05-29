@@ -76,8 +76,10 @@
     { text: '', correct: false },
   ]);
 
-  // typed
-  let genTypedAnswers = $state(['', '']);
+  // typed — keyed object list (stable id per row so Svelte never reuses/scrambles inputs)
+  let typedIdSeq = 0;
+  const newTyped = (value = '') => ({ id: typedIdSeq++, value });
+  let genTypedAnswers = $state([newTyped(), newTyped()]);
   let genTypedRequired = $state('');
 
   // fill_gap
@@ -131,7 +133,7 @@
     genAddErr = '';
     genTemplate = '';
     genGapAnswers = [''];
-    genTypedAnswers = ['', ''];
+    genTypedAnswers = [newTyped(), newTyped()];
     genTypedRequired = '';
     genOrderedItems = [{ value: '', description: '' }, { value: '', description: '' }];
     genOptions = [
@@ -205,15 +207,14 @@
 
     else if (genType === 'typed') {
       const text = genQText.trim();
-      const filled = genTypedAnswers.map(a => a.trim()).filter(Boolean);
+      const filled = genTypedAnswers.map(a => a.value.trim()).filter(Boolean);
       if (!text) { genAddErr = 'Question text is required.'; return; }
       if (filled.length === 0) { genAddErr = 'At least one accepted answer is required.'; return; }
       q.question = text;
       q.answers = filled;
-      if (genTypedRequired.trim()) {
-        const n = parseInt(genTypedRequired);
-        if (!isNaN(n) && n > 0 && n <= filled.length) q.required_count = n;
-      }
+      // genTypedRequired comes from a type="number" input — it's a number or null, not a string. Don't call .trim().
+      const n = parseInt(genTypedRequired, 10);
+      if (!isNaN(n) && n > 0 && n <= filled.length) q.required_count = n;
     }
 
     else if (genType === 'fill_gap') {
@@ -263,7 +264,7 @@
     editExplanation = q.explanation || '';
     editTemplate = q.template || '';
     editGapAnswers = Array.isArray(q.answers) && editType === 'fill_gap' ? [...q.answers] : [];
-    editTypedAnswers = Array.isArray(q.answers) && editType === 'typed' ? [...q.answers] : [];
+    editTypedAnswers = Array.isArray(q.answers) && editType === 'typed' ? q.answers.map(a => newTyped(a)) : [];
     editTypedRequired = q.required_count?.toString() || '';
     editOrderedItems = Array.isArray(q.answers) && editType === 'ordered'
       ? q.answers.map(a => ({ value: a.value || '', description: a.description || '' }))
@@ -291,8 +292,9 @@
       delete q.options; delete q.template;
     } else if (editType === 'typed') {
       q.question = editText;
-      q.answers = editTypedAnswers.map(a => a.trim()).filter(Boolean);
-      if (editTypedRequired.trim()) q.required_count = parseInt(editTypedRequired);
+      q.answers = editTypedAnswers.map(a => a.value.trim()).filter(Boolean);
+      const en = parseInt(editTypedRequired, 10);
+      if (!isNaN(en) && en > 0) q.required_count = en;
       else delete q.required_count;
       delete q.options; delete q.template;
     } else if (editType === 'fill_gap') {
@@ -491,7 +493,7 @@
   function questionSummary(q) {
     const type = q.type || 'multi_select';
     if (type === 'fill_gap') return q.template || '';
-    if (type === 'typed') return `Type ${q.required_count || q.answers?.length} answer(s) from pool of ${q.answers?.length}`;
+    if (type === 'typed') return q.question || `Type ${q.required_count || q.answers?.length} answer(s) from pool of ${q.answers?.length}`;
     if (type === 'ordered') return `Order ${q.answers?.length} items`;
     return q.question || '';
   }
@@ -646,7 +648,7 @@
         <!-- TRUE FALSE -->
         {#if genType === 'true_false'}
           <div class="gen-field">
-            <label class="gen-label">Correct Answer</label>
+            <span class="gen-label">Correct Answer</span>
             <div class="tf-row">
               <button
                 type="button"
@@ -667,18 +669,18 @@
         <!-- TYPED -->
         {#if genType === 'typed'}
           <div class="gen-field">
-            <label class="gen-label">Accepted Answers <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;">(pool of valid responses)</span></label>
+            <span class="gen-label">Accepted Answers <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;">(pool of valid responses)</span></span>
             <div class="options-list">
-              {#each genTypedAnswers as _, i}
+              {#each genTypedAnswers as answer, i (answer.id)}
                 <div class="option-row">
-                  <input class="option-text" bind:value={genTypedAnswers[i]} placeholder="Accepted answer {i + 1}">
+                  <input class="option-text" bind:value={answer.value} placeholder="Accepted answer {i + 1}">
                   {#if genTypedAnswers.length > 1}
                     <button type="button" class="option-del" onclick={() => genTypedAnswers = genTypedAnswers.filter((_, j) => j !== i)}>&#215;</button>
                   {/if}
                 </div>
               {/each}
             </div>
-            <button class="add-option-btn" onclick={() => genTypedAnswers = [...genTypedAnswers, '']}>+ Add Accepted Answer</button>
+            <button class="add-option-btn" onclick={() => genTypedAnswers = [...genTypedAnswers, newTyped()]}>+ Add Accepted Answer</button>
           </div>
           <div class="gen-field">
             <label class="gen-label" for="gen-required">Required Count <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;">(leave blank to require all)</span></label>
@@ -706,7 +708,7 @@
           </div>
           {#if genGapAnswers.length > 0}
             <div class="gen-field">
-              <label class="gen-label">Gap Answers <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;">(in order)</span></label>
+              <span class="gen-label">Gap Answers <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;">(in order)</span></span>
               <div class="options-list">
                 {#each genGapAnswers as _, i}
                   <div class="option-row">
@@ -722,7 +724,7 @@
         <!-- ORDERED -->
         {#if genType === 'ordered'}
           <div class="gen-field">
-            <label class="gen-label">Items <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;">(in correct order)</span></label>
+            <span class="gen-label">Items <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;">(in correct order)</span></span>
             <div class="options-list">
               {#each genOrderedItems as _, i}
                 <div class="ordered-row">
@@ -837,13 +839,13 @@
 
                   {#if editType === 'typed'}
                     <div class="inline-edit-label" style="margin-top:8px;">Accepted Answers</div>
-                    {#each editTypedAnswers as _, ai}
+                    {#each editTypedAnswers as answer, ai (answer.id)}
                       <div class="option-row" style="margin-bottom:4px;">
-                        <input class="option-text" bind:value={editTypedAnswers[ai]}>
+                        <input class="option-text" bind:value={answer.value}>
                         <button type="button" class="option-del" onclick={() => editTypedAnswers = editTypedAnswers.filter((_,j)=>j!==ai)}>&#215;</button>
                       </div>
                     {/each}
-                    <button class="add-option-btn" onclick={() => editTypedAnswers = [...editTypedAnswers, '']}>+ Add</button>
+                    <button class="add-option-btn" onclick={() => editTypedAnswers = [...editTypedAnswers, newTyped()]}>+ Add</button>
                   {/if}
 
                   {#if editType === 'fill_gap'}
@@ -893,8 +895,11 @@
 
 <!-- CONFIRM DIALOG -->
 {#if showConfirm}
-  <div class="modal-overlay" onclick={confirmNo}>
-    <div class="modal" onclick={(e) => e.stopPropagation()}>
+  <div class="modal-overlay" role="dialog" aria-modal="true" tabindex="-1"
+    onclick={confirmNo} onkeydown={(e) => e.key === 'Escape' && confirmNo()}>
+    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+    <div class="modal" role="document"
+      onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()}>
       <div class="modal-title">Are you sure?</div>
       <p class="modal-desc">{confirmMessage}</p>
       <div class="modal-actions">

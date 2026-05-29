@@ -91,7 +91,8 @@
 
   // ── Typed / fill_gap scoring ──────────────────────────
   function buildTypedSelected() {
-    // Returns a synthetic "selected" Set where each matched answer is an index
+    // Returns a Set of INPUT-field indices that are correct. The set size is the
+    // score; the indices let the reveal UI mark each field ✓/✗ correctly.
     const pool    = (q.answers || []).map(a => String(a).toLowerCase().trim());
     const inputs  = qtype === 'typed' ? typedInputs : gapInputs;
     const matched = new Set();
@@ -103,14 +104,16 @@
         if (expected && given === expected) matched.add(i);
       });
     } else {
-      // Pool: each input must match any unmatched answer
+      // Pool: each input must match any not-yet-consumed accepted answer.
+      // Record the INPUT index (not the pool index) so order/required_count
+      // cut-offs don't mis-flag a correct answer as wrong.
       const remaining = [...pool];
-      inputs.forEach(val => {
+      inputs.forEach((val, i) => {
         const given = val.toLowerCase().trim();
         if (!given) return;
         const idx = remaining.indexOf(given);
         if (idx !== -1) {
-          matched.add(pool.indexOf(remaining[idx]));
+          matched.add(i);
           remaining.splice(idx, 1);
         }
       });

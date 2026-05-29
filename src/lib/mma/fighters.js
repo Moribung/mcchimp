@@ -108,6 +108,30 @@ export function resetFighters() {
  *  when you need to read it after a possible resetFighters() call (e.g. in saves.js). */
 export function getFighters() { return FIGHTERS; }
 
+/** Set of full names currently occupying a slot in any of the given divisions,
+ *  plus the player's name. Used to keep generated fighter names unique so two
+ *  visible fighters never share a name. */
+export function activeNameSet(divisions, playerName) {
+  const names = new Set();
+  if (playerName) names.add(playerName);
+  for (const div of Object.values(divisions || {})) {
+    if (!div || !Array.isArray(div.slots)) continue;
+    for (const fid of div.slots) {
+      if (!fid || fid === 'player') continue;
+      const f = FIGHTERS.get(fid);
+      if (f && f.name) names.add(f.name);
+    }
+  }
+  return names;
+}
+
+/** True if any registered fighter already has this exact full name. The registry
+ *  is reset per career, so this gives career-wide name uniqueness for new fighters. */
+function nameTaken(name) {
+  for (const f of FIGHTERS.values()) if (f && f.name === name) return true;
+  return false;
+}
+
 /* ── Fighter classification ──────────────────────────── */
 export function classifyFighter(slot, divisionSlot, phase, isChamp) {
   if (slot.isPlayer) return { label: 'You', emoji: '🥊' };
@@ -247,25 +271,30 @@ export function buildDivision(phaseDef, fighterName) {
   function nextRosterOrProcedural() {
     while (rosterIdx < rosterPool.length) {
       const rf = rosterPool[rosterIdx++];
-      if (usedFirstNames.has(rf.fn) || usedLastNames.has(rf.ln)) continue;
+      const rosterName = `${rf.fn} "${rf.nick}" ${rf.ln}`;
+      // Skip if name parts clash within this division, or the full name is already
+      // used by a fighter in another division (prevents cross-division duplicates).
+      if (usedFirstNames.has(rf.fn) || usedLastNames.has(rf.ln) || nameTaken(rosterName)) continue;
       usedFirstNames.add(rf.fn);
       usedLastNames.add(rf.ln);
       usedNicks.add(rf.nick);
-      return { name: `${rf.fn} "${rf.nick}" ${rf.ln}`, rosterId: rf.id, style: rf.style };
+      return { name: rosterName, rosterId: rf.id, style: rf.style };
     }
-    // Procedural fallback when roster is exhausted
-    let fn, attempts = 0;
-    do { fn = rng(FIRST_NAMES); attempts++; } while (usedFirstNames.has(fn) && attempts < 60);
-    let ln; attempts = 0;
-    do { ln = rng(LAST_NAMES);  attempts++; } while (usedLastNames.has(ln)  && attempts < 60);
-    let nick = null;
-    if (Math.random() > 0.5) {
-      attempts = 0;
-      do { nick = rng(NICKNAMES); attempts++; } while (usedNicks.has(nick) && attempts < 40);
-      usedNicks.add(nick);
-    }
+    // Procedural fallback when roster is exhausted — unique within the division
+    // (by name part) and globally (full name not already in the registry).
+    let name, fn, ln, nick, outer = 0;
+    do {
+      let a = 0; do { fn = rng(FIRST_NAMES); a++; } while (usedFirstNames.has(fn) && a < 60);
+      a = 0;     do { ln = rng(LAST_NAMES);  a++; } while (usedLastNames.has(ln)  && a < 60);
+      nick = null;
+      if (Math.random() > 0.5) {
+        a = 0; do { nick = rng(NICKNAMES); a++; } while (usedNicks.has(nick) && a < 40);
+      }
+      name = nick ? `${fn} "${nick}" ${ln}` : `${fn} ${ln}`;
+      outer++;
+    } while (nameTaken(name) && outer < 40);
+    if (nick) usedNicks.add(nick);
     usedFirstNames.add(fn); usedLastNames.add(ln);
-    const name = nick ? `${fn} "${nick}" ${ln}` : `${fn} ${ln}`;
     return { name, rosterId: null, style: '' };
   }
 

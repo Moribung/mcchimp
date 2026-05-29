@@ -415,9 +415,10 @@
 
 <!-- ── Callout modal (rendered at page level, above everything) ── -->
 {#if calloutTargetSlot !== null}
-  <div class="callout-overlay" role="dialog" aria-modal="true"
+  <div class="callout-overlay" role="dialog" aria-modal="true" tabindex="-1"
     onclick={closeCallout}
     onkeydown={(e) => e.key === 'Escape' && closeCallout()}>
+    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
     <div class="callout-inner" role="document"
       onclick={(e) => e.stopPropagation()}
       onkeydown={(e) => e.stopPropagation()}>

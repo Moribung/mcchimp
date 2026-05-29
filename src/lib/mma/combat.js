@@ -22,7 +22,7 @@ import {
 } from './fighters.js';
 
 import {
-  scoreQuestion, drawQuestionForSlot, tierForFight,
+  scoreQuestion, drawQuestionForSlot, qidOf, rotateQuestionForFighter,
 } from './questions.js';
 
 import {
@@ -39,6 +39,21 @@ import { shuffle, randInt } from './utils.js';
  * Returns a qView object with { options, answers, _displayOrder }.
  */
 export function prepareQuestion(q) {
+  const type = q.type || 'multi_select';
+
+  // true_false may arrive without options (sparring pool skips normalisation).
+  // Always give it ["True","False"] and never shuffle — answers [0]/[1] stay valid.
+  if (type === 'true_false') {
+    const options = (Array.isArray(q.options) && q.options.length) ? q.options : ['True', 'False'];
+    return { ...q, options };
+  }
+
+  // typed / fill_gap have no options and string-based answers — shuffling/remapping
+  // would turn their answers into [undefined]. Return them unchanged.
+  if (type === 'typed' || type === 'fill_gap' || !Array.isArray(q.options) || q.options.length === 0) {
+    return { ...q };
+  }
+
   const optCount     = q.options.length;
   const displayOrder = shuffle([...Array(optCount).keys()]);
 
@@ -271,7 +286,7 @@ export function resolveResult(state, cs, q, selectedSet, pctUsed, activeLength) 
 
   // ── Question score tracking ──
   if (q) {
-    const qid = q._id || q.question;
+    const qid = qidOf(q);
     if (qid) {
       if (!state._qScores) state._qScores = {};
       state._qScores[qid] = (state._qScores[qid] || 0) + (resultClass === 'win' ? 1 : -1);
@@ -338,25 +353,10 @@ export function resolveResult(state, cs, q, selectedSet, pctUsed, activeLength) 
       if (_won) {
         state.winsVsFighter[oppFid] = (state.winsVsFighter[oppFid] || 0) + 1;
         if (state.winsVsFighter[oppFid] >= 2) {
-          const oppF   = gf(oppFid);
+          const oppF    = gf(oppFid);
           const slotIdx = state.currentOpponent.divisionSlot;
           if (oppF) {
-            const oldQid = oppF.questionId;
-            const tier   = tierForFight(cs.phase, slotIdx, oppF);
-            const fb = { easy:['easy','medium','hard','elite'], medium:['medium','easy','hard','elite'],
-              hard:['hard','medium','elite','easy'], elite:['elite','hard','medium','easy'] };
-            for (const t of fb[tier]) {
-              const newQ = (state._qPool && state._qPool[t] || [])
-                .find(x => !state._qUsed.has(x._id || x.question));
-              if (newQ) {
-                const newQid = newQ._id || newQ.question;
-                if (oldQid && state._qUsed) state._qUsed.delete(oldQid);
-                state._qUsed.add(newQid);
-                oppF.questionId = newQid;
-                if (state._qById) state._qById[newQid] = newQ;
-                break;
-              }
-            }
+            rotateQuestionForFighter(state, oppF, cs, slotIdx);
             state.winsVsFighter[oppFid] = 0;
           }
         }

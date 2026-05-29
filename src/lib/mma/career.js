@@ -14,7 +14,7 @@ import {
 import {
   FIGHTERS, makeFid, buildRec, resetFighters,
   gf, recWin, recLoss, recDraw,
-  swapSlots, migrateDivSlots, buildDivision, divisionSlotToOpponent,
+  swapSlots, migrateDivSlots, buildDivision, divisionSlotToOpponent, activeNameSet,
 } from './fighters.js';
 
 import {
@@ -335,11 +335,14 @@ export function maybeRefreshBottomSlots(state, div, phase) {
       state.career.cutPool.splice(Math.floor(Math.random() * state.career.cutPool.length), 1);
     }
 
+    // Names currently visible in the rankings — keep new fighters unique against them.
+    const usedNames = activeNameSet(state.career.divisions, state.career.fighterName);
+
     let newFid = null;
     const eligible = state.career.cutPool.filter(cf => {
       if (cf === fid) return false;
       const ff = gf(cf);
-      return ff && (ff.maxPhase || 1) >= phase;
+      return ff && (ff.maxPhase || 1) >= phase && !usedNames.has(ff.name);
     });
     if (eligible.length && Math.random() < 0.40) {
       const drawn = eligible[Math.floor(Math.random() * eligible.length)];
@@ -349,10 +352,14 @@ export function maybeRefreshBottomSlots(state, div, phase) {
       newFid = drawn;
     }
     if (!newFid) {
-      const fn   = rng(FIRST_NAMES);
-      const ln   = rng(LAST_NAMES);
-      const nick = Math.random() > 0.55 ? rng(NICKNAMES) : null;
-      const name = nick ? `${fn} "${nick}" ${ln}` : `${fn} ${ln}`;
+      let name, tries = 0;
+      do {
+        const fn   = rng(FIRST_NAMES);
+        const ln   = rng(LAST_NAMES);
+        const nick = Math.random() > 0.55 ? rng(NICKNAMES) : null;
+        name = nick ? `${fn} "${nick}" ${ln}` : `${fn} ${ln}`;
+        tries++;
+      } while (usedNames.has(name) && tries < 60);
       const isRising = Math.random() < 0.20;
       let w, l;
       if (isRising) { w = randInt(4, 8); l = Math.random() < 0.2 ? 1 : 0; }

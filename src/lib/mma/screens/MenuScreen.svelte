@@ -7,6 +7,7 @@
   import { DIFF_LABELS, DIFF_COLORS, DIFF_BG, TIER_ORDER } from '$lib/mma/constants.js';
   import { gf } from '$lib/mma/fighters.js';
   import { ensureQPool, assignDivisionQuestions } from '$lib/mma/questions.js';
+  import { fetchPublicCatalog, fetchSet } from '$lib/questions.js';
 
   const { onstartcareer, onstartsparring } = $props();
 
@@ -44,10 +45,27 @@
   let browseTab     = $state('public');   // 'public' | 'library'
   let browsePicked  = $state(null);
 
-  // Public sets (from availableModules, already loaded)
-  const publicSets = $derived(
-    gs.availableModules.filter(m => m.tag !== 'library' && m.tag !== 'uploaded')
-  );
+  // Bundled default sets (no tag) — auto-loaded, shown in the menu's "Default Sets" list.
+  const bundledSets = $derived(gs.availableModules.filter(m => !m.tag));
+
+  // Public catalog — extra static public sets, browseable + imported on demand (not auto-loaded).
+  let catalogSets   = $state([]);
+  let catalogLoaded = $state(false);
+
+  async function loadCatalog() {
+    if (catalogLoaded) return;
+    catalogLoaded = true;
+    try {
+      const filenames = await fetchPublicCatalog();
+      const sets = await Promise.all(filenames.map(async f => {
+        try   { return { id: f.replace('.json', ''), filename: f, tag: 'public', ...(await fetchSet(f)) }; }
+        catch { return null; }
+      }));
+      catalogSets = sets.filter(Boolean);
+    } catch {
+      catalogSets = [];
+    }
+  }
 
   // Library tab state
   let libLoading = $state(false);
@@ -59,6 +77,7 @@
     browsePicked = null;
     browseOpen  = true;
     if (tab === 'library') await loadLibrary();
+    else                   await loadCatalog();
   }
 
   async function loadLibrary() {
@@ -84,6 +103,7 @@
     browseTab    = tab;
     browsePicked = null;
     if (tab === 'library' && libItems.length === 0 && !libError) await loadLibrary();
+    if (tab === 'public') await loadCatalog();
   }
 
   function pickPublicSet(mod) { browsePicked = { source: 'public', mod }; }
@@ -93,7 +113,13 @@
   function confirmBrowsePick() {
     if (!browsePicked) return;
     if (browsePicked.source === 'public') {
-      selectedId = browsePicked.mod.id;
+      const mod = browsePicked.mod;
+      // Catalog sets aren't auto-loaded — import on first use.
+      if (!gs.loadedModules[mod.id]) {
+        gs.availableModules = [...gs.availableModules, mod];
+        gs.loadedModules[mod.id] = mod;
+      }
+      selectedId = mod.id;
     } else {
       const item = browsePicked.item;
       const id   = 'lib_' + item.id;
@@ -169,7 +195,7 @@
     <!-- Default sets -->
     <div class="msw-section-label">Default Sets</div>
     <div class="msw-list">
-      {#each gs.availableModules.filter(m => m.tag !== 'library' && m.tag !== 'uploaded') as mod (mod.id)}
+      {#each bundledSets as mod (mod.id)}
         <button class="msw-card" class:selected={switcherSelectedId === mod.id}
           onclick={() => switcherSelectedId = mod.id}>
           <div class="msw-card-name">{mod.name}</div>
@@ -207,7 +233,7 @@
     <!-- Default sets -->
     <div class="section-label">Default Sets</div>
     <div class="module-list">
-      {#each gs.availableModules.filter(m => m.tag !== 'library' && m.tag !== 'uploaded') as mod (mod.id)}
+      {#each bundledSets as mod (mod.id)}
         {@const tiers = countTiers(mod)}
         <button class="module-card" class:selected={selectedId === mod.id}
           onclick={() => selectedId = mod.id}>
@@ -233,7 +259,7 @@
       {/if}
 
       <!-- Selected non-default set shown inline with the list -->
-      {#if selectedMod && selectedMod.tag !== 'default' && selectedMod.tag !== undefined && !gs.availableModules.filter(m => m.tag !== 'library' && m.tag !== 'uploaded').find(m => m.id === selectedId)}
+      {#if selectedMod && selectedMod.tag !== 'default' && selectedMod.tag !== undefined && !bundledSets.find(m => m.id === selectedId)}
         {@const tiers = countTiers(selectedMod)}
         <button class="module-card selected" onclick={() => {}}>
           <div class="module-card-left">
@@ -332,8 +358,9 @@
 
 <!-- ══ BROWSE MODAL ═════════════════════════════════════════ -->
 {#if browseOpen}
-  <div class="lib-overlay" role="dialog" aria-modal="true"
+  <div class="lib-overlay" role="dialog" aria-modal="true" tabindex="-1"
     onclick={closeBrowse} onkeydown={(e) => e.key === 'Escape' && closeBrowse()}>
+    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
     <div class="lib-modal" onclick={(e) => e.stopPropagation()}
       role="document" onkeydown={(e) => e.stopPropagation()}>
 
@@ -349,16 +376,35 @@
 
       <!-- Public sets tab -->
       {#if browseTab === 'public'}
-        {#if publicSets.length === 0}
+        {#if bundledSets.length === 0 && catalogSets.length === 0}
           <div class="lib-empty">No public sets available yet.</div>
         {:else}
           <div class="lib-list">
-            {#each publicSets as mod (mod.id)}
+            {#each bundledSets as mod (mod.id)}
               {@const tiers = countTiers(mod)}
               <button class="lib-item"
                 class:selected={browsePicked?.source === 'public' && browsePicked?.mod?.id === mod.id}
                 onclick={() => pickPublicSet(mod)}>
                 <div class="lib-item-name">{mod.name}</div>
+                <div class="lib-item-meta">
+                  {mod.description ?? ''} · {totalQuestions(mod)} questions
+                  <div class="tier-badges" style="margin-top:4px;">
+                    {#each tiers as t}
+                      <span class="tier-badge" style="background:{DIFF_BG[t]};color:{DIFF_COLORS[t]}">{DIFF_LABELS[t]}</span>
+                    {/each}
+                  </div>
+                </div>
+              </button>
+            {/each}
+            {#each catalogSets as mod (mod.id)}
+              {@const tiers = countTiers(mod)}
+              <button class="lib-item"
+                class:selected={browsePicked?.source === 'public' && browsePicked?.mod?.id === mod.id}
+                onclick={() => pickPublicSet(mod)}>
+                <div class="lib-item-name">
+                  {mod.name}
+                  <span class="import-tag">{gs.loadedModules?.[mod.id] ? 'Imported' : 'Import'}</span>
+                </div>
                 <div class="lib-item-meta">
                   {mod.description ?? ''} · {totalQuestions(mod)} questions
                   <div class="tier-badges" style="margin-top:4px;">
@@ -440,6 +486,7 @@
   .tag-default  { background: rgba(74,158,232,0.15); color: var(--blue); }
   .tag-library  { background: rgba(74,232,122,0.15); color: var(--green); }
   .tag-public   { background: rgba(180,74,232,0.15); color: #b44ae8; }
+  .import-tag   { font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 700; padding: 2px 6px; border-radius: 3px; margin-left: 8px; vertical-align: middle; background: rgba(180,74,232,0.15); color: #b44ae8; }
   .module-q-count { font-size: 11px; color: var(--text-muted); }
   .selected-clear {
     background: none; border: none; color: var(--text-muted); cursor: pointer;
@@ -464,8 +511,6 @@
   .browse-btn-text { flex: 1; display: flex; flex-direction: column; gap: 1px; }
   .browse-btn-text strong { font-size: 14px; font-weight: 600; color: var(--text); font-family: var(--font-display); letter-spacing: 0.04em; }
   .browse-btn-text span   { font-size: 11px; color: var(--text-muted); }
-  .browse-btn { background: transparent; border: none; color: var(--accent); cursor: pointer; font-family: var(--font-body); font-size: 13px; font-weight: 600; padding: 6px 0; display: inline-block; }
-  .browse-btn:hover { text-decoration: underline; }
 
   /* Mode */
   .mode-row { display: flex; gap: 10px; margin-bottom: 24px; }

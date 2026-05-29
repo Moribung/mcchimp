@@ -12,6 +12,17 @@ import { CHAMP_SLOT, TIER_ORDER, QSCORE_UP_THRESHOLD, QSCORE_DOWN_THRESHOLD } fr
 import { gf, migrateDivSlots } from './fighters.js';
 import { shuffle } from './utils.js';
 
+/* ── Stable question identity ─────────────────────────── */
+/**
+ * Canonical id for a question. Prefers the authored `id` (e.g. "MMA-EA-001"),
+ * then a legacy `_id`, and only falls back to the question text. Used as the key
+ * for _qById, _qUsed, _qScores, lastQid and fighter.questionId so two questions
+ * with identical text don't collide.
+ */
+export function qidOf(q) {
+  return (q && (q.id || q._id || q.question)) || null;
+}
+
 /* ── Question normalisation ──────────────────────────── */
 /**
  * Coerce any question format to the standard internal shape.
@@ -90,7 +101,7 @@ export function ensureQPool(state) {
     );
     state._qPool[t] = qs;
     qs.forEach(q => {
-      state._qById[q._id || q.id || q.question] = q;
+      state._qById[qidOf(q)] = q;
     });
   }
 }
@@ -149,10 +160,60 @@ export function tierForFight(phase, slot, opponentFighter) {
   return baseTier;
 }
 
+/* ── Tier-aware question selector ─────────────────────── */
+const QFALLBACK_ORDER = {
+  easy:   ['easy', 'medium', 'hard', 'elite'],
+  medium: ['medium', 'easy', 'hard', 'elite'],
+  hard:   ['hard', 'medium', 'elite', 'easy'],
+  elite:  ['elite', 'hard', 'medium', 'easy'],
+};
+
+/**
+ * Pick a tier-appropriate question from the pool.
+ * Pass 1 prefers fresh (unused) questions; if `allowReuse` is set and none are
+ * fresh, Pass 2 reuses already-owned/used questions (allowing duplicates).
+ * Never recurses or loops — returns null only when the pool is genuinely empty.
+ * Returns { q, qid } or null.
+ */
+function pickQuestion(state, targetTier, { allowReuse = false } = {}) {
+  const order = QFALLBACK_ORDER[targetTier] || QFALLBACK_ORDER.medium;
+
+  const all = [];
+  for (const t of TIER_ORDER) {
+    for (const q of (state._qPool[t] || [])) {
+      const qid = qidOf(q);
+      const eff = effectiveTier(state, qid, q._tier || t);
+      all.push({ q, qid, eff, used: state._qUsed.has(qid) });
+    }
+  }
+  if (all.length === 0) return null;
+
+  const choose = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+  // Pass 1 — fresh, avoiding immediate repeat
+  for (const t of order) {
+    let pool = all.filter(x => x.eff === t && !x.used && x.qid !== state.lastQid);
+    if (!pool.length) pool = all.filter(x => x.eff === t && !x.used);
+    if (pool.length) return choose(pool);
+  }
+  if (!allowReuse) return null;
+
+  // Pass 2 — reuse (duplicates allowed), still avoiding immediate repeat
+  for (const t of order) {
+    let pool = all.filter(x => x.eff === t && x.qid !== state.lastQid);
+    if (!pool.length) pool = all.filter(x => x.eff === t);
+    if (pool.length) return choose(pool);
+  }
+
+  // Last resort — anything that isn't the immediate repeat, else anything
+  const notLast = all.filter(x => x.qid !== state.lastQid);
+  return choose(notLast.length ? notLast : all);
+}
+
 /* ── Per-fight question draw ─────────────────────────── */
 /**
  * Draw the next question from the pool for the current fight.
- * Uses adaptive tier + fallback order. Resets pool when exhausted.
+ * Uses adaptive tier + fallback order. Reuses questions when the pool is exhausted.
  */
 export function drawNextQuestion(state, cs) {
   ensureQPool(state);
@@ -170,46 +231,11 @@ export function drawNextQuestion(state, cs) {
   const oppFighter = oppFid ? gf(oppFid) : null;
   const targetTier = tierForFight(phase, slot, oppFighter);
 
-  const fallbackOrder = {
-    easy:   ['easy', 'medium', 'hard', 'elite'],
-    medium: ['medium', 'easy', 'hard', 'elite'],
-    hard:   ['hard', 'medium', 'elite', 'easy'],
-    elite:  ['elite', 'hard', 'medium', 'easy'],
-  };
-
-  // Build flat list of all available (unused) questions with their effective tiers
-  const allAvail = [];
-  for (const t of TIER_ORDER) {
-    for (const q of (state._qPool[t] || [])) {
-      const qid = q._id || q.question;
-      if (state._qUsed.has(qid)) continue;
-      const eff = effectiveTier(state, qid, q._tier || t);
-      allAvail.push({ q, qid, eff });
-    }
-  }
-
-  for (const t of fallbackOrder[targetTier]) {
-    let pool = allAvail.filter(x => x.eff === t && x.qid !== state.lastQid);
-    if (!pool.length) pool = allAvail.filter(x => x.eff === t);
-    if (pool.length > 0) {
-      const { q, qid } = pool[Math.floor(Math.random() * pool.length)];
-      state._qUsed.add(qid);
-      state.lastQid = qid;
-      return q;
-    }
-  }
-
-  // Pool exhausted — reset used set, keeping only slot-owned questions reserved
-  const ownedIds = new Set();
-  if (cs && cs.division) {
-    cs.division.slots.forEach(fid => {
-      if (!fid || fid === 'player') return;
-      const f = gf(fid);
-      if (f && f.questionId) ownedIds.add(f.questionId);
-    });
-  }
-  state._qUsed = new Set(ownedIds);
-  return drawNextQuestion(state, cs); // recurse once after reset
+  const pick = pickQuestion(state, targetTier, { allowReuse: true });
+  if (!pick) return null;
+  state._qUsed.add(pick.qid);
+  state.lastQid = pick.qid;
+  return pick.q;
 }
 
 /* ── Slot-owned question draw ────────────────────────── */
@@ -229,23 +255,34 @@ export function drawQuestionForSlot(state, fidOrObj, cs) {
   }
 
   if (f && !f.isPlayer) {
-    // Assign if no question yet
-    if (!f.questionId && cs && cs.division) {
-      assignDivisionQuestions(state, cs.division, cs.phase);
-    }
+    // Already owns a question → keep serving it
     if (f.questionId) {
-      // Try _qById cache first
       const owned = state._qById && state._qById[f.questionId];
       if (owned) { state.lastQid = f.questionId; return owned; }
-      // Fallback: scan pool
+      // Fallback: scan pool (also match raw question text for pre-qidOf saves)
       for (const t of TIER_ORDER) {
-        const q = (state._qPool[t] || []).find(x => (x._id || x.question) === f.questionId);
+        const q = (state._qPool[t] || []).find(x => qidOf(x) === f.questionId || x.question === f.questionId);
         if (q) {
           if (state._qById) state._qById[f.questionId] = q;
           state.lastQid = f.questionId;
           return q;
         }
       }
+      // Owned id no longer in pool (module changed) → drop it and reassign below
+      f.questionId = null;
+    }
+
+    // Assign now, right before this fight — for this fighter only
+    const slot = (state.currentOpponent && typeof state.currentOpponent.divisionSlot === 'number')
+      ? state.currentOpponent.divisionSlot : 0;
+    const targetTier = tierForFight(cs ? cs.phase : 1, slot, f);
+    const pick = pickQuestion(state, targetTier, { allowReuse: true });
+    if (pick) {
+      f.questionId = pick.qid;            // fighter keeps it
+      state._qUsed.add(pick.qid);         // idempotent for duplicates
+      if (state._qById) state._qById[pick.qid] = pick.q;
+      state.lastQid = pick.qid;
+      return pick.q;
     }
   }
 
@@ -259,47 +296,51 @@ export function drawQuestionForSlot(state, fidOrObj, cs) {
 export function buildSparringPool(state) {
   const mod = getActiveMod(state);
   if (!mod) return [];
+  // Normalise + filter exactly like the career pool so unsupported types
+  // (ordered/image) and legacy v1 formats don't reach the renderer.
   const all = TIER_ORDER.flatMap(t =>
-    (mod.tiers[t] || []).map(q => ({ ...q, _tier: t }))
+    (mod.tiers[t] || [])
+      .map(q => normaliseQuestion({ ...q, _tier: t }))
+      .filter(Boolean)
   );
   return shuffle(all);
 }
 
+/* ── Question rotation ───────────────────────────────── */
+/**
+ * Rotate a fighter's owned question (called after they're beaten twice).
+ * Prefers a fresh, tier-appropriate question; frees the old one first so it
+ * can be reused elsewhere. If nothing better is available (small/exhausted
+ * pool) the fighter keeps its current question.
+ */
+export function rotateQuestionForFighter(state, fighter, cs, slotIdx) {
+  ensureQPool(state);
+  if (!fighter) return;
+  const oldQid = fighter.questionId;
+  if (oldQid && state._qUsed) state._qUsed.delete(oldQid);
+
+  const targetTier = tierForFight(cs ? cs.phase : 1, slotIdx, fighter);
+  const pick = pickQuestion(state, targetTier, { allowReuse: true });
+
+  if (!pick || pick.qid === oldQid) {
+    if (oldQid && state._qUsed) state._qUsed.add(oldQid); // nothing better — keep old
+    return;
+  }
+  fighter.questionId = pick.qid;
+  if (state._qUsed) state._qUsed.add(pick.qid);
+  if (state._qById) state._qById[pick.qid] = pick.q;
+}
+
 /* ── Division question assignment ────────────────────── */
 /**
- * Assign one owned question to each fighter slot in a division.
- * Preserves existing assignments — only fills empty slots.
+ * No longer pre-assigns questions. Questions are now assigned lazily, right
+ * before each fight, in drawQuestionForSlot(). Kept (with its original
+ * signature) so existing callers stay valid; only ensures the pool is built
+ * and migrates legacy division slots.
  */
-export function assignDivisionQuestions(state, div, phase) {
+export function assignDivisionQuestions(state, div, phase) { // eslint-disable-line no-unused-vars
   ensureQPool(state);
-  migrateDivSlots(div);
-
-  div.slots.forEach((fid, i) => {
-    if (!fid || fid === 'player') return;
-    const f = gf(fid);
-    if (!f) return;
-    if (f.questionId) return; // preserve existing assignment
-
-    const tier = tierForFight(phase, i, f);
-    const fallback = {
-      easy:   ['easy', 'medium', 'hard', 'elite'],
-      medium: ['medium', 'easy', 'hard', 'elite'],
-      hard:   ['hard', 'medium', 'elite', 'easy'],
-      elite:  ['elite', 'hard', 'medium', 'easy'],
-    };
-
-    let q = null;
-    for (const t of fallback[tier]) {
-      q = (state._qPool[t] || []).find(x => !state._qUsed.has(x._id || x.question));
-      if (q) break;
-    }
-    if (q) {
-      const qid = q._id || q.question;
-      state._qUsed.add(qid);
-      f.questionId = qid;
-      if (state._qById) state._qById[qid] = q;
-    }
-  });
+  if (div) migrateDivSlots(div);
 }
 
 /* ── Scoring engine ──────────────────────────────────── */
@@ -316,6 +357,18 @@ export function assignDivisionQuestions(state, div, phase) {
  * ratio == 0         → FINISH
  */
 export function scoreQuestion(q, selectedSet) {
+  const type = q.type || 'multi_select';
+
+  if (type === 'typed' || type === 'fill_gap') {
+    const matched = selectedSet.size;
+    const maxPts  = type === 'typed'
+      ? (q.required_count ?? q.answers.length)
+      : q.answers.length;
+    const score = Math.min(matched, maxPts);
+    const ratio = maxPts > 0 ? score / maxPts : 0;
+    return { score, maxPts, ratio };
+  }
+
   const correctSet = new Set(q.answers);
   let pts = 0;
   selectedSet.forEach(i => { pts += correctSet.has(i) ? 1 : -1; });
