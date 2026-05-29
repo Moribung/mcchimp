@@ -9,7 +9,12 @@
   import { ensureQPool, assignDivisionQuestions } from '$lib/mma/questions.js';
   import { fetchPublicCatalog, fetchSet } from '$lib/questions.js';
 
-  const { onstartcareer, onstartsparring } = $props();
+  const {
+    onstartcareer, onstartsparring,
+    onsavedcareers, onpastcareers,
+    saveCount = 0, historyCount = 0,
+    userLimits = { maxActiveSaves: 10, maxPastCareers: 10 },
+  } = $props();
 
   // ── Local UI state ────────────────────────────────────
   let mode       = $state('career');
@@ -307,6 +312,30 @@
       </button>
     </div>
 
+    <!-- Career save panels (logged-in users only) -->
+    {#if $session}
+      <div class="saves-row">
+        <button class="saves-card" onclick={() => onsavedcareers?.()}>
+          <div class="saves-card-icon">▶</div>
+          <div class="saves-card-body">
+            <div class="saves-card-title">Continue a Career</div>
+            <div class="saves-card-sub">Active saves</div>
+          </div>
+          <div class="saves-card-badge">{saveCount} / {userLimits.maxActiveSaves}</div>
+        </button>
+        <button class="saves-card" onclick={() => onpastcareers?.()}>
+          <div class="saves-card-icon">📜</div>
+          <div class="saves-card-body">
+            <div class="saves-card-title">Past Careers</div>
+            <div class="saves-card-sub">Completed careers</div>
+          </div>
+          <div class="saves-card-badge">{historyCount} career{historyCount !== 1 ? 's' : ''}</div>
+        </button>
+      </div>
+    {:else}
+      <div class="saves-guest-hint">Log in to save careers and track your history.</div>
+    {/if}
+
     <!-- Mode toggle -->
     <div class="mode-row">
       <button class="mode-btn" class:active={mode === 'career'} onclick={() => mode = 'career'}>
@@ -582,10 +611,37 @@
   .lib-item-meta { font-size: 11px; color: var(--text-muted); }
   .lib-footer  { display: flex; gap: 10px; padding: 12px 16px; border-top: 1px solid var(--border); flex-shrink: 0; }
 
+  /* Save panels */
+  .saves-row {
+    display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap;
+  }
+  .saves-card {
+    flex: 1; min-width: 200px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px 16px; cursor: pointer;
+    display: flex; align-items: center; gap: 12px; font-family: var(--font-body);
+    text-align: left; color: var(--text); transition: border-color 0.15s, background 0.15s;
+  }
+  .saves-card:hover { border-color: var(--accent); background: var(--accent-dim); }
+  .saves-card-icon  { font-size: 18px; flex-shrink: 0; }
+  .saves-card-body  { flex: 1; display: flex; flex-direction: column; gap: 1px; }
+  .saves-card-title { font-family: var(--font-display); font-size: 15px; letter-spacing: 0.04em; color: var(--text); }
+  .saves-card-sub   { font-size: 11px; color: var(--text-muted); }
+  .saves-card-badge {
+    font-family: var(--font-display); font-size: 14px; letter-spacing: 0.04em;
+    color: var(--accent); flex-shrink: 0;
+  }
+  .saves-guest-hint {
+    font-size: 12px; color: var(--text-muted); text-align: center;
+    padding: 14px 16px; border: 1px dashed var(--border); border-radius: var(--radius);
+    margin-bottom: 24px;
+  }
+
   @media (max-width: 768px) {
     .menu-wrap { padding: 20px 0 32px; }
     .browse-row { flex-direction: column; }
     .diff-row, .length-row { gap: 6px; }
     .diff-btn, .length-btn { padding: 8px 10px; min-width: 0; }
+    .saves-row { flex-direction: column; }
   }
 </style>

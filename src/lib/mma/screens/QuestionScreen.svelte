@@ -155,8 +155,10 @@
       const { resultClass, rolled, score, maxPts, ratio, isLast, event } =
         resolveResult(gs, gs.career, q, sel, pctUsed, activeLength);
       gs.fightResult = { resultClass, rolled, score, maxPts, ratio, isLast, event, q };
-      onsave?.();
+      // Switch the screen first, then persist on the next tick so the save
+      // (blob serialisation + network write) never delays the transition.
       gs.screen = 'result';
+      setTimeout(() => onsave?.(), 0);
     }, 450);
   }
 

@@ -13,6 +13,8 @@
   }                       from '$lib/mma/questions.js';
   import { prepareQuestion } from '$lib/mma/combat.js';
 
+  const { onsaveexit } = $props();
+
   const cs  = $derived(gs.career);
   const mod = $derived(gs.activeModId ? gs.loadedModules?.[gs.activeModId] : null);
 
@@ -43,7 +45,9 @@
         cs
       );
     }
-    if (!q) { gs.screen = 'end'; return; }
+    // No question available — end the career. Sparring has no career to archive,
+    // so it goes straight to 'end'; a career routes through 'career_end' so it's archived.
+    if (!q) { gs.screen = gs.sparring ? 'end' : 'career_end'; return; }
 
     const baseTimer = DIFFICULTY_TIMERS[cs?.difficulty ?? 'medium'] ?? 45;
     const effectiveTimer = (!gs.sparring && cs)
@@ -97,9 +101,16 @@
   {/if}
 </div>
 
-<button class="btn btn-primary" onclick={startFight}>
-  {gs.sparring ? 'Step Into the Gym' : 'Step Into the Cage'}
-</button>
+<div class="prefight-btn-row">
+  <button class="btn btn-primary" onclick={startFight}>
+    {gs.sparring ? 'Step Into the Gym' : 'Step Into the Cage'}
+  </button>
+  {#if !gs.sparring && onsaveexit}
+    <button class="btn btn-ghost pf-save-exit" onclick={() => onsaveexit?.()}>
+      Save &amp; Exit
+    </button>
+  {/if}
+</div>
 
 <style>
   .prefight-text {
@@ -122,6 +133,8 @@
     flex-wrap: wrap;
     margin-bottom: 20px;
   }
+  .prefight-btn-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .pf-save-exit { font-size: 12px; padding: 8px 16px; }
   .inline-badge {
     display: inline-block;
     font-size: 11px;

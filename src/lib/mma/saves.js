@@ -13,10 +13,38 @@
  *   on career end:      await platformDeleteSave(userId, 'mma')
  */
 
-import { getFighters, resetFighters }           from './fighters.js';
-import { ensureQPool, assignDivisionQuestions } from './questions.js';
+import { getFighters, resetFighters, divisionSlotToOpponent } from './fighters.js';
+import { ensureQPool, assignDivisionQuestions }              from './questions.js';
+import { streakSteps, ensureTitles }                         from './career.js';
+import { CHAMP_SLOT }                                        from './constants.js';
 
 const SAVE_VERSION = '2.0';
+
+/**
+ * Re-establish the upcoming opponent after a load.
+ * resolveResult() nulls currentOpponent at the end of every fight, and the next
+ * opponent is normally chosen on "Next Fight". Since we resume directly on the
+ * prefight screen, we must restore it here:
+ *  - reuse the saved opponent if it still occupies its slot (saved from prefight)
+ *  - otherwise pick a fresh opponent via standard matchmaking (no NPC round)
+ */
+function restoreNextOpponent(state, saved) {
+  const cs = state.career;
+  if (!cs || !cs.division) return null;
+
+  if (saved && saved.fid && saved.fid !== 'player'
+      && typeof saved.divisionSlot === 'number'
+      && cs.division.slots[saved.divisionSlot] === saved.fid) {
+    return saved;
+  }
+
+  const playerSlot = cs.division.playerSlot;
+  const targetSlot = playerSlot === CHAMP_SLOT
+    ? CHAMP_SLOT - 1
+    : Math.min(CHAMP_SLOT, playerSlot + streakSteps(cs.phaseStreak, state));
+  const fid = cs.division.slots[targetSlot];
+  return (fid && fid !== 'player') ? divisionSlotToOpponent(fid, targetSlot, cs) : null;
+}
 
 /* ── Export ──────────────────────────────────────────── */
 export function exportSave(state) {
@@ -26,6 +54,9 @@ export function exportSave(state) {
     // Career core
     career:     state.career ? { ...state.career } : null,
     activeModId: state.activeModId,
+
+    // Upcoming opponent (valid when saved from the prefight screen)
+    currentOpponent: state.currentOpponent ? { ...state.currentOpponent } : null,
 
     // Fighter registry — serialise Map as [fid, fighter] pairs
     fighters:   [...getFighters().entries()],
@@ -85,6 +116,20 @@ export function loadSave(state, blob) {
   state.career      = blob.career    || null;
   state.activeModId = blob.activeModId || null;
 
+  // Re-alias division → divisions[phase]. JSON serialisation breaks the shared
+  // object reference between career.division and career.divisions[phase]; if we
+  // don't restore it, they desync and rank progress is silently discarded by
+  // syncDivisionAlias on the next NPC round (player stays stuck at their slot).
+  if (state.career?.divisions) {
+    const ph = state.career.phase ?? 1;
+    if (state.career.divisions[ph]) {
+      state.career.division = state.career.divisions[ph];
+    }
+  }
+
+  // Ensure per-organisation title records exist (migrates legacy single-belt saves).
+  if (state.career) ensureTitles(state.career);
+
   state.wins        = blob.wins      || 0;
   state.losses      = blob.losses    || 0;
   state.draws       = blob.draws     || 0;
@@ -141,6 +186,21 @@ export function loadSave(state, blob) {
   state.currentQuestion    = null;
   state.selectedOptions    = [];
   state.timerRunning       = false;
+
+  // A promotion/cut offer is only actionable from the result screen, but we
+  // resume on prefight — so an offer that was pending at save time would be
+  // orphaned and leave advancementPending/cutPending stuck true, permanently
+  // disabling future offers. Clear the orphaned choice and its flags so the
+  // offer simply re-rolls on the next qualifying result.
+  if (state.career) {
+    if (state.career.pendingEvent?.choiceType) state.career.pendingEvent = null;
+    state.career.advancementPending = false;
+    state.career.cutPending         = false;
+  }
+
+  // Restore (or reconstruct) the upcoming opponent so the resumed prefight
+  // screen has a real opponent — otherwise the next bout records "Unknown".
+  state.currentOpponent = restoreNextOpponent(state, blob.currentOpponent);
 
   state.screen = 'prefight';
   return true;

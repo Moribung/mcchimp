@@ -7,10 +7,10 @@
   import { onMount } from 'svelte';
   import { state as gs } from '$lib/mma/state.svelte.js';
 
-  const { oncareerend } = $props();  // If we land here it means the career has ended — go straight to end screen
-  onMount(() => {
-    oncareerend?.();
-    gs.screen = 'end';
+  const { oncareerend } = $props();
+  onMount(async () => {
+    // oncareerend handles routing (past_careers for logged-in, 'end' otherwise)
+    await oncareerend?.();
   });
 </script>
 <!-- Nothing to render — redirects immediately in onMount -->

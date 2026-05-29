@@ -11,7 +11,7 @@
  */
 
 export const state = $state({
-  screen: 'menu',  // 'menu' | 'naming' | 'prefight' | 'question' | 'result' | 'career_end' | 'end'
+  screen: 'menu',  // 'menu' | 'saved_careers' | 'past_careers' | 'naming' | 'prefight' | 'question' | 'result' | 'career_end' | 'end'
 
   // ── Career ────────────────────────────────────────────
   career: null,           // set by initState(); contains fighterName, phase, divisions etc.
@@ -75,4 +75,8 @@ export const state = $state({
   retiredDurability:  false,
   retiredForcefully:  false,
   _calloutOpponent:   null,     // set when callout is accepted, consumed by acceptCalloutFight
+
+  // ── Save slot ─────────────────────────────────────────
+  saveId:         null,         // UUID of the current active save row in career_saves
+  _newHistoryId:  null,         // UUID of a freshly archived career — highlights it in past_careers screen
 });

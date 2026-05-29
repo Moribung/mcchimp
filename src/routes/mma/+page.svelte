@@ -2,29 +2,33 @@
 <script>
   import { onMount }  from 'svelte';
   import { get }      from 'svelte/store';
+  import { page }     from '$app/stores';
   import { session }  from '$lib/stores/session.js';
   import { supabase } from '$lib/supabase.js';
   import {
-    loadSave  as platformLoadSave,
-    exportSave as platformExportSave,
-    deleteSave as platformDeleteSave,
-    archiveCareer,
+    loadAllSaves, loadSaveById,
+    createSave, updateSave, deleteSave,
+    loadPastCareers, archiveCareer,
+    getUserLimits,
   }                   from '$lib/saves.js';
   import { fetchIndex, fetchSet } from '$lib/questions.js';
 
   import { state as gs }    from '$lib/mma/state.svelte.js';
   import { initState, initSparringState, calcLegacyTitle } from '$lib/mma/career.js';
   import { exportSave, loadSave } from '$lib/mma/saves.js';
+  import { PHASES } from '$lib/mma/constants.js';
 
-  import MenuScreen      from '$lib/mma/screens/MenuScreen.svelte';
-  import NamingScreen    from '$lib/mma/screens/NamingScreen.svelte';
-  import PrefightScreen  from '$lib/mma/screens/PrefightScreen.svelte';
-  import QuestionScreen  from '$lib/mma/screens/QuestionScreen.svelte';
-  import ResultScreen    from '$lib/mma/screens/ResultScreen.svelte';
-  import CareerEndScreen from '$lib/mma/screens/CareerEndScreen.svelte';
-  import EndScreen       from '$lib/mma/screens/EndScreen.svelte';
-  import CareerPanel     from '$lib/mma/screens/CareerPanel.svelte';
-  import BoutHistory     from '$lib/mma/screens/BoutHistory.svelte';
+  import MenuScreen         from '$lib/mma/screens/MenuScreen.svelte';
+  import NamingScreen       from '$lib/mma/screens/NamingScreen.svelte';
+  import PrefightScreen     from '$lib/mma/screens/PrefightScreen.svelte';
+  import QuestionScreen     from '$lib/mma/screens/QuestionScreen.svelte';
+  import ResultScreen       from '$lib/mma/screens/ResultScreen.svelte';
+  import CareerEndScreen    from '$lib/mma/screens/CareerEndScreen.svelte';
+  import EndScreen          from '$lib/mma/screens/EndScreen.svelte';
+  import CareerPanel        from '$lib/mma/screens/CareerPanel.svelte';
+  import BoutHistory        from '$lib/mma/screens/BoutHistory.svelte';
+  import SavedCareersScreen from '$lib/mma/screens/SavedCareersScreen.svelte';
+  import PastCareersScreen  from '$lib/mma/screens/PastCareersScreen.svelte';
 
   import { gf }          from '$lib/mma/fighters.js';
   import {
@@ -49,7 +53,6 @@
       if (!f) continue;
       const rankNum = i === CHAMP_SLOT ? 'C' : i < RANKED_START ? '–' : `#${CHAMP_SLOT - i}`;
       const isNext  = !isPlayer && gs.currentOpponent && typeof gs.currentOpponent.divisionSlot === 'number' && i === gs.currentOpponent.divisionSlot;
-      // Movement — only meaningful on prefight screen after NPC round
       let mv = null;
       if (!isPlayer && f.prevSlot != null && f.prevSlot !== i) {
         mv = { delta: Math.abs(i - f.prevSlot), dir: i > f.prevSlot ? 'up' : 'down' };
@@ -133,7 +136,7 @@
     gs._calloutOpponent = null;
     calloutTargetSlot   = null;
     calloutResult       = null;
-    gs.calloutUsed      = false; // reset so it doesn't show "used" on next prefight
+    gs.calloutUsed      = false;
     gs.screen           = 'prefight';
   }
 
@@ -150,6 +153,26 @@
 
   // ── Back bar: display name ────────────────────────────
   let displayName = $state('');
+  let profile     = $state(null);
+
+  // ── Save counts (for menu panels) ────────────────────
+  let saveCount   = $state(0);
+  let historyCount = $state(0);
+
+  const userLimits = $derived(getUserLimits(profile));
+
+  async function refreshCounts() {
+    const sess = get(session);
+    if (!sess) return;
+    try {
+      const [saves, hist] = await Promise.all([
+        loadAllSaves(sess.user.id, 'mma'),
+        loadPastCareers(sess.user.id, 'mma'),
+      ]);
+      saveCount    = saves.length;
+      historyCount = hist.length;
+    } catch { /* ignore */ }
+  }
 
   // ── Module loading ────────────────────────────────────
   async function loadModules() {
@@ -167,33 +190,116 @@
     }
   }
 
+  // ── Save status banner ────────────────────────────────
+  let saveError = $state(null);
+
   // ── Cloud save ────────────────────────────────────────
+  // Returns true on success, false on failure (with saveError set).
   async function saveToCloud() {
     const sess = get(session);
-    if (!sess) return;
+    if (!sess) { saveError = 'Not logged in — cannot save. Log in to save careers.'; return false; }
+    if (!gs.career) return false;
     try {
-      await platformExportSave(sess.user.id, 'mma', exportSave(state));
+      const blob        = exportSave(gs);
+      const fighterName = gs.career.fighterName || null;
+      if (gs.saveId) {
+        await updateSave(gs.saveId, blob, fighterName);
+      } else {
+        const newId = await createSave(sess.user.id, 'mma', blob, fighterName);
+        gs.saveId = newId;
+        saveCount = saveCount + 1;
+      }
+      saveError = null;
+      return true;
     } catch (e) {
       console.error('Save failed:', e);
+      saveError = `Save failed: ${e?.message || e?.code || 'unknown error'}`;
+      return false;
     }
+  }
+
+  // ── Save & Exit (suspend career, return to menu) ──────
+  async function saveAndExit() {
+    const ok = await saveToCloud();
+    if (!ok) return; // keep the player on the current screen so the error banner is visible
+    // Clear the in-memory career so MenuScreen shows the main menu,
+    // not the mid-career switcher. The career is safely persisted in the DB.
+    gs.career          = null;
+    gs.currentOpponent = null;
+    gs.saveId          = null;
+    gs.sparring        = false;
+    gs.screen          = 'menu';
+    await refreshCounts();
   }
 
   // ── Career end → archive + delete active save ─────────
   async function onCareerEnd() {
     const sess = get(session);
-    if (!sess || !gs.career) return;
-    const legacy = calcLegacyTitle(gs.wins, gs.fightIndex);
-    const record = `${gs.wins}-${gs.losses}-${gs.draws}`;
+    if (!sess || !gs.career) {
+      gs.screen = 'end';
+      return;
+    }
+    const legacy  = calcLegacyTitle(gs.wins, gs.fightIndex);
+    const record  = `${gs.wins}-${gs.losses}-${gs.draws}`;
+    const highestPhase = gs.career.highestPhase ?? gs.career.phase ?? 1;
+    const highestOrg   = PHASES[highestPhase]?.promo ?? 'Regional FC';
+    const titles  = gs.career.titles || {};
+    const champCount  = [1, 2, 3].reduce((n, ph) => n + (titles[ph]?.reigns || 0), 0);
+    const maxDefenses = [1, 2, 3].reduce((m, ph) => Math.max(m, titles[ph]?.bestDefenseStreak || 0), 0);
+    const statBreakdown = {
+      wins: gs.wins, losses: gs.losses, draws: gs.draws,
+      finishes: gs.finishes, fightIndex: gs.fightIndex,
+      winsByKO: gs.winsByKO, winsByTKO: gs.winsByTKO,
+      winsBySub: gs.winsBySub, winsByDec: gs.winsByDec,
+      bestStreak: gs.bestStreak, bestUnbeatenStreak: gs.bestUnbeatenStreak,
+      champCount,
+      defenseStreak: maxDefenses,
+      // Per-organisation belts
+      titles: [1, 2, 3].map(ph => ({
+        org:    PHASES[ph]?.promo ?? `Phase ${ph}`,
+        belt:   PHASES[ph]?.rankLabels?.[11] ?? 'Champion',
+        reigns: titles[ph]?.reigns || 0,
+        bestDefenseStreak: titles[ph]?.bestDefenseStreak || 0,
+      })).filter(t => t.reigns > 0),
+    };
     try {
-      await archiveCareer(sess.user.id, 'mma', {
+      const histId = await archiveCareer(sess.user.id, 'mma', {
         fighterName: gs.career.fighterName,
         finalRecord: record,
         legacyTitle: legacy,
+        highestOrg,
+        statBreakdown,
       });
-      await platformDeleteSave(sess.user.id, 'mma');
+      if (gs.saveId) {
+        await deleteSave(gs.saveId);
+        saveCount    = Math.max(0, saveCount - 1);
+        historyCount = historyCount + 1;
+      }
+      gs._newHistoryId = histId;   // highlights the entry if/when Past Careers is opened
+      gs.saveId        = null;
+      // Show the end-of-career summary (Run It Back / Main Menu). The career is
+      // archived in the background and reachable from the menu's Past Careers panel.
+      // Going to 'end' (not 'past_careers') also avoids leaving a stale gs.career
+      // that would make the menu show the mid-career switcher.
+      gs.screen        = 'end';
     } catch (e) {
       console.error('Archive failed:', e);
+      saveError = `Could not save completed career: ${e?.message || e?.code || 'unknown error'}`;
+      gs.screen = 'end';
     }
+  }
+
+  // ── Load a specific save ──────────────────────────────
+  async function loadCareer(saveId, saveDataBlob) {
+    let blob = saveDataBlob;
+    if (!blob) {
+      const row = await loadSaveById(saveId);
+      if (!row) return;
+      blob = row.save_data;
+    }
+    if (!blob) return;
+    loadSave(gs, blob);
+    gs.saveId = saveId;
   }
 
   // ── onMount ───────────────────────────────────────────
@@ -201,20 +307,39 @@
     await loadModules();
     const sess = get(session);
     if (sess) {
-      // Fetch display name for back bar
+      // Fetch profile for display name + tier
       supabase
         .from('profiles')
-        .select('display_name')
+        .select('display_name, tier')
         .eq('id', sess.user.id)
         .single()
-        .then(({ data }) => { if (data) displayName = data.display_name; });
-      // Load save
+        .then(({ data }) => {
+          if (data) {
+            displayName = data.display_name;
+            profile     = data;
+          }
+        });
+      // Load save counts for menu panels
+      refreshCounts();
+    }
+    // Deep-link from dashboard
+    const continueId = $page.url.searchParams.get('continue');
+    const urlScreen  = $page.url.searchParams.get('screen');
+    if (continueId && sess) {
+      // Resume a specific career directly (Continue from the dashboard).
       try {
-        const blob = await platformLoadSave(sess.user.id, 'mma');
-        if (blob) loadSave(gs, blob);
+        await loadCareer(continueId);   // loadSave routes to the prefight screen
       } catch (e) {
-        console.error('Could not load save:', e);
+        console.error('Could not resume career:', e);
+        gs.screen = 'saved_careers';
       }
+    } else if (urlScreen === 'saved_careers' || urlScreen === 'past_careers') {
+      gs.screen = urlScreen;
+    }
+    // Strip deep-link params so a later reload starts at the menu instead of
+    // re-triggering the same career load / screen.
+    if (continueId || urlScreen) {
+      window.history.replaceState(window.history.state, '', '/mma');
     }
   });
 </script>
@@ -258,7 +383,14 @@
     {/if}
   </header>
 
-  {#if gs.screen !== 'menu' && gs.screen !== 'end'}
+  {#if saveError}
+    <div class="save-error-banner" role="alert">
+      <span class="seb-text">⚠ {saveError}</span>
+      <button class="seb-close" onclick={() => saveError = null} aria-label="Dismiss">✕</button>
+    </div>
+  {/if}
+
+  {#if gs.screen !== 'menu' && gs.screen !== 'end' && gs.screen !== 'saved_careers' && gs.screen !== 'past_careers'}
     <div class="fight-meta">
       {#if gs.sparring}
         {#if gs.fightIndex > 0}
@@ -284,19 +416,38 @@
 
       {#if gs.screen === 'menu'}
         <MenuScreen
+          {saveCount}
+          {historyCount}
+          {userLimits}
+          onsavedcareers={() => { gs.screen = 'saved_careers'; }}
+          onpastcareers={() => { gs.screen = 'past_careers'; }}
           onstartcareer={(e) => {
             initState(gs, e.modId);
             gs.career.activeLength = e.length;
             gs.career.difficulty   = e.difficulty;
+            gs.saveId = null;
           }}
           onstartsparring={(e) => initSparringState(gs, e.modId)}
         />
+
+      {:else if gs.screen === 'saved_careers'}
+        <SavedCareersScreen
+          onloadcareer={async (saveId, blob) => { await loadCareer(saveId, blob); }}
+          onnewcareer={() => {
+            initState(gs, gs.activeModId || gs.availableModules?.[0]?.id);
+            gs.saveId = null;
+          }}
+          onback={() => { gs.screen = 'menu'; }}
+        />
+
+      {:else if gs.screen === 'past_careers'}
+        <PastCareersScreen onback={() => { gs.screen = 'menu'; }} />
 
       {:else if gs.screen === 'naming'}
         <NamingScreen onsave={saveToCloud} />
 
       {:else if gs.screen === 'prefight'}
-        <PrefightScreen />
+        <PrefightScreen onsaveexit={saveAndExit} />
 
       {:else if gs.screen === 'question'}
         <QuestionScreen onsave={saveToCloud} />
@@ -304,13 +455,12 @@
       {:else if gs.screen === 'result'}
         <ResultScreen
           onsave={saveToCloud}
+          onsaveexit={saveAndExit}
           oncareerend={onCareerEnd}
         />
 
       {:else if gs.screen === 'career_end'}
-        <CareerEndScreen
-          oncareerend={onCareerEnd}
-        />
+        <CareerEndScreen oncareerend={onCareerEnd} />
 
       {:else if gs.screen === 'end'}
         <EndScreen onrestart={() => { gs.screen = 'menu'; }} />
@@ -413,7 +563,7 @@
 
 </div>
 
-<!-- ── Callout modal (rendered at page level, above everything) ── -->
+<!-- ── Callout modal ── -->
 {#if calloutTargetSlot !== null}
   <div class="callout-overlay" role="dialog" aria-modal="true" tabindex="-1"
     onclick={closeCallout}
@@ -585,6 +735,15 @@
     background: rgba(180,74,232,0.10); border: 1px solid rgba(180,74,232,0.25);
     border-radius: var(--radius); padding: 6px 14px; margin: 8px 32px 0; text-align: center;
   }
+  .save-error-banner {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    font-size: 13px; color: var(--red);
+    background: rgba(232,74,74,0.10); border: 1px solid rgba(232,74,74,0.35);
+    border-radius: var(--radius); padding: 10px 16px; margin: 12px 32px 0;
+  }
+  .seb-text  { line-height: 1.4; }
+  .seb-close { background: none; border: none; color: var(--red); cursor: pointer; font-size: 14px; padding: 2px 6px; flex-shrink: 0; }
+  .seb-close:hover { opacity: 0.7; }
   .layout-wrap {
     display: flex; flex: 1; min-height: 0; align-items: stretch;
     width: 100%; max-width: 1400px; margin: 0 auto;

@@ -5,7 +5,7 @@
   import {
     getPhaseDef, getPlayerSlot, slotToRankLabel, slotToCssClass, isUndefeated,
   } from '$lib/mma/career.js';
-  import { CHAMP_SLOT } from '$lib/mma/constants.js';
+  import { CHAMP_SLOT, PHASES } from '$lib/mma/constants.js';
 
   const cs      = $derived(gs.career);
   const pDef    = $derived(cs ? getPhaseDef(cs) : null);
@@ -20,16 +20,24 @@
   const rankClass = $derived(
     !cs ? '' : isChamp ? 'rank-champion' : slotToCssClass(slot)
   );
-  const champText = $derived(
-    !cs || (!cs.titleHeld && !cs.champCount) ? null :
-    cs.titleHeld
-      ? (cs.champCount > 1 ? `${cs.champCount}-Time ` : '') +
-        (cs.titleName || 'Champion') +
-        (cs.defenseStreak > 0
-          ? ` · ${cs.defenseStreak} defense${cs.defenseStreak > 1 ? 's' : ''}`
-          : ' · Undefeated champion')
-      : `${cs.champCount}-Time former champion`
-  );
+  // Per-organisation belts — separately tracked in cs.titles.
+  // In-game we surface two summary badges (full per-org data is kept for the end screen):
+  //   • Times champion — for the HIGHEST division ever held a belt in
+  //   • Title defenses — defenses of the belt currently held
+  const titleStats = $derived((() => {
+    if (!cs?.titles) return { top: null, currentDefenses: 0 };
+    let top = null;
+    for (const ph of [1, 2, 3]) {
+      const t = cs.titles[ph];
+      if (t && t.reigns > 0) {
+        top = { phase: ph, org: PHASES[ph]?.promo ?? `Phase ${ph}`,
+                belt: PHASES[ph]?.rankLabels?.[11] ?? 'Champion', reigns: t.reigns, held: t.held };
+      }
+    }
+    const cur = cs.titles[cs.phase];
+    const currentDefenses = (cur && cur.held) ? cur.defenseStreak : 0;
+    return { top, currentDefenses };
+  })());
 
   const ws  = $derived(Math.max(0, gs.currentStreak || 0));
   const ls  = $derived(Math.abs(Math.min(0, gs.currentStreak || 0)));
@@ -39,6 +47,19 @@
 
   const streakTags = $derived((() => {
     const tags = [];
+    // Championship badges first (most prestigious)
+    if (titleStats.top) {
+      const { reigns: r, belt, held } = titleStats.top;
+      // belt already reads e.g. "GFL World Champion" — don't append another "Champion".
+      // If the belt isn't currently held, mark it "Former".
+      tags.push({
+        cls:  held ? 'st-champ' : 'st-former',
+        text: `👑 ${held ? '' : 'Former '}${r > 1 ? r + '× ' : ''}${belt}`,
+      });
+    }
+    if (titleStats.currentDefenses > 0) {
+      tags.push({ cls: 'st-defense', text: `🏆 ${titleStats.currentDefenses} title defense${titleStats.currentDefenses > 1 ? 's' : ''}` });
+    }
     if (ls >= 2) tags.push({ cls: 'st-loss',       text: `💔 ${ls}-fight loss streak` });
     if (ws >= 2) tags.push({ cls: 'st-win',        text: `🔥 ${ws}-fight win streak` });
     if (fs >= 2) tags.push({ cls: 'st-finish',     text: `⚡ ${fs}-fight finish streak` });
@@ -91,7 +112,9 @@
     if (!cs || gs.sparring) return;
     if (!confirm('Are you sure you want to retire? This will end your career.')) return;
     gs.retiredVoluntarily = true;
-    gs.screen = 'end';
+    // Route through 'career_end' (not 'end') so the career is archived to Past
+    // Careers and the active save is removed — 'end' would skip onCareerEnd.
+    gs.screen = 'career_end';
   }
 </script>
 
@@ -120,11 +143,6 @@
         <div class="durability-bar" style="width:{dur}%;background:{durColor}"></div>
       </div>
     </div>
-
-    {#if champText}
-      <div class="cp-divider"></div>
-      <div class="cp-title">{champText}</div>
-    {/if}
 
     {#if streakTags.length > 0}
       <div class="cp-divider"></div>
@@ -182,7 +200,9 @@
   .cp-rank  { font-size:11px; font-weight:600; }
   .rank-unranked { color:var(--text-muted); } .rank-ranked { color:var(--accent); } .rank-champion { color:var(--accent); font-size:12px; }
   .cp-divider { height:1px; background:var(--border); margin:8px 0; }
-  .cp-title { font-size:10px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:var(--accent); line-height:1.5; }
+  .st-champ      { background:rgba(232,193,74,0.18); color:var(--accent); border:1px solid rgba(232,193,74,0.4); }
+  .st-former     { background:rgba(232,193,74,0.06); color:var(--text-muted); border:1px solid rgba(232,193,74,0.18); }
+  .st-defense    { background:rgba(232,193,74,0.10); color:var(--accent); }
   .cp-streaks-wrap { display:flex; flex-wrap:wrap; gap:4px; }
   .streak-tag { display:inline-flex; align-items:center; gap:4px; font-size:10px; font-weight:600; padding:2px 7px; border-radius:3px; }
   .st-win        { background:rgba(74,232,122,0.12);  color:var(--green); }

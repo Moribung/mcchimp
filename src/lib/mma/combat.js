@@ -317,6 +317,10 @@ export function resolveResult(state, cs, q, selectedSet, pctUsed, activeLength) 
     cs.wins   = state.wins;
     cs.losses = state.losses;
 
+    // Capture the player's slot BEFORE the division moves them this fight —
+    // updateCareerPhase needs it to detect title transitions (won belt / defense / lost).
+    const slotBefore = cs.division ? cs.division.playerSlot : 0;
+
     // Challenger drop on championship defense win
     let extraDrop = 0;
     if (_won && cs.division && cs.division.playerSlot === CHAMP_SLOT) {
@@ -328,7 +332,7 @@ export function resolveResult(state, cs, q, selectedSet, pctUsed, activeLength) 
     }
 
     updateDivisionAfterResult(state, cs, _won, _draw, extraDrop);
-    event = updateCareerPhase(state, cs, timedOut ? 'timeout' : resultClass);
+    event = updateCareerPhase(state, cs, timedOut ? 'timeout' : resultClass, slotBefore);
     cs.pendingEvent = event || null;
     cs.results      = state.results;
 

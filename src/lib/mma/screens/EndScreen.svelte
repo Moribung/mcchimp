@@ -4,11 +4,30 @@
 
   import { state as gs }             from '$lib/mma/state.svelte.js';
   import { calcLegacyTitle, initState, initSparringState } from '$lib/mma/career.js';
+  import { PHASES }                   from '$lib/mma/constants.js';
 
   const { onrestart } = $props();  // ── Derived summary ───────────────────────────────────
   const total    = $derived(gs.fightIndex);
   const winPct   = $derived(total > 0 ? Math.round((gs.wins / total) * 100) : 0);
   const legacy   = $derived(calcLegacyTitle(gs.wins, total));
+
+  // Per-organisation championships — accumulated across the whole career
+  const championships = $derived((() => {
+    const t = gs.career?.titles;
+    if (!t) return [];
+    const out = [];
+    for (const ph of [1, 2, 3]) {
+      const rec = t[ph];
+      if (!rec || rec.reigns < 1) continue;
+      out.push({
+        org:    PHASES[ph]?.promo ?? `Phase ${ph}`,
+        belt:   PHASES[ph]?.rankLabels?.[11] ?? 'Champion',
+        reigns: rec.reigns,
+        best:   rec.bestDefenseStreak || 0,
+      });
+    }
+    return out;
+  })());
 
   const endTitle = $derived(
     gs.retiredVoluntarily ? 'Hung Up The Gloves' :
@@ -20,6 +39,9 @@
   // ── Restart with same module ──────────────────────────
   function runItBack() {
     const modId = gs.activeModId;
+    // Start a brand-new career in a fresh save slot. Without clearing saveId,
+    // the new career would overwrite the just-finished career's save row.
+    gs.saveId = null;
     if (gs.sparring) {
       initSparringState(gs, modId);
     } else {
@@ -33,9 +55,10 @@
     }
   }
 
-  // ── New module ────────────────────────────────────────
-  function newModule() {
+  // ── Return to main menu ───────────────────────────────
+  function toMainMenu() {
     gs.career = null;
+    gs.saveId = null;
     gs.screen = 'menu';
     onrestart?.();
   }
@@ -95,6 +118,21 @@
     <div class="end-legacy-title">{legacy}</div>
   </div>
 
+  <!-- Championships (per organisation) -->
+  {#if championships.length > 0}
+    <div class="end-titles">
+      <div class="et-header">Championships</div>
+      {#each championships as c}
+        <div class="et-row">
+          <span class="et-belt">🏆 {c.belt}</span>
+          <span class="et-meta">
+            {c.reigns}× reign{c.reigns > 1 ? 's' : ''}{c.best > 0 ? ` · best ${c.best} defense${c.best > 1 ? 's' : ''}` : ''}
+          </span>
+        </div>
+      {/each}
+    </div>
+  {/if}
+
   <!-- Bout history teaser (last 5) -->
   {#if (gs.boutHistory || []).length > 0}
     <div class="end-history">
@@ -113,7 +151,7 @@
 
   <div class="btn-row">
     <button class="btn btn-primary" onclick={runItBack}>Run It Back</button>
-    <button class="btn btn-ghost"   onclick={newModule}>New Module</button>
+    <button class="btn btn-ghost"   onclick={toMainMenu}>Main Menu</button>
   </div>
 
 </div>
@@ -135,6 +173,13 @@
   .end-legacy { background: var(--surface); border: 1px solid var(--accent); border-radius: var(--radius); padding: 16px 20px; margin-bottom: 32px; }
   .end-legacy-label { font-size: 10px; color: var(--accent); text-transform: uppercase; letter-spacing: 0.14em; margin-bottom: 4px; }
   .end-legacy-title { font-family: var(--font-display); font-size: 24px; letter-spacing: 0.04em; color: var(--text); }
+
+  .end-titles { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 18px; margin-bottom: 32px; }
+  .et-header  { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; }
+  .et-row     { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+  .et-row:last-child { border-bottom: none; }
+  .et-belt    { font-family: var(--font-display); font-size: 15px; letter-spacing: 0.04em; color: var(--accent); }
+  .et-meta    { font-size: 11px; color: var(--text-muted); letter-spacing: 0.04em; white-space: nowrap; }
 
   .end-history { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px; margin-bottom: 28px; }
   .eh-header { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; }

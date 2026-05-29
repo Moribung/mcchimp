@@ -9,7 +9,7 @@
   import { setupNextFight }       from '$lib/mma/combat.js';
   import { ensureQPool, assignDivisionQuestions } from '$lib/mma/questions.js';
 
-  const { onsave, oncareerend } = $props();
+  const { onsave, onsaveexit, oncareerend } = $props();
 
   const result = $derived(gs.fightResult);
   const cs     = $derived(gs.career);
@@ -34,9 +34,9 @@
     gs.screen           = 'prefight';
   }
 
-  function onSeeRecord() {
-    oncareerend?.();
-    gs.screen = 'end';
+  async function onSeeRecord() {
+    // oncareerend handles routing (to past_careers for logged-in, 'end' otherwise)
+    await oncareerend?.();
   }
 
   // ── Career choice modal actions ───────────────────────
@@ -49,7 +49,10 @@
   }
 
   function choiceMove() {
+    // Leaving this org vacates its belt (reign count is preserved).
+    if (cs.titles?.[cs.phase]) { cs.titles[cs.phase].held = false; cs.titles[cs.phase].defenseStreak = 0; }
     cs.phase          = Math.min(3, cs.phase + 1);
+    cs.highestPhase   = Math.max(cs.highestPhase || 1, cs.phase);
     cs.phaseWins      = 0; cs.phaseLosses = 0;
     cs.titleHeld      = false; cs.titleName = null;
     cs.advancementPending = false;
@@ -71,6 +74,8 @@
   }
 
   function choiceSign() {
+    // Being cut vacates the current org's belt (reign count is preserved).
+    if (cs.titles?.[cs.phase]) { cs.titles[cs.phase].held = false; cs.titles[cs.phase].defenseStreak = 0; }
     cs.phase       = Math.max(1, cs.phase - 1);
     cs.phaseWins   = 0; cs.phaseLosses = 0; cs.phaseStreak = 0;
     cs.titleHeld   = false; cs.titleName = null;
@@ -143,13 +148,19 @@
   <!-- Buttons -->
   <div class="btn-row">
     {#if result.isLast}
+      <!-- Career is over — the only action is archiving it. No Save & Exit /
+           Change Module here: those would abandon the run without recording it. -->
       <button class="btn btn-primary" onclick={onSeeRecord}>See Final Record</button>
     {:else if gs.sparring}
       <button class="btn btn-primary" onclick={onNextFight}>Next Round</button>
+      <button class="btn btn-ghost" onclick={changeModule}>Change Module</button>
     {:else}
       <button class="btn btn-primary" onclick={onNextFight}>Next Fight</button>
+      {#if onsaveexit}
+        <button class="btn btn-ghost" onclick={() => onsaveexit?.()}>Save &amp; Exit</button>
+      {/if}
+      <button class="btn btn-ghost" onclick={changeModule}>Change Module</button>
     {/if}
-    <button class="btn btn-ghost" onclick={changeModule}>Change Module</button>
   </div>
 {/if}
 

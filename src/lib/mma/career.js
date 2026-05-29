@@ -27,6 +27,35 @@ import { rng, randInt, shuffle, generateFighterName } from './utils.js';
 export function getPhaseDef(cs)  { return PHASES[cs.phase] || PHASES[3]; }
 export function getPlayerSlot(cs) { return cs.division ? cs.division.playerSlot : 0; }
 export function isPhaseChampion(cs) { return getPlayerSlot(cs) === CHAMP_SLOT; }
+
+/* ── Per-organisation title tracking ─────────────────── */
+// Each promotion (phase) has its own belt, tracked separately:
+//   { reigns, defenseStreak, bestDefenseStreak, held }
+export function blankTitle() {
+  return { reigns: 0, defenseStreak: 0, bestDefenseStreak: 0, held: false };
+}
+export function ensureTitles(cs) {
+  if (!cs) return null;
+  if (!cs.titles) {
+    cs.titles = { 1: blankTitle(), 2: blankTitle(), 3: blankTitle() };
+    // Migrate a legacy single-belt save into the phase it was earned in.
+    if (cs.titleHeld || cs.champCount) {
+      const ph = cs.phase || 1;
+      const t  = cs.titles[ph];
+      t.held              = !!cs.titleHeld;
+      t.reigns            = cs.champCount || (cs.titleHeld ? 1 : 0);
+      t.defenseStreak     = cs.defenseStreak || 0;
+      t.bestDefenseStreak = cs.defenseStreak || 0;
+    }
+  }
+  for (const ph of [1, 2, 3]) if (!cs.titles[ph]) cs.titles[ph] = blankTitle();
+  return cs.titles;
+}
+export function totalReigns(cs) {
+  const t = cs?.titles;
+  if (!t) return cs?.champCount || 0;
+  return (t[1]?.reigns || 0) + (t[2]?.reigns || 0) + (t[3]?.reigns || 0);
+}
 export function phaseWinRate(cs) {
   const total = cs.phaseWins + cs.phaseLosses;
   return total > 0 ? cs.phaseWins / total : 1;
@@ -385,12 +414,16 @@ export function maybeRefreshBottomSlots(state, div, phase) {
 }
 
 /* ── Career phase update (streaks, belt, events) ─────── */
-export function updateCareerPhase(state, cs, resultType) {
+// `slotBefore` MUST be the player's division slot from BEFORE updateDivisionAfterResult()
+// moved them this fight. It is passed in from resolveResult(); falling back to the
+// current slot here would make slotBefore === slotAfter and silently disable every
+// title transition (won belt / defense / belt lost).
+export function updateCareerPhase(state, cs, resultType, slotBefore) {
   const phase = cs.phase;
   const pDef  = PHASES[phase];
   const won   = resultType === 'win';
   const lost  = resultType === 'loss' || resultType === 'finish' || resultType === 'timeout';
-  const slotBefore = getPlayerSlot(cs);
+  if (slotBefore == null) slotBefore = getPlayerSlot(cs);
 
   if (won)  { cs.phaseWins++;   cs.phaseStreak = Math.max(0, cs.phaseStreak) + 1; }
   if (resultType === 'draw') { cs.phaseStreak = 0; }
@@ -399,41 +432,57 @@ export function updateCareerPhase(state, cs, resultType) {
   const slotAfter = getPlayerSlot(cs);
   let event = null;
 
-  // ── Belt won / defense ──
-  if (resultType === 'draw' && cs.titleHeld && slotBefore === CHAMP_SLOT) {
-    cs.defenseStreak = (cs.defenseStreak || 0) + 1;
-    const defNum = cs.defenseStreak;
+  // ── Belt won / defense / lost (tracked per organisation) ──
+  const t       = ensureTitles(cs)[phase];
+  const orgBelt = pDef.rankLabels[11] || 'Champion';
+
+  if (resultType === 'draw' && t.held && slotBefore === CHAMP_SLOT) {
+    t.defenseStreak++;
+    t.bestDefenseStreak = Math.max(t.bestDefenseStreak, t.defenseStreak);
     event = { type: phase < 3 ? 'ev-interim' : 'ev-title',
-      label: `Draw Defense #${defNum}`,
-      text: `A draw — you keep the belt. Defense #${defNum} on record.` };
-  } else if (won && slotAfter === CHAMP_SLOT && cs.titleHeld && slotBefore === CHAMP_SLOT) {
-    cs.defenseStreak = (cs.defenseStreak || 0) + 1;
-    const defNum = cs.defenseStreak;
+      label: `${pDef.promo} — Draw Defense #${t.defenseStreak}`,
+      text: `A draw — you keep the ${orgBelt} title. Defense #${t.defenseStreak} on record.` };
+  } else if (won && slotAfter === CHAMP_SLOT && t.held && slotBefore === CHAMP_SLOT) {
+    t.defenseStreak++;
+    t.bestDefenseStreak = Math.max(t.bestDefenseStreak, t.defenseStreak);
+    const defNum = t.defenseStreak;
     event = { type: phase < 3 ? 'ev-interim' : 'ev-title',
-      label: `Defense #${defNum}`,
-      text: `${defNum === 1 ? 'First defense.' : defNum >= 5 ? 'Dominant reign.' : `Defense #${defNum}.`} The division still has no answer for you.` };
-  } else if (won && slotAfter === CHAMP_SLOT && slotBefore < CHAMP_SLOT && !cs.titleHeld) {
-    cs.titleHeld  = true;
-    cs.titleName  = pDef.rankLabels[11];
-    cs.champCount = (cs.champCount || 0) + 1;
-    cs.defenseStreak = 0;
-    const nTime = cs.champCount > 1 ? `${cs.champCount}-Time ` : '';
+      label: `${pDef.promo} — Defense #${defNum}`,
+      text: `${defNum === 1 ? 'First defense.' : defNum >= 5 ? 'Dominant reign.' : `Defense #${defNum}.`} The ${pDef.promo} division still has no answer for you.` };
+  } else if (won && slotAfter === CHAMP_SLOT && slotBefore < CHAMP_SLOT && !t.held) {
+    t.held   = true;
+    t.reigns++;
+    t.defenseStreak = 0;
+    cs.titleName = orgBelt;
+    const nTime = t.reigns > 1 ? `${t.reigns}-Time ` : '';
     event = phase < 3
-      ? { type: 'ev-interim', label: `${nTime}Champion!`, text: `You've claimed the ${cs.titleName}.` }
-      : { type: 'ev-title',   label: `${nTime}World Champion!`, text: `You've done it. The ${cs.titleName} is yours.` };
+      ? { type: 'ev-interim', label: `${nTime}${pDef.promo} Champion!`, text: `You've claimed the ${orgBelt} title.` }
+      : { type: 'ev-title',   label: `${nTime}World Champion!`,         text: `You've done it. The ${orgBelt} title is yours.` };
   }
 
   // ── Belt lost ──
-  if (lost && slotBefore === CHAMP_SLOT && slotAfter < CHAMP_SLOT && cs.titleHeld) {
-    const _defStr = cs.defenseStreak === 0 ? 'no defenses' : `${cs.defenseStreak} defense${cs.defenseStreak > 1 ? 's' : ''}`;
-    cs.titleHeld     = false;
-    cs.defenseStreak = 0;
-    event = { type: 'ev-cut', label: 'Title Lost',
-      text: `The belt is gone after ${_defStr}. Rebuild and earn it back.` };
+  if (lost && slotBefore === CHAMP_SLOT && slotAfter < CHAMP_SLOT && t.held) {
+    const _defStr = t.defenseStreak === 0 ? 'no defenses' : `${t.defenseStreak} defense${t.defenseStreak > 1 ? 's' : ''}`;
+    t.held          = false;
+    t.defenseStreak = 0;
+    event = { type: 'ev-cut', label: `${pDef.promo} — Title Lost`,
+      text: `The ${orgBelt} title is gone after ${_defStr}. Rebuild and earn it back.` };
   }
 
+  // ── Sync legacy current-phase mirrors (UI + archive compatibility) ──
+  cs.titleHeld     = t.held;
+  cs.defenseStreak = t.defenseStreak;
+  cs.champCount    = totalReigns(cs);
+  if (t.held) cs.titleName = orgBelt;
+
   // ── Promotion offer ──
-  if (!event && !cs.advancementPending && won && phase < 3) {
+  // A defending champion must still get the offer. The defense banner set above
+  // is only informational, so it must not suppress the (intended, high-chance)
+  // promotion — we let the offer override it. We do NOT override the freshly-won
+  // belt celebration (so the player sees they won it) or any choice event.
+  const justWonBelt  = won && slotBefore < CHAMP_SLOT && slotAfter === CHAMP_SLOT;
+  const promoBlocked = event && (event.choiceType || justWonBelt);
+  if (!promoBlocked && !cs.advancementPending && won && phase < 3) {
     const slotNow = getPlayerSlot(cs);
     let promoPct  = 0;
     if (slotNow === CHAMP_SLOT)       promoPct = 0.80;
@@ -524,10 +573,12 @@ export function initState(state, activeModId) {
     phaseLosses:        0,
     phaseStreak:        0,
     lowestPhase:        1,
-    titleHeld:          false,
+    highestPhase:       1,       // highest org reached (for "highest organisation reached")
+    titleHeld:          false,   // legacy mirror of titles[phase].held
     titleName:          null,
-    champCount:         0,
-    defenseStreak:      0,
+    champCount:         0,        // legacy mirror: total reigns across all orgs
+    defenseStreak:      0,        // legacy mirror of titles[phase].defenseStreak
+    titles:             { 1: blankTitle(), 2: blankTitle(), 3: blankTitle() },
     calloutRecord:      {},
     forceRetire:        false,
     advancementPending: false,
