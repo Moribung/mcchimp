@@ -69,15 +69,6 @@
 
 <svelte:window onkeydown={onKeydown} />
 
-<!-- ── Event banner ──────────────────────────────────── -->
-{#if !gs.sparring && cs?.pendingEvent}
-  {@const ev = cs.pendingEvent}
-  <div class="event-banner {ev.type}">
-    <div class="ev-label">{ev.label}</div>
-    <div class="ev-text">{ev.text}</div>
-  </div>
-{/if}
-
 <!-- ── Top: headline + badges + CTA ─────────────────── -->
 <div class="prefight-text">
   {#if gs.sparring}
@@ -111,6 +102,15 @@
     </button>
   {/if}
 </div>
+
+<!-- Event notification — always below everything else -->
+{#if !gs.sparring && cs?.pendingEvent && !cs.pendingEvent.choiceType}
+  {@const ev = cs.pendingEvent}
+  <div class="event-banner {ev.type}">
+    <div class="ev-label">{ev.label}</div>
+    <div class="ev-text">{ev.text}</div>
+  </div>
+{/if}
 
 <style>
   .prefight-text {
@@ -146,7 +146,7 @@
   }
 
   /* Event banner */
-  .event-banner { border-radius: var(--radius); padding: 12px 16px; margin-bottom: 16px; border: 1px solid; }
+  .event-banner { border-radius: var(--radius); padding: 12px 16px; margin-top: 20px; border: 1px solid; }
   .event-banner.ev-contract  { background: rgba(74,232,122,0.08);  border-color: rgba(74,232,122,0.3); }
   .event-banner.ev-interim   { background: rgba(232,193,74,0.08);  border-color: rgba(232,193,74,0.3); }
   .event-banner.ev-title     { background: rgba(232,74,74,0.08);   border-color: rgba(232,74,74,0.3); }

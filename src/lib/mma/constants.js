@@ -42,6 +42,12 @@ export const PHASES = {
   },
 };
 
+/* ── Phase 2 org options (one chosen randomly per career) ── */
+export const PHASE2_OPTIONS = [
+  { promo: 'Apex Combat',                belt: 'Apex Champion'   },
+  { promo: 'Kings Fighting Championship', belt: 'KFC Champion'    },
+];
+
 /* ── Division size constants ─────────────────────────── */
 export const DIVISION_SIZE = 21;   // total slots
 export const CHAMP_SLOT    = 20;   // slot index of champion
@@ -56,13 +62,17 @@ export const RETIREMENT_LOSS_STREAK = 5; // losses in ∞-mode before forced ret
 
 /* ── Durability ──────────────────────────────────────── */
 export const DURABILITY_DAMAGE = {
-  ko_win:       0.5,
-  decision_win: 1.0,
-  split_win:    2.0,
-  draw:         4.0,
-  loss:         6.0,
-  finish:       5.0,
-  timeout:      3.0,
+  ko_win:           0.5,
+  // late_finish_win: computed dynamically as 0.5 + 0.4 * (round-1) / (maxRounds-1)
+  decision_win:     1.0,
+  split_win:        2.0,
+  draw:             2.5,
+  split_loss:       3.0,
+  embarrassing_dec: 3.0,
+  loss:             4.0,
+  finish:           5.0,
+  late_finish:      6.0,
+  timeout_finish:   6.0,
 };
 
 export const MIN_TIMER  = 5;   // seconds at 0% durability
@@ -111,16 +121,27 @@ export const NICKNAMES = [
 
 /* ── Venue pools (per phase) ─────────────────────────── */
 export const VENUES_P1 = [
-  'The Pavilion','City Sports Arena','Riverside Expo Center',
-  'Midwest Fighting Hall','The Underground','Bayview Venue','Metro Combat Center',
+  'The Pit','Riverside Fairgrounds','Tri-County Rec Center',
+  'Old Depot Hall','Veterans Legion Post','The Warehouse','Lakefront Community Center',
+  'East Side Civic Hall','Bayview Bingo & Events','Milltown Sports Complex',
+  'The Stockyard','County Fairground Arena',
 ];
 export const VENUES_P2 = [
-  'Apex Arena','The Coliseum','Summit Events Center','Pinnacle Hall',
-  'Grand Combat Arena','The Dome','Starlight Pavilion',
+  'Meridian Arena','The Coliseum','Summit Center',
+  'Harbor Events Center','Pinnacle Pavilion','Metro Sports Arena',
+  'Westside Convention Center','Parkway Arena','The Rotunda','Casino Grand Ballroom',
+  'Harborview Hall','Lakeside Civic Center',
 ];
 export const VENUES_P3 = [
-  'The GFL Apex','Madison Grand Arena','International Fight Center',
-  'The Pyramid','Oceanview Grand','Capital Combat Center',
+  'National Arena','The Palais','Convention Center',
+  'Civic Coliseum','Sports Palace','Grand Pavilion',
+  'The Forum','Exhibition Arena','Waterfront Stadium','The Grand Hall',
+];
+
+export const GFL_CITIES = [
+  'Las Vegas','London','Tokyo','Dubai','Abu Dhabi','New York',
+  'Los Angeles','São Paulo','Sydney','Singapore','Paris','Toronto',
+  'Mexico City','Madrid','Amsterdam','Shanghai','Riyadh','Manchester',
 ];
 
 /* ── Bio pools (per phase) ───────────────────────────── */
@@ -184,9 +205,43 @@ export const FIGHTER_ROSTER = [
 export const KO_METHODS  = ['KO', 'Head Kick KO', 'Flying Knee KO', 'Spinning Elbow KO'];
 export const TKO_METHODS = ['TKO', 'TKO (Strikes)', 'TKO (Ground and Pound)', 'Doctor Stoppage', 'Corner Stoppage'];
 export const SUB_METHODS = [
-  'Submission', 'Rear Naked Choke', 'Triangle Choke', 'Armbar',
+  'Rear Naked Choke', 'Triangle Choke', 'Armbar',
   'Guillotine', 'D\'Arce Choke', 'Heel Hook', 'Kimura', 'Anaconda Choke',
 ];
+
+/* ── Fight style profiles ────────────────────────────────
+   Chosen on the naming screen. Purely affects the *flavour*
+   of your wins and losses — never durability or difficulty.
+
+   win:  seeds state.methodWeights (base 1 + tendency). A value
+         of 3 vs base 1 means that finish type is ~3× as likely.
+   loss: seeds career.lossWeights — skews HOW you get finished
+         when you lose by finish. Cosmetic only.
+
+   The highest win/loss weight is 3 (base 1 + max additive 2).
+──────────────────────────────────────────────────────── */
+export const FIGHT_STYLES = [
+  { id:'allrounder', name:'MMA Fighter',       tagline:'No holes, no peaks. Adapts to anything.',
+    win:{ KO:1, TKO:1, Submission:1 }, loss:{ KO:1, TKO:1, Submission:1 } },
+  { id:'brawler',    name:'Brawler',           tagline:'All power. Swing first, ask later.',
+    win:{ KO:3, TKO:1, Submission:1 }, loss:{ KO:3, TKO:1, Submission:1 } },
+  { id:'boxer',      name:'Boxer',             tagline:'Sharp hands, heavy leather, no ground game.',
+    win:{ KO:2, TKO:2, Submission:1 }, loss:{ KO:1, TKO:2, Submission:2 } },
+  { id:'kickboxer',  name:'Kickboxer',         tagline:'Strikes from every angle.',
+    win:{ KO:2, TKO:2, Submission:1 }, loss:{ KO:2, TKO:2, Submission:1 } },
+  { id:'wrestler',   name:'Wrestler',          tagline:'Take them down, grind them out.',
+    win:{ KO:1, TKO:3, Submission:1 }, loss:{ KO:1, TKO:1, Submission:3 } },
+  { id:'submission', name:'Submission Hunter', tagline:'The fight ends on the mat.',
+    win:{ KO:1, TKO:1, Submission:3 }, loss:{ KO:3, TKO:1, Submission:1 } },
+  { id:'pressure',   name:'Pressure Fighter',  tagline:'Relentless, suffocating volume.',
+    win:{ KO:1, TKO:3, Submission:1 }, loss:{ KO:1, TKO:3, Submission:1 } },
+  { id:'sniper',     name:'Sniper',            tagline:'Patient. One perfect shot.',
+    win:{ KO:3, TKO:1, Submission:1 }, loss:{ KO:1, TKO:3, Submission:1 } },
+];
+
+export function getFightStyle(id) {
+  return FIGHT_STYLES.find(s => s.id === id) || null;
+}
 
 /* ── Tier config (for effectiveTier adaptive difficulty) ── */
 export const TIER_ORDER = ['easy', 'medium', 'hard', 'elite'];

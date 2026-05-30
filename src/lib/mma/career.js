@@ -7,7 +7,7 @@
  */
 
 import {
-  PHASES, CHAMP_SLOT, RANKED_START,
+  PHASES, PHASE2_OPTIONS, CHAMP_SLOT, RANKED_START,
   DURABILITY_DAMAGE, FIRST_NAMES, LAST_NAMES, NICKNAMES, FIGHTER_ROSTER,
 } from './constants.js';
 
@@ -24,7 +24,17 @@ import {
 import { rng, randInt, shuffle, generateFighterName } from './utils.js';
 
 /* ── Phase helpers ───────────────────────────────────── */
-export function getPhaseDef(cs)  { return PHASES[cs.phase] || PHASES[3]; }
+export function getPhaseDef(cs) {
+  const def = PHASES[cs.phase] || PHASES[3];
+  if (cs.phase === 2 && cs.phase2Name) {
+    return {
+      ...def,
+      promo:      cs.phase2Name,
+      rankLabels: { ...def.rankLabels, 11: cs.phase2Belt || 'Champion' },
+    };
+  }
+  return def;
+}
 export function getPlayerSlot(cs) { return cs.division ? cs.division.playerSlot : 0; }
 export function isPhaseChampion(cs) { return getPlayerSlot(cs) === CHAMP_SLOT; }
 
@@ -141,7 +151,7 @@ export function syncDivisionAlias(state, cs) {
 }
 
 /* ── Phase A: player rank movement after result ──────── */
-export function updateDivisionAfterResult(state, cs, won, draw, extraChallengerDrop) {
+export function updateDivisionAfterResult(state, cs, won, draw, extraChallengerDrop, extraLossDrop = 0) {
   if (!cs.division) return;
   if (draw) return; // no movement on draw
 
@@ -173,7 +183,7 @@ export function updateDivisionAfterResult(state, cs, won, draw, extraChallengerD
   } else {
     const lossAbs     = Math.abs(cs.phaseStreak);
     const drop2chance = Math.min(0.6, lossAbs * 0.15);
-    const steps       = Math.random() < drop2chance ? 2 : 1;
+    const steps       = (Math.random() < drop2chance ? 2 : 1) + extraLossDrop;
     divisionMoveDown(cs.division, steps);
   }
 }
@@ -193,7 +203,11 @@ export function simulateNPCBouts(state, div) {
     if (candidates.length < 2) break;
 
     const aIdx  = candidates[Math.floor(Math.random() * candidates.length)];
-    const bPool = candidates.filter(i => i !== aIdx && Math.abs(i - aIdx) <= 4);
+    const aF    = gf(slots[aIdx]);
+    const wsA   = (aF && !aF.isPlayer) ? (aF.winStreak || 0) : 0;
+    // Win-streak fighters get matched further up the rankings (up to +4 extra slots above)
+    const upRange = 4 + Math.min(wsA, 4);
+    const bPool = candidates.filter(i => i !== aIdx && (i - aIdx) <= upRange && (aIdx - i) <= 4);
     if (!bPool.length) continue;
 
     const bWeights = bPool.map(i => 1 / (Math.abs(i - aIdx) + 0.5));
@@ -216,6 +230,17 @@ export function simulateNPCBouts(state, div) {
     if (a.losses === 0 && a.wins > 0)         rateA = Math.min(0.92, rateA * 1.5);
     if (bSlot.losses === 0 && bSlot.wins > 0) rateB = Math.min(0.92, rateB * 1.5);
 
+    // Streak modifiers (NPC only): win streak 1.2×→2×, loss streak 0.83×→0.5×
+    function streakMod(f) {
+      const ws = f.winStreak  || 0;
+      const ls = f.lossStreak || 0;
+      if (ws > 0) return Math.min(2.0, 1.0 + Math.min(ws, 5) * 0.16);
+      if (ls > 0) return Math.max(0.5, 1.0 / (1.0 + Math.min(ls, 5) * 0.16));
+      return 1.0;
+    }
+    rateA = Math.min(0.95, rateA * streakMod(a));
+    rateB = Math.min(0.95, rateB * streakMod(bSlot));
+
     const probA  = rateA / (rateA + rateB);
     const aWins  = Math.random() < probA;
     const winFid = aWins ? fidA : fidB;
@@ -225,11 +250,23 @@ export function simulateNPCBouts(state, div) {
 
     recWin(winFid); recLoss(loseFid);
 
-    if (winIdx + 1 < n && winIdx + 1 !== playerSlot && winIdx + 1 < CHAMP_SLOT) {
-      swapSlots(div, winIdx, winIdx + 1);
+    // Winner lands at least at the opponent's slot; streak pushes them above it
+    const winF  = gf(winFid);
+    const ws    = winF ? (winF.winStreak || 1) : 1;
+    const jump  = ws <= 2 ? 1 : ws <= 4 ? 2 : 3;
+    const target = Math.min(CHAMP_SLOT - 1, Math.max(winIdx + jump, loseIdx));
+    let wp = winIdx;
+    while (wp < target) {
+      const next = wp + 1;
+      if (next >= n || next === playerSlot || next >= CHAMP_SLOT) break;
+      swapSlots(div, wp, next);
+      wp++;
     }
+
+    // Loser may have been displaced by the winner's move — find their actual position
+    const actualLoseIdx = div.slots.indexOf(loseFid);
     const dropSteps = Math.random() < 0.34 ? 2 : 1;
-    let lp = loseIdx;
+    let lp = actualLoseIdx !== -1 ? actualLoseIdx : loseIdx;
     for (let d = 0; d < dropSteps; d++) {
       if (lp - 1 < 1 || lp - 1 === playerSlot) break;
       swapSlots(div, lp, lp - 1);
@@ -354,7 +391,11 @@ export function maybeRefreshBottomSlots(state, div, phase) {
 
     const total    = (f.wins || 0) + (f.losses || 0);
     const lossRate = total > 0 ? (f.losses || 0) / total : 0;
-    if (total < 8 || lossRate < 0.70 || Math.random() >= 0.25) continue;
+    const ls       = f.lossStreak || 0;
+    // Loss streak lowers the lossRate threshold and raises cut chance (caps at 0.70)
+    const lossRateThreshold = Math.max(0.50, 0.70 - ls * 0.05);
+    const cutChance         = Math.min(0.70, 0.25 + ls * 0.10);
+    if (total < 8 || lossRate < lossRateThreshold || Math.random() >= cutChance) continue;
 
     // Cut this fighter
     f.maxPhase = phase;
@@ -422,7 +463,7 @@ export function updateCareerPhase(state, cs, resultType, slotBefore) {
   const phase = cs.phase;
   const pDef  = PHASES[phase];
   const won   = resultType === 'win';
-  const lost  = resultType === 'loss' || resultType === 'finish' || resultType === 'timeout';
+  const lost  = ['loss', 'split_loss', 'finish', 'late_finish', 'timeout_finish', 'embarrassing_dec', 'timeout'].includes(resultType);
   if (slotBefore == null) slotBefore = getPlayerSlot(cs);
 
   if (won)  { cs.phaseWins++;   cs.phaseStreak = Math.max(0, cs.phaseStreak) + 1; }
@@ -439,12 +480,14 @@ export function updateCareerPhase(state, cs, resultType, slotBefore) {
   if (resultType === 'draw' && t.held && slotBefore === CHAMP_SLOT) {
     t.defenseStreak++;
     t.bestDefenseStreak = Math.max(t.bestDefenseStreak, t.defenseStreak);
+    cs.champCalloutClout = (cs.champCalloutClout || 0) + 1;
     event = { type: phase < 3 ? 'ev-interim' : 'ev-title',
       label: `${pDef.promo} — Draw Defense #${t.defenseStreak}`,
       text: `A draw — you keep the ${orgBelt} title. Defense #${t.defenseStreak} on record.` };
   } else if (won && slotAfter === CHAMP_SLOT && t.held && slotBefore === CHAMP_SLOT) {
     t.defenseStreak++;
     t.bestDefenseStreak = Math.max(t.bestDefenseStreak, t.defenseStreak);
+    cs.champCalloutClout = (cs.champCalloutClout || 0) + 1;
     const defNum = t.defenseStreak;
     event = { type: phase < 3 ? 'ev-interim' : 'ev-title',
       label: `${pDef.promo} — Defense #${defNum}`,
@@ -514,7 +557,7 @@ export function updateCareerPhase(state, cs, resultType, slotBefore) {
         choiceType: 'cut',
         text: hardCut
           ? `You've been cut from ${pDef.promo}.`
-          : `${PHASES[phase - 1].promo} has reached out. Take the step down or grind it out here.` };
+          : `${getPhaseDef({ ...cs, phase: phase - 1 }).promo} has reached out. Take the step down or grind it out here.` };
     }
   }
 
@@ -526,13 +569,15 @@ export function updateCareerPhase(state, cs, resultType, slotBefore) {
   }
 
   // ── Milestone events ──
-  if (!event && won && slotBefore === 0 && slotAfter >= 1) {
-    event = { type: 'ev-mainevent', label: 'Ranked Contender',
-      text: "You've entered the rankings. The division knows your name now." };
+  // "Entered the rankings" — only fires when crossing from unranked into the ranked band
+  if (!event && won && slotBefore < RANKED_START && slotAfter >= RANKED_START) {
+    event = { type: 'ev-mainevent', label: 'Ranked',
+      text: "You're in the rankings. The division knows your name." };
   }
-  if (!event && won && slotAfter >= 9 && slotBefore < 9) {
+  // "Title contention" — top 3 (slots 17+); text is accurate at that range
+  if (!event && won && slotAfter >= CHAMP_SLOT - 3 && slotBefore < CHAMP_SLOT - 3) {
     event = { type: phase === 3 ? 'ev-title' : 'ev-interim', label: 'Title Contention',
-      text: 'One more win and the belt is on the line.' };
+      text: "You're in the top three. The belt is within reach." };
   }
 
   return event;
@@ -546,15 +591,31 @@ export function durabilityToTimer(durability, baseTimer) {
 }
 
 /* ── Callout success probability ─────────────────────── */
-export function calloutSuccessPct(playerSlot, targetSlot, penalty) {
+export function calloutSuccessPct(playerSlot, targetSlot, penalty, defenseStreak = 0) {
+  const pen = penalty || 0;
+
+  if (playerSlot === CHAMP_SLOT) {
+    // As champion, calling down: the further below #1, the less likely.
+    // More defenses = more clout = higher base chance across the board.
+    const diff = CHAMP_SLOT - targetSlot; // 1 = #1 contender, higher = further below
+    const defBonus = Math.min(0.20, defenseStreak * 0.05);
+    let base;
+    if (diff <= 1)       base = 0.80 + defBonus;  // #1 contender — natural fight
+    else if (diff <= 3)  base = 0.55 + defBonus;  // fringe contender
+    else if (diff <= 6)  base = 0.25 + defBonus;  // outside title picture
+    else if (diff <= 10) base = 0.10 + defBonus;  // well outside
+    else                 base = 0.05;              // far too low
+    return Math.max(0.05, Math.min(0.95, base) * Math.pow(0.80, pen));
+  }
+
+  // Non-champion: calling up is harder, calling down is easy
   const diff = targetSlot - playerSlot;
   let base;
-  if (diff <= 0)      base = Math.min(0.95, 0.90 - diff * 0.02);
-  else if (diff <= 2) base = 0.75;
-  else if (diff <= 5) base = 0.55;
+  if (diff <= 0)       base = Math.min(0.95, 0.90 - diff * 0.02);
+  else if (diff <= 2)  base = 0.75;
+  else if (diff <= 5)  base = 0.55;
   else if (diff <= 10) base = 0.30;
   else                 base = 0.15;
-  const pen = penalty || 0;
   return Math.max(0.05, base * Math.pow(0.80, pen));
 }
 
@@ -578,6 +639,9 @@ export function initState(state, activeModId) {
     titleName:          null,
     champCount:         0,        // legacy mirror: total reigns across all orgs
     defenseStreak:      0,        // legacy mirror of titles[phase].defenseStreak
+    champCalloutClout: 0,        // accumulated callout power as champion; resets on low-ranked callout
+    ...((() => { const p2 = PHASE2_OPTIONS[Math.floor(Math.random() * PHASE2_OPTIONS.length)]; return { phase2Name: p2.promo, phase2Belt: p2.belt }; })()),
+    gflEventNum:       randInt(1, 300), // GFL event counter, advances every fight
     titles:             { 1: blankTitle(), 2: blankTitle(), 3: blankTitle() },
     calloutRecord:      {},
     forceRetire:        false,

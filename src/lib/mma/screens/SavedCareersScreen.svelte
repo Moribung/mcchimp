@@ -47,11 +47,13 @@
   function getRecord(save) {
     const d = save.save_data;
     if (!d) return '–';
-    return `${d.wins ?? 0}–${d.losses ?? 0}–${d.draws ?? 0}`;
+    return `${d.wins ?? 0}–${(d.losses ?? 0) + (d.finishes ?? 0)}–${d.draws ?? 0}`;
   }
 
   function getPhaseLabel(save) {
-    const phase = save.save_data?.career?.phase ?? 1;
+    const career = save.save_data?.career;
+    const phase  = career?.phase ?? 1;
+    if (phase === 2 && career?.phase2Name) return career.phase2Name;
     return PHASES[phase]?.promo ?? 'Regional FC';
   }
 

@@ -4,7 +4,7 @@
 
   import { state as gs }             from '$lib/mma/state.svelte.js';
   import { calcLegacyTitle, initState, initSparringState } from '$lib/mma/career.js';
-  import { PHASES }                   from '$lib/mma/constants.js';
+  import { PHASES, CHAMP_SLOT }       from '$lib/mma/constants.js';
 
   const { onrestart } = $props();  // ── Derived summary ───────────────────────────────────
   const total    = $derived(gs.fightIndex);
@@ -57,8 +57,25 @@
 
   // ── Return to main menu ───────────────────────────────
   function toMainMenu() {
-    gs.career = null;
-    gs.saveId = null;
+    gs.career         = null;
+    gs.saveId         = null;
+    gs.currentOpponent = null;
+    // Wipe the global record so the header / mid-career switcher don't
+    // think there's still a career in progress.
+    gs.wins = 0; gs.losses = 0; gs.draws = 0; gs.finishes = 0;
+    gs.results = []; gs.boutHistory = [];
+    gs.fightIndex = 0;
+    gs.currentStreak = 0; gs.bestStreak = 0;
+    gs.finishStreak = 0;
+    gs.unbeatenStreak = 0; gs.bestUnbeatenStreak = 0;
+    gs.winsByKO = 0; gs.winsByTKO = 0; gs.winsBySub = 0; gs.winsByDec = 0;
+    gs.lossByKO = 0; gs.lossByTKO = 0; gs.lossBySub = 0; gs.lossByDec = 0;
+    gs.methodWeights = { KO: 1, TKO: 1, Submission: 1 };
+    gs.specificMethodCounts = {};
+    gs.winsVsFighter = {};
+    gs.retiredVoluntarily = false;
+    gs.retiredDurability  = false;
+    gs.retiredForcefully  = false;
     gs.screen = 'menu';
     onrestart?.();
   }
@@ -67,7 +84,7 @@
 <div class="end-wrap">
 
   <div class="end-title">{endTitle}</div>
-  <div class="end-record">{gs.wins}–{gs.draws}–{gs.losses}</div>
+  <div class="end-record">{gs.wins}–{gs.losses + gs.finishes}–{gs.draws}</div>
   <div class="end-subtitle">Final Record</div>
 
   <!-- Stat cards -->
@@ -81,7 +98,7 @@
       <div class="stat-label">Draws</div>
     </div>
     <div class="stat-card">
-      <div class="stat-num">{gs.losses - gs.finishes}</div>
+      <div class="stat-num">{gs.losses}</div>
       <div class="stat-label">Losses</div>
     </div>
     <div class="stat-card">
@@ -108,7 +125,7 @@
       <div class="stat-num">
         {(gs.winsByKO || 0) + (gs.winsByTKO || 0) + (gs.winsBySub || 0)}
       </div>
-      <div class="stat-label">Finishes</div>
+      <div class="stat-label">Stoppages</div>
     </div>
   </div>
 
@@ -138,9 +155,11 @@
     <div class="end-history">
       <div class="eh-header">Recent Fights</div>
       {#each gs.boutHistory.slice(0, 5) as b}
-        {@const rc = b.rc || 'loss'}
-        <div class="eh-row">
+        {@const rc       = b.rc || 'loss'}
+        {@const oppChamp = b.oppRankSlot === CHAMP_SLOT}
+        <div class="eh-row" class:eh-title={b.titleFight} title={b.titleFight ? 'Title fight' : undefined}>
           <span class="bh-dot {rc}"></span>
+          {#if oppChamp}<span class="eh-belt" title="Reigning champion">🏆</span>{/if}
           <span class="eh-name">{b.oppName || 'Unknown'}</span>
           <span class="eh-outcome">{b.outcome || ''}</span>
           <span class="eh-method">{b.method || ''}</span>
@@ -193,6 +212,8 @@
   .eh-name    { font-weight: 500; flex: 1; }
   .eh-outcome { color: var(--text); white-space: nowrap; }
   .eh-method  { color: var(--text-muted); font-style: italic; font-size: 11px; white-space: nowrap; }
+  .eh-belt    { font-size: 11px; flex-shrink: 0; }
+  .eh-row.eh-title { background: rgba(232,193,74,0.05); border-radius: 3px; margin: 0 -6px; padding-left: 6px; padding-right: 6px; }
 
   .btn-row { display: flex; gap: 12px; flex-wrap: wrap; }
 

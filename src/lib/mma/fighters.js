@@ -13,7 +13,7 @@
 import {
   FIRST_NAMES, LAST_NAMES, NICKNAMES,
   FIGHTER_ROSTER, DIVISION_SIZE, CHAMP_SLOT, RANKED_START,
-  BIOS_P1, BIOS_P2, BIOS_P3, VENUES_P1, VENUES_P2, VENUES_P3,
+  BIOS_P1, BIOS_P2, BIOS_P3, VENUES_P1, VENUES_P2, VENUES_P3, GFL_CITIES,
 } from './constants.js';
 
 import { shuffle, rng, randInt } from './utils.js';
@@ -53,13 +53,17 @@ export function gf(fid) {
 /* ── Record update helpers ───────────────────────────── */
 export function recWin(fid) {
   const f = FIGHTERS.get(fid); if (!f) return;
-  f.wins = (f.wins || 0) + 1;
+  f.wins      = (f.wins || 0) + 1;
+  f.winStreak  = (f.winStreak  || 0) + 1;
+  f.lossStreak = 0;
   f.record = buildRec(f.wins, f.losses || 0, f.draws || 0);
 }
 
 export function recLoss(fid) {
   const f = FIGHTERS.get(fid); if (!f) return;
-  f.losses = (f.losses || 0) + 1;
+  f.losses     = (f.losses || 0) + 1;
+  f.lossStreak = (f.lossStreak || 0) + 1;
+  f.winStreak  = 0;
   if (f.isRising) f.isRising = false;
   f.record = buildRec(f.wins || 0, f.losses, f.draws || 0);
 }
@@ -188,19 +192,27 @@ export function findRosterFighter(questionId) {
   return FIGHTER_ROSTER.find(f => f.prefixes.some(p => questionId.startsWith(p))) || null;
 }
 
+/** Pick a venue for the current fight. Returns { venue, city } — city is only set for phase 3. */
+export function pickVenue(phase) {
+  if (phase === 1) return { venue: rng(VENUES_P1), city: null };
+  if (phase === 2) return { venue: rng(VENUES_P2), city: null };
+  return { venue: rng(VENUES_P3), city: rng(GFL_CITIES) };
+}
+
 /** Build a fighter display object from a roster entry + phase context */
 export function rosterFighterToOpponent(rf, phase) {
   const w      = rf.wRange ? Math.round((rf.wRange[0] + rf.wRange[1]) / 2) : 10;
   const l      = rf.lRange ? Math.round((rf.lRange[0] + rf.lRange[1]) / 2) : 3;
   const record = `${w}-${l}`;
   const name   = `${rf.fn} "${rf.nick}" ${rf.ln}`;
-  const bioPool   = phase === 1 ? BIOS_P1   : phase === 2 ? BIOS_P2   : BIOS_P3;
-  const venuePool = phase === 1 ? VENUES_P1 : phase === 2 ? VENUES_P2 : VENUES_P3;
+  const bioPool        = phase === 1 ? BIOS_P1 : phase === 2 ? BIOS_P2 : BIOS_P3;
+  const { venue, city } = pickVenue(phase);
   return {
     name, record,
     badge: '', badgeClass: '',
-    bio:      rng(bioPool),
-    venue:    rng(venuePool),
+    bio:     rng(bioPool),
+    venue,
+    gflCity: city,
     rosterId: rf.id,
     style:    rf.style,
   };
@@ -218,9 +230,8 @@ export function divisionSlotToOpponent(fidOrObj, slot, cs) {
   }
   if (!f) return null;
 
-  const phase     = cs.phase;
-  const venuePool = phase === 1 ? VENUES_P1 : phase === 2 ? VENUES_P2 : VENUES_P3;
-  const bioPool   = phase === 1 ? BIOS_P1   : phase === 2 ? BIOS_P2   : BIOS_P3;
+  const phase   = cs.phase;
+  const bioPool = phase === 1 ? BIOS_P1 : phase === 2 ? BIOS_P2 : BIOS_P3;
 
   let badge = '', badgeClass = '';
   if (slot === CHAMP_SLOT)           { badge = 'Champion';                          badgeClass = 'oc-badge-champ'; }
@@ -241,7 +252,7 @@ export function divisionSlotToOpponent(fidOrObj, slot, cs) {
     name:         f.name,
     record:       f.record,
     bio:          rng(bioPool),
-    venue:        rng(venuePool),
+    ...(() => { const { venue, city } = pickVenue(phase); return { venue, gflCity: city }; })(),
     badge,
     badgeClass,
     rosterId:     f.rosterId,

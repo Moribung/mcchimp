@@ -4,7 +4,7 @@
   import { state as gs } from '$lib/mma/state.svelte.js';
   import { CHAMP_SLOT, RANKED_START } from '$lib/mma/constants.js';
 
-  const PHASE_NAMES = { 1: 'Regional FC', 2: 'Apex Combat', 3: 'GFL' };
+  const PHASE_NAMES = { 1: 'Regional FC', 2: 'Apex Combat', 3: 'GFL' }; // fallback for old saves
 
   function rankLabel(s) {
     if (s === null || s === undefined) return '';
@@ -29,12 +29,14 @@
         </thead>
         <tbody>
           {#each bouts as b}
-            {@const rc   = b.rc || 'loss'}
-            {@const rank = rankLabel(b.oppRankSlot)}
-            {@const org  = PHASE_NAMES[b.phase || 1] || ''}
-            <tr>
+            {@const rc       = b.rc || 'loss'}
+            {@const rank     = rankLabel(b.oppRankSlot)}
+            {@const org      = b.eventName || PHASE_NAMES[b.phase || 1] || ''}
+            {@const oppChamp = b.oppRankSlot === CHAMP_SLOT}
+            <tr class:bh-title={b.titleFight} title={b.titleFight ? 'Title fight' : undefined}>
               <td class="bh-res-cell"><span class="bh-dot {rc}"></span></td>
               <td>
+                {#if oppChamp}<span class="bh-belt" title="Reigning champion">🏆</span>{/if}
                 <span class="bh-opp-name">{b.oppName || 'Unknown'}</span>
                 {#if rank}<span class="bh-rank">{rank}</span>{/if}
               </td>
@@ -69,8 +71,11 @@
   .bh-rank    { color:var(--text-muted); font-size:10px; white-space:nowrap; margin-left:4px; }
   .bh-outcome { color:var(--text); white-space:nowrap; }
   .bh-method  { color:var(--text-muted); font-style:italic; font-size:10px; white-space:nowrap; }
-  .bh-div { font-size:9px; letter-spacing:0.06em; padding:1px 5px; border-radius:2px; font-weight:600; }
+  .bh-div { font-size:9px; letter-spacing:0.06em; padding:1px 5px; border-radius:2px; font-weight:600; white-space:nowrap; max-width:110px; overflow:hidden; text-overflow:ellipsis; }
   .bh-div-1 { background:rgba(255,255,255,.06); color:var(--text-muted); }
   .bh-div-2 { background:rgba(74,158,232,.12);  color:var(--blue); }
   .bh-div-3 { background:rgba(232,193,74,.12);  color:var(--accent); }
+  /* Title fights — subtle gold tint + belt icon */
+  .bh-title td { background: rgba(232,193,74,0.05); }
+  .bh-belt    { margin-right:4px; font-size:11px; }
 </style>

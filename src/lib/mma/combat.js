@@ -105,7 +105,8 @@ export function rollFightOutcome(state, resultClass, pctUsed, timedOut, score, m
     else if (generalMethod === 'TKO')        obj.method = weightedPool(TKO_METHODS);
     else if (generalMethod === 'Submission') obj.method = weightedPool(SUB_METHODS);
     else                                     obj.method = generalMethod || '';
-    obj.round = round || null;
+    obj.round     = round || null;
+    obj.maxRounds = maxRounds;
     return obj;
   }
 
@@ -114,6 +115,16 @@ export function rollFightOutcome(state, resultClass, pctUsed, timedOut, score, m
     let roll = Math.random() * total;
     if ((roll -= (mw.KO || 1)) <= 0)  return 'KO';
     if ((roll -= (mw.TKO || 1)) <= 0) return 'TKO';
+    return 'Submission';
+  }
+
+  // How the player gets finished when losing — skewed by their style's weakness.
+  const lw = (cs && cs.lossWeights) || { KO: 1, TKO: 1, Submission: 1 };
+  function weightedLossFinish() {
+    const total = (lw.KO || 1) + (lw.TKO || 1) + (lw.Submission || 1);
+    let roll = Math.random() * total;
+    if ((roll -= (lw.KO || 1)) <= 0)  return 'KO';
+    if ((roll -= (lw.TKO || 1)) <= 0) return 'TKO';
     return 'Submission';
   }
 
@@ -127,48 +138,72 @@ export function rollFightOutcome(state, resultClass, pctUsed, timedOut, score, m
     return n === 1 ? '1st' : n === 2 ? '2nd' : n === 3 ? '3rd' : n + 'th';
   }
 
-  // Timed out
-  if (resultClass === 'finish' && timedOut) {
-    return ret({ outcome: 'KO — R1', icon: '⏱', dmgKey: 'timeout',
-      desc: `The clock hit zero. ${oppShort} walked you down and finished you in the first.` }, 'KO', 1);
+  // Stopped before the bell (timed out, stopped variant)
+  if (resultClass === 'timeout_finish') {
+    const r = Math.random();
+    if (r < 0.50) return ret({ outcome: `TKO — R${maxRounds}`, icon: '⏱', dmgKey: 'timeout_finish',
+      desc: `The ref waved it off in the final seconds. You did nothing and paid for it.` }, 'TKO', maxRounds);
+    return ret({ outcome: `KO — R${maxRounds}`, icon: '⏱', dmgKey: 'timeout_finish',
+      desc: `Caught right before the bell. The clock ran out on you in every sense.` }, 'KO', maxRounds);
   }
 
-  // Finish (ratio=0, wrong answers)
+  // Embarrassing decision loss (timed out, decision variant)
+  if (resultClass === 'embarrassing_dec') {
+    return ret({ outcome: `Decision Loss — R${maxRounds}`, icon: '😶', dmgKey: 'embarrassing_dec',
+      desc: `You survived but did absolutely nothing. Lost on every card. Embarrassing.` }, 'Decision', maxRounds);
+  }
+
+  // Early finish — ratio=0, pctUsed < 0.5
   if (resultClass === 'finish') {
-    const rnd    = pctUsed < 0.30 ? 1 : (maxRounds === 5 ? randInt(1, 3) : randInt(1, 2));
+    const rnd    = pctUsed < 0.30 ? 1 : randInt(1, Math.ceil(maxRounds / 2));
     const rndStr = ordinal(rnd);
-    const r = Math.random();
-    if (r < 0.40) return ret({ outcome: `KO — R${rnd}`, icon: '💥', dmgKey: 'finish',
+    const lf = weightedLossFinish();
+    if (lf === 'KO') return ret({ outcome: `KO — R${rnd}`, icon: '💥', dmgKey: 'finish',
       desc: `${oppShort} caught you clean in the ${rndStr}. Lights out.` }, 'KO', rnd);
-    if (r < 0.70) return ret({ outcome: `Sub — R${rnd}`, icon: '🔒', dmgKey: 'finish',
+    if (lf === 'Submission') return ret({ outcome: `Sub — R${rnd}`, icon: '🔒', dmgKey: 'finish',
       desc: `Tapped out in the ${rndStr}. ${oppShort} was clinical on the ground.` }, 'Submission', rnd);
-    if (r < 0.85) return ret({ outcome: `TKO — R${rnd}`, icon: '💀', dmgKey: 'finish',
+    if (Math.random() < 0.5) return ret({ outcome: `TKO — R${rnd}`, icon: '💀', dmgKey: 'finish',
       desc: `Ground and pound in the ${rndStr}. The ref had seen enough.` }, 'TKO', rnd);
     return ret({ outcome: `TKO — R${rnd}`, icon: '🛑', dmgKey: 'finish',
       desc: `Stopped in the ${rndStr} after taking too much damage.` }, 'TKO', rnd);
   }
 
-  // Loss
+  // Late finish — ratio=0, pctUsed >= 0.5
+  if (resultClass === 'late_finish') {
+    const rnd    = randInt(Math.ceil(maxRounds / 2), maxRounds);
+    const rndStr = ordinal(rnd);
+    const lf = weightedLossFinish();
+    if (lf === 'KO') return ret({ outcome: `KO — R${rnd}`, icon: '💥', dmgKey: 'late_finish',
+      desc: `Wore you down and put you away in the ${rndStr}. You had no answer.` }, 'KO', rnd);
+    if (lf === 'Submission') return ret({ outcome: `Sub — R${rnd}`, icon: '🔒', dmgKey: 'late_finish',
+      desc: `Patience. ${oppShort} waited, then locked it in the ${rndStr}.` }, 'Submission', rnd);
+    return ret({ outcome: `TKO — R${rnd}`, icon: '💀', dmgKey: 'late_finish',
+      desc: `Accumulated damage caught up with you in the ${rndStr}. The ref stepped in.` }, 'TKO', rnd);
+  }
+
+  // Split loss — ratio 0.5–0.74
+  if (resultClass === 'split_loss') {
+    return ret({ outcome: `Split Dec. Loss — R${maxRounds}`, icon: '📋', dmgKey: 'split_loss',
+      desc: `Split decision. You were in it but came up just short on two cards.` }, 'Split Decision', maxRounds);
+  }
+
+  // Loss — ratio 0.01–0.49
   if (resultClass === 'loss') {
-    if (pctUsed >= 0.70) {
-      const split = pctUsed >= 0.95;
-      if (split) return ret({ outcome: `Split Dec. Loss — R${maxRounds}`, icon: '📋', dmgKey: 'loss',
-        desc: `Split decision. One judge had you — the other two disagreed.` }, 'Split Decision', maxRounds);
-      return ret({ outcome: `Decision Loss — R${maxRounds}`, icon: '📋', dmgKey: 'loss',
-        desc: `Lost on the cards over ${maxRounds} rounds. ${oppShort} did just enough.` }, 'Decision', maxRounds);
-    }
     const rnd    = getRound();
     const rndStr = ordinal(rnd);
-    const r = Math.random();
-    if (r < 0.30) return ret({ outcome: `KO Loss — R${rnd}`, icon: '💢', dmgKey: 'loss',
+    // ~25% lost on the cards; the rest is a finish skewed by the player's weakness.
+    if (Math.random() < 0.25) return ret({ outcome: `Decision Loss — R${maxRounds}`, icon: '📋', dmgKey: 'loss',
+      desc: `Lost on the cards over ${maxRounds} rounds. ${oppShort} did just enough.` }, 'Decision', maxRounds);
+    const lf = weightedLossFinish();
+    if (lf === 'KO') return ret({ outcome: `KO Loss — R${rnd}`, icon: '💢', dmgKey: 'loss',
       desc: `Caught with a big shot in the ${rndStr}. Down and out cold.` }, 'KO', rnd);
-    if (r < 0.55) return ret({ outcome: `TKO Loss — R${rnd}`, icon: '🩹', dmgKey: 'loss',
+    if (lf === 'TKO') return ret({ outcome: `TKO Loss — R${rnd}`, icon: '🩹', dmgKey: 'loss',
       desc: `Stopped in the ${rndStr}. The ref stepped in after you took too much.` }, 'TKO', rnd);
     return ret({ outcome: `Sub Loss — R${rnd}`, icon: '🔗', dmgKey: 'loss',
       desc: `Caught in a submission in the ${rndStr}. ${oppShort} was the better grappler.` }, 'Submission', rnd);
   }
 
-  // Draw
+  // Draw — ratio 0.75–0.99
   if (resultClass === 'draw') {
     const split = pctUsed >= 0.95;
     if (split) return ret({ outcome: `Split Draw — R${maxRounds}`, icon: '📋', dmgKey: 'draw',
@@ -197,11 +232,11 @@ export function rollFightOutcome(state, resultClass, pctUsed, timedOut, score, m
     return ret({ outcome: 'Sub — R1', icon: '⚡', dmgKey: 'ko_win',
       desc: `Clinical from the jump. ${oppShort} tapped out inside the first round.` }, 'Submission', 1);
   }
-  if (wf === 'KO')  return ret({ outcome: `KO — R${rnd}`,  icon: '🥊', dmgKey: 'decision_win',
+  if (wf === 'KO')  return ret({ outcome: `KO — R${rnd}`,  icon: '🥊', dmgKey: 'late_finish_win',
     desc: `Broke ${oppShort} down and put them away in the ${rndStr}.` }, 'KO', rnd);
-  if (wf === 'TKO') return ret({ outcome: `TKO — R${rnd}`, icon: '✊', dmgKey: 'decision_win',
+  if (wf === 'TKO') return ret({ outcome: `TKO — R${rnd}`, icon: '✊', dmgKey: 'late_finish_win',
     desc: `Took ${oppShort} down in the ${rndStr} and didn't let them back up.` }, 'TKO', rnd);
-  return ret({ outcome: `Sub — R${rnd}`, icon: '🔒', dmgKey: 'decision_win',
+  return ret({ outcome: `Sub — R${rnd}`, icon: '🔒', dmgKey: 'late_finish_win',
     desc: `Patiently set up the submission in the ${rndStr}.` }, 'Submission', rnd);
 }
 
@@ -218,14 +253,29 @@ export function resolveResult(state, cs, q, selectedSet, pctUsed, activeLength) 
 
   // Determine result class
   let resultClass;
-  if (timedOut || ratio === 0) {
-    state.finishes++; state.losses++;
+  if (timedOut) {
+    // Timeout: randomly stopped before the bell or embarrassing decision loss
+    if (Math.random() < 0.5) {
+      state.finishes++;
+      state.results.push('finish');
+      resultClass = 'timeout_finish';
+    } else {
+      state.losses++;
+      state.results.push('loss');
+      resultClass = 'embarrassing_dec';
+    }
+  } else if (ratio === 0) {
+    state.finishes++;
     state.results.push('finish');
-    resultClass = 'finish';
+    resultClass = pctUsed < 0.5 ? 'finish' : 'late_finish';
   } else if (ratio < 0.5) {
     state.losses++;
     state.results.push('loss');
     resultClass = 'loss';
+  } else if (ratio < 0.75) {
+    state.losses++;
+    state.results.push('loss');
+    resultClass = 'split_loss';
   } else if (ratio < 1) {
     state.draws++;
     state.results.push('draw');
@@ -257,9 +307,9 @@ export function resolveResult(state, cs, q, selectedSet, pctUsed, activeLength) 
 
   // ── Finish streak ──
   const isFinishWin = resultClass === 'win' && (
-    dmgKey === 'ko_win' ||
-    rolled.outcome.includes('KO') || rolled.outcome.includes('TKO') ||
-    rolled.outcome.includes('Submission') || rolled.outcome.includes('Ground')
+    KO_METHODS.includes(rolled.method) ||
+    TKO_METHODS.includes(rolled.method) ||
+    SUB_METHODS.includes(rolled.method)
   );
   state.finishStreak = isFinishWin ? Math.max(0, state.finishStreak) + 1 : 0;
 
@@ -276,7 +326,7 @@ export function resolveResult(state, cs, q, selectedSet, pctUsed, activeLength) 
       if (m && (isKO || isTKO || isSub)) {
         state.specificMethodCounts[m] = (state.specificMethodCounts[m] || 0) + 1;
       } else { state.winsByDec++; }
-    } else if (resultClass === 'loss' || resultClass === 'finish') {
+    } else if (['loss', 'split_loss', 'finish', 'late_finish', 'timeout_finish', 'embarrassing_dec'].includes(resultClass)) {
       if (isKO)       state.lossByKO++;
       else if (isTKO) state.lossByTKO++;
       else if (isSub) state.lossBySub++;
@@ -296,16 +346,44 @@ export function resolveResult(state, cs, q, selectedSet, pctUsed, activeLength) 
   // ── Bout history ──
   if (!state.sparring) {
     const o = state.currentOpponent || {};
+    // Title fight: champion's belt is on the line. Runs BEFORE updateDivisionAfterResult,
+    // so cs.division.playerSlot is still the pre-fight slot here.
+    const pPreSlot   = cs && cs.division ? cs.division.playerSlot : -1;
+    const oPreSlot   = typeof o.divisionSlot === 'number' ? o.divisionSlot : -1;
+    const titleFight = pPreSlot === CHAMP_SLOT || oPreSlot === CHAMP_SLOT;
+
+    // Event name: GFL numbered/fight-night for phase 3, org name for others
+    let eventName = '';
+    if (cs) {
+      const phase = cs.phase || 1;
+      const evNum = cs.gflEventNum || 1;
+      if (phase === 3) {
+        const onMainCard = pPreSlot >= CHAMP_SLOT - 5; // top 5 or better
+        eventName = onMainCard ? `GFL ${evNum}` : `GFL Fight Night`;
+      } else if (phase === 2) {
+        eventName = cs.phase2Name || 'Apex Combat';
+      } else {
+        eventName = 'Regional FC';
+      }
+    }
+
     state.boutHistory.unshift({
       fn:          state.fightIndex,
       oppName:     o.name || 'Unknown',
       oppRankSlot: typeof o.divisionSlot === 'number' ? o.divisionSlot : null,
       outcome:     rolled.outcome,
       method:      rolled.method || '',
-      rc:          resultClass,
+      rc:          ['split_loss', 'embarrassing_dec'].includes(resultClass) ? 'loss'
+                 : ['late_finish', 'timeout_finish'].includes(resultClass)  ? 'finish'
+                 : resultClass,
       phase:       cs ? cs.phase : 1,
+      eventName,
+      titleFight,
     });
     if (state.boutHistory.length > 50) state.boutHistory.pop();
+
+    // Advance the GFL event counter every fight (the league runs regardless of your org)
+    if (cs) cs.gflEventNum = (cs.gflEventNum || 1) + randInt(1, 10);
   }
 
   // ── Career phase update ──
@@ -324,15 +402,15 @@ export function resolveResult(state, cs, q, selectedSet, pctUsed, activeLength) 
     // Challenger drop on championship defense win
     let extraDrop = 0;
     if (_won && cs.division && cs.division.playerSlot === CHAMP_SLOT) {
-      if (resultClass === 'finish')        extraDrop = 5;
-      else if (dmgKey === 'ko_win')        extraDrop = 4;
-      else if (rolled.outcome.includes('Submission')) extraDrop = 3;
+      if (dmgKey === 'ko_win')             extraDrop = 4;
+      else if (dmgKey === 'late_finish_win') extraDrop = 3;
       else if (dmgKey === 'decision_win')  extraDrop = 2;
       else                                 extraDrop = 1;
     }
 
-    updateDivisionAfterResult(state, cs, _won, _draw, extraDrop);
-    event = updateCareerPhase(state, cs, timedOut ? 'timeout' : resultClass, slotBefore);
+    const extraLossDrop = resultClass === 'embarrassing_dec' ? 2 : 0;
+    updateDivisionAfterResult(state, cs, _won, _draw, extraDrop, extraLossDrop);
+    event = updateCareerPhase(state, cs, resultClass, slotBefore);
     cs.pendingEvent = event || null;
     cs.results      = state.results;
 
@@ -367,8 +445,15 @@ export function resolveResult(state, cs, q, selectedSet, pctUsed, activeLength) 
       }
     }
 
-    // Durability damage
-    const dmg = DURABILITY_DAMAGE[dmgKey] ?? DURABILITY_DAMAGE['loss'];
+    // Durability damage (late_finish_win scales 0.5–0.9 by round relative to maxRounds)
+    let dmg;
+    if (dmgKey === 'late_finish_win') {
+      const maxR = rolled.maxRounds || 3;
+      const r    = rolled.round    || 2;
+      dmg = 0.5 + 0.4 * (r - 1) / Math.max(1, maxR - 1);
+    } else {
+      dmg = DURABILITY_DAMAGE[dmgKey] ?? DURABILITY_DAMAGE['loss'];
+    }
     cs.durability = Math.max(0, cs.durability - dmg);
 
     // Callout reset

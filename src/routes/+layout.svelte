@@ -50,7 +50,13 @@
 <header>
   <a class="logo" href="/">Mc<span>Chimp</span></a>
   <nav>
-    <a href="/games">Games</a>
+    <div class="nav-item">
+      <a class="nav-link-q" href="/games">Games&#8202;<span class="chevron">&#9662;</span></a>
+      <div class="dropdown">
+        <a href="/mma"><span class="dd-label">MMA Game</span></a>
+        <a href="/football"><span class="dd-label">Football Game</span></a>
+      </div>
+    </div>
     <a href="/#how">How it works</a>
     <div class="nav-item">
       <a class="nav-link-q" href="/questions">Questions&#8202;<span class="chevron">&#9662;</span></a>
@@ -84,6 +90,8 @@
 <div class="mobile-nav" class:open={mobileNavOpen}>
   <button class="mobile-nav-close" onclick={toggleMobileNav}>&#215;</button>
   <a href="/games" onclick={toggleMobileNav}>Games</a>
+  <a href="/mma"      onclick={toggleMobileNav} style="font-size:20px;color:var(--muted);padding:3px 0;padding-left:12px;">MMA Game</a>
+  <a href="/football" onclick={toggleMobileNav} style="font-size:20px;color:var(--muted);padding:3px 0;padding-left:12px;">Football Game</a>
   <a href="/#how" onclick={toggleMobileNav}>How It Works</a>
   <a href="/questions" onclick={toggleMobileNav}>Questions</a>
   <a href="/questions/sets"      onclick={toggleMobileNav} style="font-size:20px;color:var(--muted);padding:3px 0;padding-left:12px;">Question Sets</a>

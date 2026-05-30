@@ -122,7 +122,7 @@
   <div class="career-panel">
     <div class="cp-fighter">{cs.fighterName}{cs.titleHeld ? ' 🏆' : ''}</div>
     <div class="cp-record-line">
-      <span class="r-w">{gs.wins}</span>W&nbsp;–&nbsp;<span class="r-l">{gs.losses}</span>L&nbsp;–&nbsp;<span class="r-d">{gs.draws}</span>D
+      <span class="r-w">{gs.wins}</span>W&nbsp;–&nbsp;<span class="r-l">{gs.losses + gs.finishes}</span>L&nbsp;–&nbsp;<span class="r-d">{gs.draws}</span>D
     </div>
     <div class="cp-org-row">
       <span class="cp-promo">{pDef?.promo}</span>

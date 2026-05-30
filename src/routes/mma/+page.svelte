@@ -72,11 +72,35 @@
   let calloutResultText = $state('');
   let calloutAccepted   = $state(false);
 
+  // Current event name shown on the opponent card
+  const currentEventName = $derived((() => {
+    const cs = gs.career;
+    if (!cs || gs.sparring) return '';
+    const phase = cs.phase || 1;
+    const evNum = cs.gflEventNum || 1;
+    if (phase === 3) {
+      const pSlot = cs.division?.playerSlot ?? 0;
+      if (pSlot >= CHAMP_SLOT - 5) {
+        const city = gs.currentOpponent?.gflCity;
+        return city ? `GFL ${evNum} · ${city}` : `GFL ${evNum}`;
+      }
+      return 'GFL Fight Night';
+    }
+    if (phase === 2) return cs.phase2Name || 'Apex Combat';
+    return 'Regional FC';
+  })());
+
+  // Every 3rd defence is mandatory (defenseStreak of 2, 5, 8… means next is the 3rd, 6th, 9th…)
+  const isMandatoryDefense = $derived(
+    !!(gs.career?.titleHeld) && (gs.career?.defenseStreak ?? 0) % 3 === 2
+  );
+
   const canCallout = $derived(
     gs.screen === 'result' &&
     !gs.calloutUsed &&
     !!gs.fightResult &&
-    !gs.fightResult?.isLast
+    !gs.fightResult?.isLast &&
+    !isMandatoryDefense
   );
 
   function openCallout(slotIdx) {
@@ -90,15 +114,26 @@
     calloutTargetSlot = slotIdx;
     calloutFighter    = f;
     const playerSlot  = cs.division.playerSlot;
+    const isChamp     = playerSlot === CHAMP_SLOT;
     const penalty     = cs.calloutRecord?.[f.name] || 0;
-    const pct         = calloutSuccessPct(playerSlot, slotIdx, penalty);
+    const defenses    = cs.champCalloutClout || 0;
+    const pct         = calloutSuccessPct(playerSlot, slotIdx, penalty, defenses);
     calloutPct        = Math.round(pct * 100);
-    const diff        = slotIdx - playerSlot;
-    if (diff <= 0)       calloutOddsDesc = diff === 0 ? 'Same rank — they have little reason to refuse.' : 'They are ranked below you.';
-    else if (diff <= 3)  calloutOddsDesc = 'Close in the rankings — this is a natural matchup.';
-    else if (diff <= 8)  calloutOddsDesc = 'A few spots above you — they might not see you as worthy yet.';
-    else                 calloutOddsDesc = 'Far above your current ranking — expect a cold shoulder.';
-    if (penalty > 0) calloutOddsDesc += ` They have lost to you ${penalty} time${penalty > 1 ? 's' : ''} — reluctant to fight again.`;
+    if (isChamp) {
+      const diff = CHAMP_SLOT - slotIdx; // how far below #1 contender
+      if (diff <= 1)      calloutOddsDesc = 'The #1 contender — a natural title defence.';
+      else if (diff <= 3) calloutOddsDesc = 'A fringe contender — the organisation may not push for this.';
+      else if (diff <= 6) calloutOddsDesc = 'Well outside the title picture — unlikely to get sanctioned.';
+      else                calloutOddsDesc = 'Far too low in the rankings — the organisation won\'t want this fight.';
+      if (penalty > 0) calloutOddsDesc += ` You've already beaten them ${penalty} time${penalty > 1 ? 's' : ''} — they have nothing to gain from a rematch.`;
+    } else {
+      const diff = slotIdx - playerSlot;
+      if (diff <= 0)       calloutOddsDesc = diff === 0 ? 'Same rank — they have little reason to refuse.' : 'They are ranked below you.';
+      else if (diff <= 3)  calloutOddsDesc = 'Close in the rankings — this is a natural matchup.';
+      else if (diff <= 8)  calloutOddsDesc = 'A few spots above you — they might not see you as worthy yet.';
+      else                 calloutOddsDesc = 'Far above your current ranking — expect a cold shoulder.';
+      if (penalty > 0) calloutOddsDesc += ` They have lost to you ${penalty} time${penalty > 1 ? 's' : ''} — reluctant to fight again.`;
+    }
     calloutResult   = null;
     calloutAccepted = false;
   }
@@ -109,8 +144,10 @@
     const fid    = cs.division.slots[calloutTargetSlot];
     const f      = gf(fid);
     if (!f) return;
+    const isChamp  = cs.division.playerSlot === CHAMP_SLOT;
     const penalty  = cs.calloutRecord?.[f.name] || 0;
-    const pct      = calloutSuccessPct(cs.division.playerSlot, calloutTargetSlot, penalty);
+    const defenses = cs.champCalloutClout || 0;
+    const pct      = calloutSuccessPct(cs.division.playerSlot, calloutTargetSlot, penalty, defenses);
     const accepted = Math.random() < pct;
     gs.calloutUsed = true;
     if (accepted) {
@@ -118,8 +155,18 @@
       calloutResultText = '✓ They accepted. The fight is on.';
       calloutAccepted   = true;
       gs._calloutOpponent = divisionSlotToOpponent(fid, calloutTargetSlot, cs);
+      // Reset accumulated callout clout if champion called out someone outside the top 5
+      if (isChamp && (CHAMP_SLOT - calloutTargetSlot) > 5) {
+        cs.champCalloutClout = 0;
+      }
     } else {
-      const reasons = [
+      const reasons = isChamp ? [
+        "The organisation didn't want this fight made.",
+        "They didn't think they were ready for a title shot.",
+        "The promotion felt it was too early for them.",
+        "They turned it down — not confident they've earned a shot.",
+        "The matchmakers blocked it. That name isn't in the title conversation.",
+      ] : [
         'Not interested. You have not earned it yet.',
         'Their team passed. Work your way up.',
         'They want bigger names first.',
@@ -300,6 +347,25 @@
     if (!blob) return;
     loadSave(gs, blob);
     gs.saveId = saveId;
+
+    // Guard: if the loaded career is already in a terminal state, the active save is
+    // orphaned — archiving succeeded but delete failed. Clean up the save and send
+    // straight to the end summary; don't re-archive (it's already in Past Careers).
+    const cs = gs.career;
+    if (cs) {
+      const voluntarilyOut = !!cs.retiredVoluntarily;
+      const durabilityGone = (cs.durability ?? 100) <= 0;
+      const forcedOut      = !!cs.forceRetire;
+      if (voluntarilyOut || durabilityGone || forcedOut) {
+        gs.retiredVoluntarily = voluntarilyOut;
+        gs.retiredDurability  = durabilityGone && !forcedOut && !voluntarilyOut;
+        gs.retiredForcefully  = forcedOut && !voluntarilyOut;
+        try { await deleteSave(gs.saveId); } catch {}
+        gs.saveId = null;
+        gs.screen = 'end';
+        return;
+      }
+    }
   }
 
   // ── onMount ───────────────────────────────────────────
@@ -372,11 +438,11 @@
 
   <header class="mma-header">
     <h1 class="mma-title">MMA Career Trivia</h1>
-    {#if !gs.sparring}
+    {#if !gs.sparring && gs.career}
       <div class="score-display">
         <span class="score-w">{gs.wins}W</span>
         <span class="score-sep">–</span>
-        <span class="score-l">{gs.losses}L</span>
+        <span class="score-l">{gs.losses + gs.finishes}L</span>
         <span class="score-sep">–</span>
         <span class="score-d">{gs.draws}D</span>
       </div>
@@ -478,6 +544,9 @@
         {#if gs.currentOpponent}
           {@const opp = gs.currentOpponent}
           <div class="sidebar-opp">
+            {#if currentEventName}
+              <div class="so-event">{currentEventName}</div>
+            {/if}
             <div class="so-label">Your Opponent</div>
             <div class="so-name">{opp.name}</div>
             <div class="so-row2">
@@ -508,7 +577,9 @@
             <div class="rt-header">
               {pDef.promo} Rankings
               {#if gs.screen === 'result'}
-                {#if canCallout}
+                {#if isMandatoryDefense}
+                  <span class="rt-callout-hint mandatory">mandatory defence</span>
+                {:else if canCallout}
                   <span class="rt-callout-hint">tap to call out</span>
                 {:else if gs.calloutUsed}
                   <span class="rt-callout-hint used">callout used</span>
@@ -774,6 +845,7 @@
     background: var(--surface2); border: 1px solid var(--border);
     border-radius: var(--radius); padding: 12px 14px; margin-bottom: 14px;
   }
+  .so-event  { font-family: var(--font-display); font-size: 22px; letter-spacing: 0.04em; line-height: 1.1; margin-bottom: 8px; color: var(--text); }
   .so-label  { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 3px; }
   .so-name   { font-family: var(--font-display); font-size: 20px; letter-spacing: 0.04em; line-height: 1.1; margin-bottom: 4px; word-break: break-word; }
   .so-row2   { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 3px; }
@@ -792,6 +864,7 @@
   .rt-header { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); padding: 8px 12px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
   .rt-callout-hint { font-size: 9px; letter-spacing: 0.08em; color: var(--accent); opacity: 0.8; }
   .rt-callout-hint.used { color: var(--text-muted); opacity: 0.4; }
+  .rt-callout-hint.mandatory { color: var(--red, #c0392b); opacity: 1; }
   .rt-table  { width: 100%; border-collapse: collapse; font-size: 11px; }
   .rt-table thead th { font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); padding: 4px 12px; text-align: left; border-bottom: 1px solid var(--border); }
   .rt-table tbody tr { border-bottom: 1px solid rgba(255,255,255,0.04); }
