@@ -117,6 +117,7 @@
 
   function confirmBrowsePick() {
     if (!browsePicked) return;
+    let pickedId;
     if (browsePicked.source === 'public') {
       const mod = browsePicked.mod;
       // Catalog sets aren't auto-loaded — import on first use.
@@ -124,7 +125,7 @@
         gs.availableModules = [...gs.availableModules, mod];
         gs.loadedModules[mod.id] = mod;
       }
-      selectedId = mod.id;
+      pickedId = mod.id;
     } else {
       const item = browsePicked.item;
       const id   = 'lib_' + item.id;
@@ -134,7 +135,12 @@
         gs.availableModules = [...gs.availableModules, mod];
         gs.loadedModules[id] = mod;
       }
-      selectedId = id;
+      pickedId = id;
+    }
+    if (isSwitcher) {
+      switcherSelectedId = pickedId;
+    } else {
+      selectedId = pickedId;
     }
     browseOpen   = false;
     browsePicked = null;
