@@ -17,7 +17,7 @@
   let nick  = $state('');
   let last  = $state('');
 
-  // ── Fight style + special moves ───────────────────────
+  // ── Fight style + signature moves ─────────────────────
   // MMA Fighter (the balanced base profile) is selected by default.
   let styleId = $state('allrounder');
   // moveSlots = rolling window of the last 2 move clicks.
@@ -85,7 +85,7 @@
     // Weakness → how you get finished when you lose.
     gs.career.fightStyle  = style.id;
     gs.career.lossWeights = { ...style.loss };
-    // Special moves → starting specific-method counts.
+    // Signature moves → starting specific-method counts.
     const counts = {};
     for (const m of moveSlots) counts[m] = (counts[m] || 0) + 1;
     gs.specificMethodCounts = counts;
@@ -222,9 +222,9 @@
     </button>
   {/if}
 
-  <!-- ── Special moves (popup) ────────────────────────── -->
+  <!-- ── Signature moves (popup) ──────────────────────── -->
   <div class="section-head">
-    Special Moves <span class="optional">(optional)</span>
+    Signature Moves <span class="optional">(optional)</span>
   </div>
   {#if selectedMoves.length}
     <button type="button" class="selector selector-moves" onclick={() => (movesModalOpen = true)}>
@@ -239,7 +239,7 @@
     </button>
   {:else}
     <button type="button" class="selector selector-empty" onclick={() => (movesModalOpen = true)}>
-      <span>Add Special Moves</span>
+      <span>Add Signature Moves</span>
       <span class="selector-edit">Select →</span>
     </button>
   {/if}
@@ -270,12 +270,12 @@
   </div>
 {/if}
 
-<!-- ── Special moves modal ────────────────────────────── -->
+<!-- ── Signature moves modal ──────────────────────────── -->
 {#if movesModalOpen}
   <div class="modal-overlay" role="presentation" onclick={() => (movesModalOpen = false)}>
     <div class="modal" role="dialog" aria-modal="true" onclick={(e) => e.stopPropagation()}>
       <div class="modal-head">
-        <h3 class="modal-title">Special Moves</h3>
+        <h3 class="modal-title">Signature Moves</h3>
         <button type="button" class="modal-close" aria-label="Close" onclick={() => (movesModalOpen = false)}>✕</button>
       </div>
       <p class="moves-hint">

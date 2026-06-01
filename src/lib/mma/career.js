@@ -215,8 +215,8 @@ export function updateDivisionAfterResult(state, cs, won, draw, extraChallengerD
 /* ── NPC simulation ──────────────────────────────────── */
 function durabilityMod(f) {
   const d = f.npcDurability ?? 100;
-  if (d < 20) return -0.15;
-  if (d < 50) return -0.07;
+  if (d < 20) return -0.30;
+  if (d < 50) return -0.14;
   return 0;
 }
 
@@ -233,14 +233,35 @@ export function simulateNPCBouts(state, div, newsLog = null) {
   const numBouts = randInt(5, 12);
   const retirees = [];
 
+  // Per-fighter appearance tracking (keyed by fid — slots shuffle as fights resolve).
+  // Hard cap of 3 bouts per fighter per tick, and each prior appearance sharply
+  // lowers the chance of being picked again, so repeats stay rare.
+  const MAX_BOUTS      = 3;
+  const APPEAR_WEIGHT  = [1, 0.4, 0.15];   // index = prior appearances
+  const appearances    = new Map();
+  const apWeight = (fid) => {
+    const c = appearances.get(fid) || 0;
+    return c >= MAX_BOUTS ? 0 : APPEAR_WEIGHT[c];
+  };
+  const weightedPick = (arr, weights) => {
+    const total = weights.reduce((s, x) => s + x, 0);
+    let r = Math.random() * total;
+    for (let i = 0; i < arr.length; i++) {
+      r -= weights[i];
+      if (r <= 0) return arr[i];
+    }
+    return arr[arr.length - 1];
+  };
+
   for (let b = 0; b < numBouts; b++) {
     const candidates = [];
     for (let i = 1; i < n - 1; i++) {
-      if (i !== playerSlot) candidates.push(i);
+      if (i !== playerSlot && apWeight(slots[i]) > 0) candidates.push(i);
     }
     if (candidates.length < 2) break;
 
-    const aIdx  = candidates[Math.floor(Math.random() * candidates.length)];
+    // Fighter A: weighted toward those who haven't fought yet this tick.
+    const aIdx  = weightedPick(candidates, candidates.map(i => apWeight(slots[i])));
     const aF    = gf(slots[aIdx]);
     const wsA   = (aF && !aF.isPlayer) ? (aF.winStreak || 0) : 0;
     // Win-streak fighters get matched further up the rankings (up to +4 extra slots above)
@@ -248,25 +269,24 @@ export function simulateNPCBouts(state, div, newsLog = null) {
     const bPool = candidates.filter(i => i !== aIdx && (i - aIdx) <= upRange && (aIdx - i) <= 4);
     if (!bPool.length) continue;
 
-    const bWeights = bPool.map(i => 1 / (Math.abs(i - aIdx) + 0.5));
-    const bTotal   = bWeights.reduce((a, x) => a + x, 0);
-    let bRand = Math.random() * bTotal;
-    let bIdx  = bPool[bPool.length - 1];
-    for (let j = 0; j < bPool.length; j++) {
-      bRand -= bWeights[j];
-      if (bRand <= 0) { bIdx = bPool[j]; break; }
-    }
+    // Opponent weight blends slot proximity with appearance rarity.
+    const bIdx = weightedPick(bPool, bPool.map(i => apWeight(slots[i]) / (Math.abs(i - aIdx) + 0.5)));
 
     const fidA = slots[aIdx], fidB = slots[bIdx];
     const a = gf(fidA), bSlot = gf(fidB);
     if (!a || !bSlot || a.isPlayer || bSlot.isPlayer) continue;
 
+    appearances.set(fidA, (appearances.get(fidA) || 0) + 1);
+    appearances.set(fidB, (appearances.get(fidB) || 0) + 1);
+
     let rateA = (a.wins + a.losses) > 0 ? a.wins / (a.wins + a.losses) : 0.30;
     let rateB = (bSlot.wins + bSlot.losses) > 0 ? bSlot.wins / (bSlot.wins + bSlot.losses) : 0.30;
     if (a.isRising)     rateA = Math.min(0.88, rateA + 0.18);
     if (bSlot.isRising) rateB = Math.min(0.88, rateB + 0.18);
-    if (a.losses === 0 && a.wins > 0)         rateA = Math.min(0.92, rateA * 1.5);
-    if (bSlot.losses === 0 && bSlot.wins > 0) rateB = Math.min(0.92, rateB * 1.5);
+    // Undefeated fighters get the strongest single boost — by design larger than
+    // any win-streak multiplier (streakMod caps at 2.0×).
+    if (a.losses === 0 && a.wins > 0)         rateA = Math.min(0.94, rateA * 2.5);
+    if (bSlot.losses === 0 && bSlot.wins > 0) rateB = Math.min(0.94, rateB * 2.5);
 
     // Streak modifiers (NPC only): win streak 1.2×→2×, loss streak 0.83×→0.5×
     function streakMod(f) {
@@ -375,8 +395,8 @@ export function simulateNPCBouts(state, div, newsLog = null) {
       const challenger = gf(challFid);
       let rChamp = champF.wins > 0 ? champF.wins / (champF.wins + champF.losses) : 0.75;
       let rChall = challenger.wins > 0 ? challenger.wins / (challenger.wins + challenger.losses) : 0.30;
-      if (champF.losses === 0 && champF.wins > 0)        rChamp = Math.min(0.95, rChamp * 1.5);
-      if (challenger.losses === 0 && challenger.wins > 0) rChall = Math.min(0.92, rChall * 1.5);
+      if (champF.losses === 0 && champF.wins > 0)        rChamp = Math.min(0.95, rChamp * 2.5);
+      if (challenger.losses === 0 && challenger.wins > 0) rChall = Math.min(0.94, rChall * 2.5);
       rChamp = Math.max(0.05, rChamp + durabilityMod(champF));
       rChall = Math.max(0.05, rChall + durabilityMod(challenger));
       const champWins = Math.random() < rChamp / (rChamp + rChall);
@@ -678,7 +698,7 @@ export function maybeRefreshBottomSlots(state, div, phase, newsLog = null) {
         signatureMoves: makeSignatureMoves(),
         rosterId: null, isPlayer: false, isRising,
         questionId: null, isNew: true, prevSlot: null, maxPhase: phase,
-        npcDurability: Math.max(20, Math.round(100 - (w + l) * 0.5)),
+        npcDurability: Math.max(20, Math.round(100 - (w + l) * 1.0)),
       };
       FIGHTERS.set(nf.fid, nf);
       newFid = nf.fid;

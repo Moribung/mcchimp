@@ -90,6 +90,9 @@
       cs.divisions[cs.phase] = buildDivision(PHASES[cs.phase], cs.fighterName);
     }
     cs.division = cs.divisions[cs.phase];
+    // Clear any stale 'player' entry left from when this division was last occupied
+    const staleIdx = cs.division.slots.indexOf('player');
+    if (staleIdx !== -1) cs.division.slots[staleIdx] = null;
     cs.division.playerSlot = 0;
     cs.division.slots[0]   = 'player';
     ensureQPool(gs);

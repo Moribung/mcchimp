@@ -121,7 +121,7 @@ export function rollFightOutcome(state, resultClass, pctUsed, timedOut, score, m
   }
 
   // Specific finish method for a general finish type:
-  //  - player win  → weighted by the player's selected special moves (smc)
+  //  - player win  → weighted by the player's selected signature moves (smc)
   //  - opp. finish → 50% the opponent's signature for that type, else a uniform
   //                  roll from the pool (the player's smc must not bias it)
   function pickMethod(type) {

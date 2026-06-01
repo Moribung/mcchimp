@@ -44,6 +44,20 @@
 
   // ── Selected module display ───────────────────────────
   const selectedMod = $derived(selectedId ? gs.loadedModules?.[selectedId] : null);
+  // Non-default sets to surface in the switcher: the active module and any browsed pick.
+  const switcherExtraMods = $derived.by(() => {
+    const seen = new Set();
+    const mods = [];
+    for (const id of [gs.activeModId, switcherSelectedId]) {
+      if (!id || seen.has(id)) continue;
+      const m = gs.loadedModules?.[id];
+      if (m && m.tag && !bundledSets.find(b => b.id === id)) {
+        seen.add(id);
+        mods.push(m);
+      }
+    }
+    return mods;
+  });
 
   // ── Browse modal ──────────────────────────────────────
   let browseOpen    = $state(false);
@@ -210,6 +224,21 @@
         <button class="msw-card" class:selected={switcherSelectedId === mod.id}
           onclick={() => switcherSelectedId = mod.id}>
           <div class="msw-card-name">{mod.name}</div>
+          <div class="msw-card-desc">{totalQuestions(mod)} questions</div>
+        </button>
+      {/each}
+
+      <!-- Active / browsed non-default sets shown inline with the list -->
+      {#each switcherExtraMods as mod (mod.id)}
+        <button class="msw-card" class:selected={switcherSelectedId === mod.id}
+          onclick={() => switcherSelectedId = mod.id}>
+          <div class="msw-card-name">
+            {mod.name}
+            <span class="module-tag {mod.tag === 'library' ? 'tag-library' : 'tag-public'}">
+              {mod.tag === 'library' ? 'Library' : 'Public'}
+            </span>
+            {#if mod.id === gs.activeModId}<span class="msw-active-tag">Active</span>{/if}
+          </div>
           <div class="msw-card-desc">{totalQuestions(mod)} questions</div>
         </button>
       {/each}
@@ -583,10 +612,11 @@
   .msw-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; }
   .msw-section-label { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; }
   .msw-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
-  .msw-card { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; cursor: pointer; transition: border-color 0.15s; text-align: left; width: 100%; color: var(--text); font-family: var(--font-body); }
+  .msw-card { position: relative; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; cursor: pointer; transition: border-color 0.15s; text-align: left; width: 100%; color: var(--text); font-family: var(--font-body); }
   .msw-card:hover    { border-color: var(--border-hover); }
   .msw-card.selected { border-color: var(--accent); background: var(--accent-dim); }
-  .msw-card-name { font-weight: 600; font-size: 13px; margin-bottom: 1px; }
+  .msw-card-name { font-weight: 600; font-size: 13px; margin-bottom: 1px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .msw-active-tag { font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 700; padding: 2px 6px; border-radius: 3px; background: var(--accent-dim); color: var(--accent); }
   .msw-card-desc { font-size: 11px; color: var(--text-muted); }
   .msw-divider   { height: 1px; background: var(--border); margin: 16px 0; }
   .msw-actions   { display: flex; flex-direction: column; gap: 10px; }

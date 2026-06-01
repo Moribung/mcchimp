@@ -49,8 +49,10 @@
     for (let i = slots.length - 1; i >= 0; i--) {
       const fid      = slots[i];
       const isPlayer = fid === 'player' || i === playerSlot;
+      if (isPlayer && i !== playerSlot) continue; // stale 'player' string left in slots after division change
+      const totalLosses = (gs.losses || 0) + (gs.finishes || 0);
       const f = isPlayer
-        ? { name: cs.fighterName, record: `${gs.wins}-${gs.losses}`, wins: gs.wins, losses: gs.losses, draws: gs.draws || 0, isPlayer: true }
+        ? { name: cs.fighterName, record: `${gs.wins}-${totalLosses}`, wins: gs.wins, losses: totalLosses, draws: gs.draws || 0, isPlayer: true }
         : gf(fid);
       if (!f) continue;
       const rankNum = i === CHAMP_SLOT ? 'C' : i < RANKED_START ? '–' : `#${CHAMP_SLOT - i}`;

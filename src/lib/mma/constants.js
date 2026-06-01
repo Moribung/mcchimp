@@ -144,33 +144,25 @@ export const GFL_CITIES = [
   'Mexico City','Madrid','Amsterdam','Shanghai','Riyadh','Manchester',
 ];
 
-/* ── Bio pools (per phase) ───────────────────────────── */
-export const BIOS_P1 = [
-  'A tough local product making noise on the regional scene.',
-  'Six fights in, no quit in him — hungry and dangerous.',
-  "Trained out of a converted garage gym. Don't sleep on him.",
-  'An unknown quantity. No film, no tape. Just a record.',
-  'Comes in overweight at every weigh-in. Still keeps winning.',
-];
-export const BIOS_P2 = [
-  'A veteran of 30+ fights. Seen everything, done everything.',
-  'Coming off a brutal war last camp. Still carries the damage.',
-  'A late replacement — only two weeks of camp. Could go either way.',
-  'Ranked fighter on a four-fight win streak. Hot right now.',
-  'A finisher. Twelve of his wins have come inside the distance.',
-  'Former amateur champion. Plenty of amateur pedigree behind him.',
-  "A grappler. He'll be looking to drag this to the floor.",
-  'A journeyman — but the kind that makes careers end early.',
-];
-export const BIOS_P3 = [
-  'A ranked contender with a power that has ended eleven careers.',
-  'The #2-ranked challenger. A loss here ends title ambitions.',
-  'The current interim champion. He carries the belt but wants the real thing.',
-  'A 10-year veteran of the sport. This might be his last shot at gold.',
-  'He knocked out the last person who stepped to him in 47 seconds.',
-  'Undefeated in the promotion. A test no one has passed yet.',
-  'The champion has been avoiding him for two years. No more.',
-  'A defensive wizard. Nobody has finished him in 25 fights.',
+/* ── Fun facts (flavor only — never performance/record related) ──
+   Appended to ~1 in 3 fighters' scouting reports for colour. Keep every
+   entry purely about background/personality so it can never contradict
+   a fighter's actual stats. */
+export const FUN_FACTS = [
+  'Trains out of a converted garage gym back home.',
+  'Walks out to the same song every single fight.',
+  'A qualified electrician before he turned pro.',
+  'Brings his own chef along for fight week.',
+  'Collects vintage motorcycles between camps.',
+  'Started martial arts at the age of four.',
+  'Swears the beard is lucky and refuses to trim it mid-camp.',
+  'Speaks four languages fluently.',
+  'Coaches a kids’ wrestling club in the off-season.',
+  'Has a tattoo for every country he has fought in.',
+  'A former national-level swimmer.',
+  'Superstitious — always steps into the cage left foot first.',
+  'Runs a surprisingly popular cooking channel on the side.',
+  'Named his dog after his favourite submission.',
 ];
 
 /* ── Fighter roster ──────────────────────────────────────
@@ -205,7 +197,7 @@ export const FIGHTER_ROSTER = [
    *_METHODS are the FULL pools any finish can roll from. Every entry is a
    concrete finish — there are no generic 'KO'/'TKO' placeholders. TKO still
    includes ref/doctor stoppages (real outcomes, just not player-selectable).
-   SELECTABLE_* are the subset a player may manually pick as a special move,
+   SELECTABLE_* are the subset a player may manually pick as a signature move,
    and the pool that enemy signature moves are drawn from: only specific,
    deliberate finishing techniques.
 ──────────────────────────────────────────────────────── */

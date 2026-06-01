@@ -13,8 +13,9 @@
 import {
   FIRST_NAMES, LAST_NAMES, NICKNAMES,
   FIGHTER_ROSTER, DIVISION_SIZE, CHAMP_SLOT, RANKED_START,
-  BIOS_P1, BIOS_P2, BIOS_P3, VENUES_P1, VENUES_P2, VENUES_P3, GFL_CITIES,
+  VENUES_P1, VENUES_P2, VENUES_P3, GFL_CITIES,
   ALL_PROFILE_STYLES, SELECTABLE_KO, SELECTABLE_TKO, SELECTABLE_SUB,
+  FIGHTER_PROFILES, FUN_FACTS,
 } from './constants.js';
 
 import { shuffle, rng, randInt } from './utils.js';
@@ -165,39 +166,100 @@ export function classifyFighter(slot, divisionSlot, phase, isChamp) {
   const topRanked = divisionSlot >= CHAMP_SLOT - 4;
   const midRanked = divisionSlot >= RANKED_START + 5;
 
-  if (phase === 1) {
-    if (total < 4)                                return { label: 'Unknown',           emoji: '❓' };
-    if (total < 10 && rate >= 0.85 && w >= 5)    return { label: 'Regional Prospect', emoji: '⚡' };
-    if (topRanked && rate >= 0.70 && total >= 8) return { label: 'Regional Elite',    emoji: '🌟' };
-    if (total >= 12 && rate < 0.40)              return { label: 'Regional Bum',      emoji: '💩' };
-    if (total >= 8  && rate < 0.52)              return { label: 'Journeyman',        emoji: '🎒' };
-    if (total >= 6  && rate >= 0.65)             return { label: 'Circuit Regular',   emoji: '🥊' };
-    return                                       { label: 'Regional Fighter',         emoji: '👊' };
+  const base = classifyBase();
+
+  // "Veteran" is driven by durability, not win rate: a worn-down non-champion
+  // (durability below 50%) earns the prefix on whatever their skill title is.
+  const durability = slot.npcDurability ?? 100;
+  if (durability < 50 && !base.label.includes('Veteran')) {
+    return { label: `Veteran ${base.label}`, emoji: base.emoji };
+  }
+  return base;
+
+  function classifyBase() {
+    if (phase === 1) {
+      if (total < 4)                                return { label: 'Unknown',           emoji: '❓' };
+      if (total < 10 && rate >= 0.85 && w >= 5)    return { label: 'Regional Prospect', emoji: '⚡' };
+      if (topRanked && rate >= 0.70 && total >= 8) return { label: 'Regional Elite',    emoji: '🌟' };
+      if (total >= 12 && rate < 0.40)              return { label: 'Regional Bum',      emoji: '💩' };
+      if (total >= 8  && rate < 0.52)              return { label: 'Journeyman',        emoji: '🎒' };
+      if (total >= 6  && rate >= 0.65)             return { label: 'Circuit Regular',   emoji: '🥊' };
+      return                                       { label: 'Regional Fighter',         emoji: '👊' };
+    }
+
+    if (phase === 2) {
+      if (total < 12 && rate >= 0.88 && w >= 6)    return { label: 'Hot Prospect',     emoji: '🚀' };
+      if (total < 15 && rate >= 0.80 && w >= 8)    return { label: 'Prospect',         emoji: '⚡' };
+      if (total >= 25 && rate >= 0.75 && topRanked) return { label: 'Elite Contender', emoji: '💎' };
+      if (total >= 15 && rate < 0.42)              return { label: 'Journeyman',        emoji: '🎒' };
+      if (total >= 12 && rate < 0.52)              return { label: 'Gatekeeper',        emoji: '🚧' };
+      if (midRanked  && rate >= 0.65)              return { label: 'Contender',         emoji: '🔥' };
+      if (rate >= 0.72 && total >= 10)             return { label: 'Solid Fighter',     emoji: '🥊' };
+      return                                       { label: 'Mid-level Fighter',        emoji: '👊' };
+    }
+
+    // Phase 3
+    if (total < 18 && rate >= 0.90 && w >= 12)    return { label: 'Hot Prospect',      emoji: '🚀' };
+    if (total >= 30 && rate >= 0.87)              return { label: 'GOAT Candidate',     emoji: '🐐' };
+    if (total >= 25 && rate >= 0.80 && topRanked) return { label: 'All-Time Great',    emoji: '💎' };
+    if (total >= 20 && rate >= 0.75)              return { label: 'Elite Contender',    emoji: '🌟' };
+    if (total >= 15 && rate < 0.48)               return { label: 'Journeyman',         emoji: '🎒' };
+    if (total >= 12 && rate < 0.55)               return { label: 'Gatekeeper',         emoji: '🚧' };
+    if (topRanked  && rate >= 0.72)               return { label: 'Top Contender',      emoji: '🔥' };
+    if (rate >= 0.68 && total >= 12)              return { label: 'Ranked Contender',   emoji: '🥊' };
+    return                                        { label: 'Contender',                 emoji: '👊' };
+  }
+}
+
+/* ── Scouting report (bio) ───────────────────────────────
+   Generated from the fighter's real, current stats so it never contradicts
+   the rest of the card. Deterministic (no rng) → stable, no flicker.
+   Two clauses: current FORM (most salient true fact) + the THREAT they pose
+   (derived from their actual style finish profile). */
+export function fighterBio(f) {
+  if (!f) return '';
+  const w = f.wins || 0, l = f.losses || 0, d = f.draws || 0;
+  const total = w + l + d;
+  const ws  = f.winStreak  || 0;
+  const ls  = f.lossStreak || 0;
+  const dur = f.npcDurability ?? 100;
+
+  // Form clause — first match wins, in order of how much it defines the fighter.
+  let form = '';
+  if (l === 0 && w >= 3)            form = `Undefeated at ${w}-0 — nobody has solved him yet.`;
+  else if (ws >= 5)                 form = `Riding a ${ws}-fight win streak and peaking.`;
+  else if (ws >= 3)                 form = `On a ${ws}-fight run and brimming with confidence.`;
+  else if (ls >= 4)                 form = `In free-fall — ${ls} straight losses.`;
+  else if (ls >= 2)                 form = `Cold lately, having dropped his last ${ls}.`;
+  else if (dur < 35 && total >= 12) form = `A worn veteran; ${total} hard fights have taken their toll.`;
+  else if (dur < 50)                form = `The miles are starting to show on him.`;
+  else if (f.isRising)              form = `A fast-rising prospect with real buzz behind him.`;
+  else if (total >= 30)             form = `A ${total}-fight veteran who has seen it all.`;
+  else if (total >= 18)             form = `Deep into a long pro career at ${w}-${l}${d ? `-${d}` : ''}.`;
+  else if (total <= 4)              form = `Still an unknown quantity — only ${total} pro fight${total === 1 ? '' : 's'}.`;
+
+  // Threat clause — how he actually finishes, read from his style profile.
+  let threat = '';
+  if (f.style) {
+    const off = FIGHTER_PROFILES[f.style]?.off;
+    if (off) {
+      const top = ['KO', 'TKO', 'Submission'].reduce((a, k) => ((off[k] ?? 0) > (off[a] ?? 0) ? k : a), 'KO');
+      const phrase = top === 'KO'         ? 'who carries genuine knockout power'
+                   : top === 'Submission' ? 'who hunts the finish on the mat'
+                                          : 'who grinds opponents down for the late stoppage';
+      threat = `A ${f.style} ${phrase}.`;
+    } else {
+      threat = `Fights as a ${f.style}.`;
+    }
   }
 
-  if (phase === 2) {
-    if (total < 12 && rate >= 0.88 && w >= 6)    return { label: 'Hot Prospect',     emoji: '🚀' };
-    if (total < 15 && rate >= 0.80 && w >= 8)    return { label: 'Prospect',         emoji: '⚡' };
-    if (total >= 25 && rate >= 0.75 && topRanked) return { label: 'Elite Veteran',   emoji: '💎' };
-    if (total >= 20 && rate >= 0.70)             return { label: 'Veteran',           emoji: '🎖️' };
-    if (total >= 15 && rate < 0.42)              return { label: 'Journeyman',        emoji: '🎒' };
-    if (total >= 12 && rate < 0.52)              return { label: 'Gatekeeper',        emoji: '🚧' };
-    if (midRanked  && rate >= 0.65)              return { label: 'Contender',         emoji: '🔥' };
-    if (rate >= 0.72 && total >= 10)             return { label: 'Solid Fighter',     emoji: '🥊' };
-    return                                       { label: 'Mid-level Fighter',        emoji: '👊' };
+  // Occasional flavor fact — rolled once per fighter and cached so it stays
+  // stable (and persists with the save). '' = rolled, no fact; undefined = not yet rolled.
+  if (f.funFact === undefined) {
+    f.funFact = Math.random() < 0.33 ? rng(FUN_FACTS) : '';
   }
 
-  // Phase 3
-  if (total < 18 && rate >= 0.90 && w >= 12)    return { label: 'Hot Prospect',      emoji: '🚀' };
-  if (total >= 30 && rate >= 0.87)              return { label: 'GOAT Candidate',     emoji: '🐐' };
-  if (total >= 25 && rate >= 0.80 && topRanked) return { label: 'All-Time Great',    emoji: '💎' };
-  if (total >= 20 && rate >= 0.75)              return { label: 'Elite Contender',    emoji: '🌟' };
-  if (total >= 20 && rate >= 0.65)              return { label: 'Veteran',            emoji: '🎖️' };
-  if (total >= 15 && rate < 0.48)               return { label: 'Journeyman',         emoji: '🎒' };
-  if (total >= 12 && rate < 0.55)               return { label: 'Gatekeeper',         emoji: '🚧' };
-  if (topRanked  && rate >= 0.72)               return { label: 'Top Contender',      emoji: '🔥' };
-  if (rate >= 0.68 && total >= 12)              return { label: 'Ranked Contender',   emoji: '🥊' };
-  return                                        { label: 'Contender',                 emoji: '👊' };
+  return [form, threat, f.funFact].filter(Boolean).join(' ');
 }
 
 /* ── Roster fighter lookup ───────────────────────────── */
@@ -221,12 +283,11 @@ export function rosterFighterToOpponent(rf, phase) {
   const l      = rf.lRange ? Math.round((rf.lRange[0] + rf.lRange[1]) / 2) : 3;
   const record = `${w}-${l}`;
   const name   = `${rf.fn} "${rf.nick}" ${rf.ln}`;
-  const bioPool        = phase === 1 ? BIOS_P1 : phase === 2 ? BIOS_P2 : BIOS_P3;
   const { venue, city } = pickVenue(phase);
   return {
     name, record,
     badge: '', badgeClass: '',
-    bio:     rng(bioPool),
+    bio:     '',
     venue,
     gflCity: city,
     rosterId: rf.id,
@@ -247,7 +308,6 @@ export function divisionSlotToOpponent(fidOrObj, slot, cs) {
   if (!f) return null;
 
   const phase   = cs.phase;
-  const bioPool = phase === 1 ? BIOS_P1 : phase === 2 ? BIOS_P2 : BIOS_P3;
 
   let badge = '', badgeClass = '';
   if (slot === CHAMP_SLOT)           { badge = 'Champion';                          badgeClass = 'oc-badge-champ'; }
@@ -271,7 +331,7 @@ export function divisionSlotToOpponent(fidOrObj, slot, cs) {
     fid,
     name:         f.name,
     record:       f.record,
-    bio:          rng(bioPool),
+    bio:          fighterBio(f),
     ...(() => { const { venue, city } = pickVenue(phase); return { venue, gflCity: city }; })(),
     badge,
     badgeClass,
@@ -406,7 +466,7 @@ export function buildDivision(phaseDef, fighterName) {
         questionId:     null,
         calloutPenalty: 0,
         isNew:          false,
-        npcDurability:  Math.max(20, Math.round(100 - totalFights * 0.5)),
+        npcDurability:  Math.max(20, Math.round(100 - totalFights * 1.0)),
       };
       FIGHTERS.set(fighter.fid, fighter);
       slots.push(fighter.fid);
