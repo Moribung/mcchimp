@@ -14,9 +14,11 @@
   import { fetchIndex, fetchSet } from '$lib/questions.js';
 
   import { state as gs }    from '$lib/mma/state.svelte.js';
-  import { initState, initSparringState, calcLegacyTitle } from '$lib/mma/career.js';
+  import {
+    initState, initSparringState,
+    buildLegacyStats, calcLegacyTitle, deriveRetireType,
+  } from '$lib/mma/career.js';
   import { exportSave, loadSave } from '$lib/mma/saves.js';
-  import { PHASES } from '$lib/mma/constants.js';
 
   import MenuScreen         from '$lib/mma/screens/MenuScreen.svelte';
   import NamingScreen       from '$lib/mma/screens/NamingScreen.svelte';
@@ -30,7 +32,7 @@
   import SavedCareersScreen from '$lib/mma/screens/SavedCareersScreen.svelte';
   import PastCareersScreen  from '$lib/mma/screens/PastCareersScreen.svelte';
 
-  import { gf }          from '$lib/mma/fighters.js';
+  import { gf, classifyFighter }          from '$lib/mma/fighters.js';
   import {
     CHAMP_SLOT, RANKED_START,
     DIFF_LABELS, DIFF_COLORS, DIFF_BG,
@@ -62,6 +64,37 @@
     }
     return rows;
   })());
+
+  // ── Sidebar: ranking-row hover popup ──────────────────
+  let hoverPop = $state(null);   // { x, y, name, record, rate, rateColor, clfEmoji, clfLabel, style, rising }
+
+  function showRowPop(e, row) {
+    if (row.isPlayer || !gs.career) { hoverPop = null; return; }
+    const f = row.f;
+    const w = f.wins || 0, l = f.losses || 0, d = f.draws || 0;
+    const total = w + l + d;
+    const rate  = total > 0 ? Math.round((100 * w) / total) : 0;
+    const rateColor = rate >= 70 ? 'var(--green)' : rate >= 50 ? 'var(--amber, #e8c14a)' : 'var(--red)';
+    const clf = classifyFighter(f, row.i, gs.career.phase, row.isChamp);
+    const rect = e.currentTarget.getBoundingClientRect();
+    const h2h  = gs.h2h?.[row.fid];
+    const h2hTotal = h2h ? (h2h.w + h2h.l + h2h.d) : 0;
+    const vsRecord = h2hTotal > 0
+      ? `${h2h.w}W-${h2h.l}L${h2h.d > 0 ? `-${h2h.d}D` : ''}`
+      : null;
+    hoverPop = {
+      // Anchor to the LEFT of the row (sidebar sits on the right edge of the screen).
+      x: rect.left,
+      y: rect.top + rect.height / 2,
+      name: f.name,
+      record: f.record,
+      rate, rateColor, total,
+      clfEmoji: clf.emoji, clfLabel: clf.label,
+      style: f.style || '',
+      rising: !!f.isRising,
+      vsRecord,
+    };
+  }
 
   // ── Sidebar: callout (result screen only) ─────────────
   let calloutTargetSlot = $state(null);
@@ -282,14 +315,25 @@
   // ── Career end → archive + delete active save ─────────
   async function onCareerEnd() {
     const sess = get(session);
-    if (!sess || !gs.career) {
+
+    // Stamp retireType on the career object before anything else, so
+    // buildLegacyStats() and the EndScreen both read the same value.
+    const cs = gs.career;
+    if (cs) {
+      if (!cs.retireType) cs.retireType = deriveRetireType(cs, gs);
+    }
+
+    if (!sess || !cs) {
       gs.screen = 'end';
       return;
     }
-    const legacy  = calcLegacyTitle(gs.wins, gs.fightIndex);
-    const record  = `${gs.wins}-${gs.losses}-${gs.draws}`;
+
+    const careerFull = buildLegacyStats(gs);
+    const legacy     = calcLegacyTitle(careerFull);
+    const record     = `${gs.wins}-${gs.losses + gs.finishes}-${gs.draws}`;
     const highestPhase = gs.career.highestPhase ?? gs.career.phase ?? 1;
-    const highestOrg   = PHASES[highestPhase]?.promo ?? 'Regional FC';
+    // getPhaseDef applies the per-career phase-2 org override (e.g. Kings FC).
+    const highestOrg   = getPhaseDef({ ...cs, phase: highestPhase }).promo ?? 'Regional FC';
     const titles  = gs.career.titles || {};
     const champCount  = [1, 2, 3].reduce((n, ph) => n + (titles[ph]?.reigns || 0), 0);
     const maxDefenses = [1, 2, 3].reduce((m, ph) => Math.max(m, titles[ph]?.bestDefenseStreak || 0), 0);
@@ -302,12 +346,15 @@
       champCount,
       defenseStreak: maxDefenses,
       // Per-organisation belts
-      titles: [1, 2, 3].map(ph => ({
-        org:    PHASES[ph]?.promo ?? `Phase ${ph}`,
-        belt:   PHASES[ph]?.rankLabels?.[11] ?? 'Champion',
-        reigns: titles[ph]?.reigns || 0,
-        bestDefenseStreak: titles[ph]?.bestDefenseStreak || 0,
-      })).filter(t => t.reigns > 0),
+      titles: [1, 2, 3].map(ph => {
+        const d = getPhaseDef({ ...cs, phase: ph });
+        return {
+          org:    d.promo ?? `Phase ${ph}`,
+          belt:   d.rankLabels?.[11] ?? 'Champion',
+          reigns: titles[ph]?.reigns || 0,
+          bestDefenseStreak: titles[ph]?.bestDefenseStreak || 0,
+        };
+      }).filter(t => t.reigns > 0),
     };
     try {
       const histId = await archiveCareer(sess.user.id, 'mma', {
@@ -555,11 +602,14 @@
                 <span class="so-badge {opp.badgeClass}">{opp.badge}</span>
               {/if}
             </div>
-            {#if opp.classLabel}
-              <div class="so-class">{opp.classEmoji} {opp.classLabel}</div>
+            {#if opp.classLabel || opp.style}
+              <div class="so-class">
+                {#if opp.classLabel}{opp.classEmoji} {opp.classLabel}{/if}{#if opp.classLabel && opp.style} · {/if}{#if opp.style}<span class="so-style">{opp.style}</span>{/if}
+              </div>
             {/if}
-            {#if opp.style}
-              <div class="so-style">{opp.style}</div>
+            {#if gs.h2h?.[opp.fid] && (gs.h2h[opp.fid].w + gs.h2h[opp.fid].l + gs.h2h[opp.fid].d) > 0}
+              {@const h = gs.h2h[opp.fid]}
+              <div class="so-h2h">vs YOU · {h.w}W-{h.l}L{h.d > 0 ? `-${h.d}D` : ''}</div>
             {/if}
             {#if opp.bio}
               <div class="so-bio">{opp.bio}</div>
@@ -570,7 +620,25 @@
           </div>
         {/if}
 
-        <!-- 3. Rankings table -->
+        <!-- 3. Divisional news (prefight only) -->
+        {#if gs.screen === 'prefight' && gs.career?.divisionNews?.length}
+          {@const pDef = getPhaseDef(gs.career)}
+          <div class="sidebar-news">
+            <button class="sn-header" onclick={() => { gs.career.newsFolded = !gs.career.newsFolded; }}>
+              <span>{pDef.promo} · News</span>
+              <span class="sn-toggle">{gs.career.newsFolded ? '▶' : '▼'}</span>
+            </button>
+            {#if !gs.career.newsFolded}
+              <ul class="sn-list">
+                {#each gs.career.divisionNews as item}
+                  <li class="sn-item sn-{item.type}">{item.text}</li>
+                {/each}
+              </ul>
+            {/if}
+          </div>
+        {/if}
+
+        <!-- 4. Rankings table -->
         {#if gs.career?.division && rankingRows.length}
           {@const pDef = getPhaseDef(gs.career)}
           <div class="sidebar-rankings">
@@ -599,6 +667,8 @@
                     role={!row.isPlayer && canCallout ? 'button' : undefined}
                     tabindex={!row.isPlayer && canCallout ? 0 : undefined}
                     onkeydown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && !row.isPlayer && canCallout) openCallout(row.i); }}
+                    onmouseenter={(e) => showRowPop(e, row)}
+                    onmouseleave={() => (hoverPop = null)}
                   >
                     <td class="rt-rank">{row.rankNum}</td>
                     <td class="rt-name">
@@ -628,6 +698,28 @@
         <BoutHistory />
 
       </aside>
+    {/if}
+
+    <!-- Ranking-row hover popup (fixed, follows the hovered row) -->
+    {#if hoverPop}
+      <div
+        class="rt-popup"
+        style="left: {hoverPop.x}px; top: {hoverPop.y}px;"
+      >
+        <div class="rtp-name">{hoverPop.name}</div>
+        <div class="rtp-rec">
+          {hoverPop.record} · <span style="color: {hoverPop.rateColor}">{hoverPop.rate}% win rate</span> ({hoverPop.total} fights)
+        </div>
+        <div class="rtp-clf">
+          {hoverPop.clfEmoji} {hoverPop.clfLabel}{#if hoverPop.style} · <span class="rtp-style">{hoverPop.style}</span>{/if}
+        </div>
+        {#if hoverPop.rising}
+          <div class="rtp-rising">🚀 Hot Prospect</div>
+        {/if}
+        {#if hoverPop.vsRecord}
+          <div class="rtp-vs">vs YOU · {hoverPop.vsRecord}</div>
+        {/if}
+      </div>
     {/if}
 
   </div>
@@ -854,10 +946,27 @@
   .oc-badge-ranked    { background: rgba(232,193,74,0.15); color: var(--accent); }
   .oc-badge-champ     { background: rgba(232,193,74,0.25); color: var(--accent); border: 1px solid var(--accent); }
   .oc-badge-contender { background: rgba(232,74,74,0.12);  color: var(--red); }
-  .so-class  { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 2px; color: var(--accent); }
-  .so-style  { font-size: 10px; color: var(--text-muted); font-style: italic; margin-bottom: 4px; }
+  .so-class  { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 4px; color: var(--accent); }
+  .so-style  { color: var(--text-muted); font-style: italic; font-weight: 600; }
   .so-bio    { font-size: 10px; color: var(--text-muted); line-height: 1.5; }
   .so-venue  { font-size: 9px; color: var(--text-muted); margin-top: 6px; letter-spacing: 0.05em; border-top: 1px solid var(--border); padding-top: 6px; }
+  .so-h2h    { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 4px; }
+
+  /* Sidebar: divisional news */
+  .sidebar-news { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 14px; }
+  .sn-header {
+    width: 100%; display: flex; justify-content: space-between; align-items: center;
+    font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted);
+    padding: 8px 12px; background: none; border: none; cursor: pointer;
+    border-bottom: 1px solid var(--border);
+  }
+  .sn-header:hover { color: var(--text); }
+  .sn-toggle { font-size: 8px; opacity: 0.6; }
+  .sn-list { list-style: none; margin: 0; padding: 4px 0; }
+  .sn-item { font-size: 11px; color: var(--text-muted); padding: 5px 12px; border-bottom: 1px solid rgba(255,255,255,0.03); line-height: 1.4; }
+  .sn-item:last-child { border-bottom: none; }
+  .sn-item.sn-championship { color: var(--accent); }
+  .sn-item.sn-prospect { color: var(--green); }
 
   /* Sidebar: rankings */
   .sidebar-rankings { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 14px; }
@@ -887,6 +996,29 @@
   .rt-new        { font-size: 9px; font-weight: 700; color: var(--blue); margin-left: 4px; letter-spacing: 0.08em; text-transform: uppercase; vertical-align: middle; }
   .rt-mv-up      { font-size: 10px; font-weight: 700; color: var(--green); margin-left: 4px; vertical-align: middle; }
   .rt-mv-dn      { font-size: 10px; font-weight: 700; color: var(--red);   margin-left: 4px; vertical-align: middle; }
+
+  /* Ranking-row hover popup */
+  .rt-popup {
+    position: fixed;
+    z-index: 200;
+    /* anchored at the row's left edge & vertical centre → sit to the left of it */
+    transform: translate(calc(-100% - 8px), -50%);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    min-width: 180px;
+    max-width: 240px;
+    pointer-events: none;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+    line-height: 1.6;
+  }
+  .rtp-name  { font-family: var(--font-display); font-size: 16px; letter-spacing: 0.04em; margin-bottom: 2px; color: var(--text); }
+  .rtp-rec   { color: var(--text-muted); font-size: 11px; margin-bottom: 3px; }
+  .rtp-clf   { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); }
+  .rtp-style { color: var(--text-muted); font-style: italic; font-weight: 600; }
+  .rtp-rising{ font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--green); margin-top: 3px; }
+  .rtp-vs    { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); margin-top: 3px; }
 
   /* Callout modal */
   .callout-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.80); display: flex; align-items: center; justify-content: center; z-index: 9999; }

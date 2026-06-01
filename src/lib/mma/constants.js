@@ -45,7 +45,7 @@ export const PHASES = {
 /* ── Phase 2 org options (one chosen randomly per career) ── */
 export const PHASE2_OPTIONS = [
   { promo: 'Apex Combat',                belt: 'Apex Champion'   },
-  { promo: 'Kings Fighting Championship', belt: 'KFC Champion'    },
+  { promo: 'Kings Fighting Championship', belt: 'KFC Champion'      },
 ];
 
 /* ── Division size constants ─────────────────────────── */
@@ -201,13 +201,27 @@ export const FIGHTER_ROSTER = [
   { id:'F020', fn:'Cruz',    ln:'Tran',     nick:'The Ironman',      style:'High-cardio brawler',wRange:[9,17],  lRange:[3,7],  prefixes:['ANel-03','ANel-04','ANel-05'] },
 ];
 
-/* ── Finish method buckets (used by submitAnswer for stat tracking) ── */
-export const KO_METHODS  = ['KO', 'Head Kick KO', 'Flying Knee KO', 'Spinning Elbow KO'];
-export const TKO_METHODS = ['TKO', 'TKO (Strikes)', 'TKO (Ground and Pound)', 'Doctor Stoppage', 'Corner Stoppage'];
-export const SUB_METHODS = [
-  'Rear Naked Choke', 'Triangle Choke', 'Armbar',
-  'Guillotine', 'D\'Arce Choke', 'Heel Hook', 'Kimura', 'Anaconda Choke',
+/* ── Finish method buckets ───────────────────────────────
+   *_METHODS are the FULL pools any finish can roll from. Every entry is a
+   concrete finish — there are no generic 'KO'/'TKO' placeholders. TKO still
+   includes ref/doctor stoppages (real outcomes, just not player-selectable).
+   SELECTABLE_* are the subset a player may manually pick as a special move,
+   and the pool that enemy signature moves are drawn from: only specific,
+   deliberate finishing techniques.
+──────────────────────────────────────────────────────── */
+export const SELECTABLE_KO = [
+  'Head Kick', 'Flying Knee', 'Spinning Elbow',
+  'Left Hook', 'Uppercut', 'Overhand Right', 'Knee', 'Body Kick',
 ];
+export const SELECTABLE_TKO = ['TKO (Strikes)', 'TKO (Ground and Pound)', 'Clinch Elbows'];
+export const SELECTABLE_SUB = [
+  'Rear Naked Choke', 'Triangle Choke', 'Armbar',
+  'Guillotine', "D'Arce Choke", 'Heel Hook', 'Kimura', 'Anaconda Choke',
+];
+
+export const KO_METHODS  = [...SELECTABLE_KO];
+export const TKO_METHODS = [...SELECTABLE_TKO, 'Doctor Stoppage', 'Corner Stoppage'];
+export const SUB_METHODS = [...SELECTABLE_SUB];
 
 /* ── Fight style profiles ────────────────────────────────
    Chosen on the naming screen. Purely affects the *flavour*
@@ -241,6 +255,60 @@ export const FIGHT_STYLES = [
 
 export function getFightStyle(id) {
   return FIGHT_STYLES.find(s => s.id === id) || null;
+}
+
+/* ── Fighter profiles (style === profile) ────────────────
+   A fighter's displayed style IS its mechanical finish profile —
+   one source of truth, keyed by the exact style string.
+     off  — how strong they are at finishing YOU (interplays with
+            your style's loss weights when you lose by finish)
+     vuln — how easily they themselves get finished (interplays with
+            your method weights when you win by finish)
+   Base is 1; higher = more likely. Read ONLY inside the player's own
+   fight resolution (rollFightOutcome) — NPC-vs-NPC bouts never compute
+   a finish type, so profiles have no effect there.
+──────────────────────────────────────────────────────── */
+export const FIGHTER_PROFILES = {
+  // ── Strikers — KO-leaning, vulnerable on the ground ──
+  'Boxer':              { off:{ KO:2.2, TKO:1.3, Submission:0.4 }, vuln:{ KO:1,   TKO:1,   Submission:1.9 } },
+  'Kickboxer':          { off:{ KO:2,   TKO:1.5, Submission:0.5 }, vuln:{ KO:1,   TKO:1,   Submission:1.7 } },
+  'Muay Thai striker':  { off:{ KO:1.8, TKO:1.8, Submission:0.5 }, vuln:{ KO:1,   TKO:1,   Submission:1.6 } },
+  'Counter-striker':    { off:{ KO:2,   TKO:1.1, Submission:0.5 }, vuln:{ KO:0.9, TKO:1,   Submission:1.6 } },
+  'Karate/counter':     { off:{ KO:2,   TKO:1.1, Submission:0.5 }, vuln:{ KO:0.9, TKO:1,   Submission:1.5 } },
+  'Technical striker':  { off:{ KO:1.7, TKO:1.4, Submission:0.6 }, vuln:{ KO:1,   TKO:1,   Submission:1.5 } },
+  'Volume striker':     { off:{ KO:1.2, TKO:2,   Submission:0.6 }, vuln:{ KO:1.1, TKO:1,   Submission:1.4 } },
+
+  // ── Pressure / brawlers — volume & power, hittable ──
+  'Pressure fighter':   { off:{ KO:1,   TKO:2.2, Submission:0.7 }, vuln:{ KO:1.2, TKO:1,   Submission:1.2 } },
+  'High-cardio brawler':{ off:{ KO:1.3, TKO:2,   Submission:0.7 }, vuln:{ KO:1.4, TKO:1,   Submission:1.2 } },
+  'Unorthodox brawler': { off:{ KO:2.2, TKO:1.3, Submission:0.6 }, vuln:{ KO:1.8, TKO:1.3, Submission:1.2 } },
+
+  // ── Wrestlers — GnP stoppages, sub-vulnerable off their back ──
+  'Wrestler/GnP':       { off:{ KO:0.7, TKO:2.2, Submission:1   }, vuln:{ KO:1.3, TKO:0.8, Submission:1.5 } },
+  'Wrestler/top ctrl':  { off:{ KO:0.6, TKO:2.2, Submission:1.1 }, vuln:{ KO:1.3, TKO:0.8, Submission:1.4 } },
+  'Clinch specialist':  { off:{ KO:1,   TKO:2,   Submission:1   }, vuln:{ KO:1.2, TKO:0.9, Submission:1.3 } },
+  'Sambo/wrestler':     { off:{ KO:0.8, TKO:1.7, Submission:1.6 }, vuln:{ KO:1.3, TKO:0.9, Submission:1   } },
+
+  // ── Grapplers — submission-heavy, vulnerable to strikes ──
+  'BJJ specialist':     { off:{ KO:0.5, TKO:1,   Submission:2.2 }, vuln:{ KO:1.8, TKO:1.2, Submission:0.5 } },
+  'Submission hunter':  { off:{ KO:0.6, TKO:1.2, Submission:2.4 }, vuln:{ KO:1.7, TKO:1.1, Submission:0.5 } },
+  'Grappling wizard':   { off:{ KO:0.4, TKO:1,   Submission:2.6 }, vuln:{ KO:1.9, TKO:1.1, Submission:0.4 } },
+  'BJJ/wrestling':      { off:{ KO:0.6, TKO:1.6, Submission:1.8 }, vuln:{ KO:1.5, TKO:0.9, Submission:0.7 } },
+
+  // ── Balanced ──
+  'All-rounder':        { off:{ KO:1,   TKO:1,   Submission:1   }, vuln:{ KO:1,   TKO:1,   Submission:1   } },
+  'MMA all-rounder':    { off:{ KO:1,   TKO:1,   Submission:1   }, vuln:{ KO:1,   TKO:1,   Submission:1   } },
+};
+
+/** All assignable profile style keys — used to give generated fighters a style. */
+export const ALL_PROFILE_STYLES = Object.keys(FIGHTER_PROFILES);
+
+const NEUTRAL_PROFILE = FIGHTER_PROFILES['All-rounder'];
+
+/** Look up a fighter's finish profile by their style string.
+ *  Falls back to neutral for empty/unknown styles (e.g. legacy saves). */
+export function opponentFinishProfile(style) {
+  return FIGHTER_PROFILES[style] || NEUTRAL_PROFILE;
 }
 
 /* ── Tier config (for effectiveTier adaptive difficulty) ── */

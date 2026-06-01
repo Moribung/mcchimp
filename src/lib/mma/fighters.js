@@ -14,6 +14,7 @@ import {
   FIRST_NAMES, LAST_NAMES, NICKNAMES,
   FIGHTER_ROSTER, DIVISION_SIZE, CHAMP_SLOT, RANKED_START,
   BIOS_P1, BIOS_P2, BIOS_P3, VENUES_P1, VENUES_P2, VENUES_P3, GFL_CITIES,
+  ALL_PROFILE_STYLES, SELECTABLE_KO, SELECTABLE_TKO, SELECTABLE_SUB,
 } from './constants.js';
 
 import { shuffle, rng, randInt } from './utils.js';
@@ -29,6 +30,19 @@ export function makeFid() {
 /* ── Record string builder ───────────────────────────── */
 export function buildRec(w, l, d) {
   return d > 0 ? `${w}-${l}-${d}` : `${w}-${l}`;
+}
+
+/* ── Signature moves ─────────────────────────────────────
+   Every fighter gets one random signature finish per type. When they
+   finish the player by that type, there's a 50% chance it's their
+   signature (handled in combat.js). Drawn from the deliberate (selectable)
+   move pools, never the generic 'KO'/'TKO'/ref-stoppage entries. */
+export function makeSignatureMoves() {
+  return {
+    KO:         rng(SELECTABLE_KO),
+    TKO:        rng(SELECTABLE_TKO),
+    Submission: rng(SELECTABLE_SUB),
+  };
 }
 
 /* Register a fighter object — returns its fid */
@@ -56,6 +70,7 @@ export function recWin(fid) {
   f.wins      = (f.wins || 0) + 1;
   f.winStreak  = (f.winStreak  || 0) + 1;
   f.lossStreak = 0;
+  f.npcDurability = Math.max(0, (f.npcDurability ?? 100) - 1);
   f.record = buildRec(f.wins, f.losses || 0, f.draws || 0);
 }
 
@@ -65,6 +80,7 @@ export function recLoss(fid) {
   f.lossStreak = (f.lossStreak || 0) + 1;
   f.winStreak  = 0;
   if (f.isRising) f.isRising = false;
+  f.npcDurability = Math.max(0, (f.npcDurability ?? 100) - 3);
   f.record = buildRec(f.wins || 0, f.losses, f.draws || 0);
 }
 
@@ -241,6 +257,10 @@ export function divisionSlotToOpponent(fidOrObj, slot, cs) {
   const isChamp = slot === CHAMP_SLOT;
   const clf     = classifyFighter(f, slot, cs.phase, isChamp);
 
+  // Ensure the fighter has stable signature moves (covers fighters built before
+  // this feature, e.g. legacy saves). Written back so it persists & stays fixed.
+  if (!f.signatureMoves) f.signatureMoves = makeSignatureMoves();
+
   let rankMovement = null;
   if (f.prevSlot != null && f.prevSlot !== slot) {
     const delta = slot - f.prevSlot;
@@ -257,6 +277,7 @@ export function divisionSlotToOpponent(fidOrObj, slot, cs) {
     badgeClass,
     rosterId:     f.rosterId,
     style:        f.style || '',
+    signatureMoves: f.signatureMoves,
     divisionSlot: slot,
     classLabel:   clf.label,
     classEmoji:   clf.emoji,
@@ -306,7 +327,7 @@ export function buildDivision(phaseDef, fighterName) {
     } while (nameTaken(name) && outer < 40);
     if (nick) usedNicks.add(nick);
     usedFirstNames.add(fn); usedLastNames.add(ln);
-    return { name, rosterId: null, style: '' };
+    return { name, rosterId: null, style: rng(ALL_PROFILE_STYLES) };
   }
 
   // Derive phase number from phaseDef.name (caller passes PHASES[n])
@@ -317,7 +338,7 @@ export function buildDivision(phaseDef, fighterName) {
   // Seed 1–2 rising contenders in the lower-mid ranked area
   const risingSlots = new Set();
   const numRising   = randInt(1, 2);
-  while (risingSlots.size < numRising) risingSlots.add(randInt(4, 10));
+  while (risingSlots.size < numRising) risingSlots.add(randInt(1, 10));
 
   for (let i = 0; i < DIVISION_SIZE; i++) {
     if (i === 0) {
@@ -372,17 +393,20 @@ export function buildDivision(phaseDef, fighterName) {
       }
 
       const rec = d ? `${w}-${l}-${d}` : `${w}-${l}`;
+      const totalFights = w + l + d;
       const fighter = {
         fid:            makeFid(),
         name, record:  rec,
         wins: w, losses: l, draws: d,
         isPlayer:       false,
         rosterId,       style,
+        signatureMoves: makeSignatureMoves(),
         isRising:       risingSlots.has(i),
         prevSlot:       i,
         questionId:     null,
         calloutPenalty: 0,
         isNew:          false,
+        npcDurability:  Math.max(20, Math.round(100 - totalFights * 0.5)),
       };
       FIGHTERS.set(fighter.fid, fighter);
       slots.push(fighter.fid);

@@ -14,6 +14,7 @@
 import {
   CHAMP_SLOT, DURABILITY_DAMAGE,
   KO_METHODS, TKO_METHODS, SUB_METHODS,
+  opponentFinishProfile,
 } from './constants.js';
 
 import {
@@ -89,8 +90,27 @@ export function rollFightOutcome(state, resultClass, pctUsed, timedOut, score, m
   const mw  = state.methodWeights || { KO: 1, TKO: 1, Submission: 1 };
   const smc = state.specificMethodCounts || {};
 
+  // Opponent finish profile — interplays with the player's weights below.
+  // Derived from the opponent's style; neutral (all 1) when there's no opponent
+  // (e.g. sparring). NPC-vs-NPC bouts never reach this function.
+  const oppProfile = opponentFinishProfile(state.currentOpponent && state.currentOpponent.style);
+  const oVuln = oppProfile.vuln;   // how easily the opponent gets finished (vs your wins)
+  const oOff  = oppProfile.off;    // how the opponent finishes you (vs your losses)
+
+  // Opponent's signature moves (one per finish type). When they finish the
+  // player by a given type there's a 50% chance it's their signature.
+  const oppSig = (state.currentOpponent && state.currentOpponent.signatureMoves) || {};
+  // These result classes are the OPPONENT finishing the player (a loss). The
+  // trailing 'win' path is the PLAYER finishing the opponent.
+  const oppFinish = ['finish', 'late_finish', 'loss', 'timeout_finish'].includes(resultClass);
+
+  // Per-occurrence likelihood gain for a specific move. Each time the player
+  // wins by a given move (and each pick in the move selector) raises its weight
+  // by this much, so a signature emerges. Larger pools need a bigger gain to
+  // overcome dilution.
+  const SPECIFIC_MOVE_GAIN = 0.6;
   function weightedPool(pool) {
-    const weights = pool.map(m => 1 + (smc[m] || 0) * 0.2);
+    const weights = pool.map(m => 1 + (smc[m] || 0) * SPECIFIC_MOVE_GAIN);
     const total   = weights.reduce((a, x) => a + x, 0);
     let roll = Math.random() * total;
     for (let i = 0; i < pool.length; i++) {
@@ -100,31 +120,53 @@ export function rollFightOutcome(state, resultClass, pctUsed, timedOut, score, m
     return pool[pool.length - 1];
   }
 
+  // Specific finish method for a general finish type:
+  //  - player win  → weighted by the player's selected special moves (smc)
+  //  - opp. finish → 50% the opponent's signature for that type, else a uniform
+  //                  roll from the pool (the player's smc must not bias it)
+  function pickMethod(type) {
+    const pool = type === 'KO' ? KO_METHODS : type === 'TKO' ? TKO_METHODS : SUB_METHODS;
+    if (oppFinish) {
+      const sig = oppSig[type];
+      if (sig && pool.includes(sig) && Math.random() < 0.5) return sig;
+      return pool[Math.floor(Math.random() * pool.length)];
+    }
+    return weightedPool(pool);
+  }
+
   function ret(obj, generalMethod, round) {
-    if (generalMethod === 'KO')              obj.method = weightedPool(KO_METHODS);
-    else if (generalMethod === 'TKO')        obj.method = weightedPool(TKO_METHODS);
-    else if (generalMethod === 'Submission') obj.method = weightedPool(SUB_METHODS);
-    else                                     obj.method = generalMethod || '';
+    if (generalMethod === 'KO' || generalMethod === 'TKO' || generalMethod === 'Submission') {
+      obj.method = pickMethod(generalMethod);
+    } else {
+      obj.method = generalMethod || '';
+    }
     obj.round     = round || null;
     obj.maxRounds = maxRounds;
     return obj;
   }
 
+  // How the player finishes the opponent on a win — their method weights
+  // multiplied by how vulnerable the opponent is to each finish type.
   function weightedFinish() {
-    const total = (mw.KO || 1) + (mw.TKO || 1) + (mw.Submission || 1);
-    let roll = Math.random() * total;
-    if ((roll -= (mw.KO || 1)) <= 0)  return 'KO';
-    if ((roll -= (mw.TKO || 1)) <= 0) return 'TKO';
+    const k = (mw.KO || 1)         * (oVuln.KO || 1);
+    const t = (mw.TKO || 1)        * (oVuln.TKO || 1);
+    const s = (mw.Submission || 1) * (oVuln.Submission || 1);
+    let roll = Math.random() * (k + t + s);
+    if ((roll -= k) <= 0) return 'KO';
+    if ((roll -= t) <= 0) return 'TKO';
     return 'Submission';
   }
 
-  // How the player gets finished when losing — skewed by their style's weakness.
+  // How the player gets finished when losing — their style's weakness
+  // multiplied by how strong the opponent is at each finish type.
   const lw = (cs && cs.lossWeights) || { KO: 1, TKO: 1, Submission: 1 };
   function weightedLossFinish() {
-    const total = (lw.KO || 1) + (lw.TKO || 1) + (lw.Submission || 1);
-    let roll = Math.random() * total;
-    if ((roll -= (lw.KO || 1)) <= 0)  return 'KO';
-    if ((roll -= (lw.TKO || 1)) <= 0) return 'TKO';
+    const k = (lw.KO || 1)         * (oOff.KO || 1);
+    const t = (lw.TKO || 1)        * (oOff.TKO || 1);
+    const s = (lw.Submission || 1) * (oOff.Submission || 1);
+    let roll = Math.random() * (k + t + s);
+    if ((roll -= k) <= 0) return 'KO';
+    if ((roll -= t) <= 0) return 'TKO';
     return 'Submission';
   }
 
@@ -371,6 +413,7 @@ export function resolveResult(state, cs, q, selectedSet, pctUsed, activeLength) 
       fn:          state.fightIndex,
       oppName:     o.name || 'Unknown',
       oppRankSlot: typeof o.divisionSlot === 'number' ? o.divisionSlot : null,
+      playerSlot:  pPreSlot >= 0 ? pPreSlot : null,
       outcome:     rolled.outcome,
       method:      rolled.method || '',
       rc:          ['split_loss', 'embarrassing_dec'].includes(resultClass) ? 'loss'
@@ -428,6 +471,16 @@ export function resolveResult(state, cs, q, selectedSet, pctUsed, activeLength) 
       else            recWin(state.currentOpponent.fid);
     }
 
+    // Head-to-head record vs this specific opponent
+    if (state.currentOpponent && state.currentOpponent.fid && state.currentOpponent.fid !== 'player') {
+      const oppFid = state.currentOpponent.fid;
+      if (!state.h2h) state.h2h = {};
+      if (!state.h2h[oppFid]) state.h2h[oppFid] = { w: 0, l: 0, d: 0 };
+      if (_won)       state.h2h[oppFid].w++;
+      else if (_draw) state.h2h[oppFid].d++;
+      else            state.h2h[oppFid].l++;
+    }
+
     // Question rotation: rotate after beating the same fighter twice
     if (state.currentOpponent && state.currentOpponent.fid && state.currentOpponent.fid !== 'player') {
       const oppFid = state.currentOpponent.fid;
@@ -464,6 +517,22 @@ export function resolveResult(state, cs, q, selectedSet, pctUsed, activeLength) 
   state.fightIndex++;
   if (state.sparring) state.sparringPtr++;
 
+  // ── Legacy stat tracking (peakWinPct, longestLosingStreak) ──
+  if (!state.sparring && cs) {
+    const f = state.fightIndex; // already incremented — equals total completed fights
+    const w = state.wins;
+    cs.peakWinPct = Math.max(cs.peakWinPct ?? 0, f > 0 ? w / f : 0);
+
+    const isLossResult = ['loss', 'split_loss', 'finish', 'late_finish',
+                          'timeout_finish', 'embarrassing_dec'].includes(resultClass);
+    if (isLossResult) {
+      cs._currentLosingStreak  = (cs._currentLosingStreak  || 0) + 1;
+      cs.longestLosingStreak   = Math.max(cs.longestLosingStreak || 0, cs._currentLosingStreak);
+    } else {
+      cs._currentLosingStreak  = 0;
+    }
+  }
+
   // ── Retirement / end checks ──
   const durabilityExhausted = !state.sparring && cs && cs.durability <= 0;
   const retirementForced    = !state.sparring && cs && activeLength === 0
@@ -491,14 +560,12 @@ export function resolveResult(state, cs, q, selectedSet, pctUsed, activeLength) 
 export function setupNextFight(state, cs, pinnedOpponent) {
   if (!cs) return null;
 
-  let _pinnedPlayerSlot = null;
-  let _pinnedOppFid     = null;
-  let _pinnedOppSlot    = null;
+  let _pinnedOppFid  = null;
+  let _pinnedOppSlot = null;
 
   if (pinnedOpponent && pinnedOpponent.fid) {
-    _pinnedPlayerSlot = cs.division.playerSlot;
-    _pinnedOppFid     = pinnedOpponent.fid;
-    _pinnedOppSlot    = pinnedOpponent.divisionSlot;
+    _pinnedOppFid  = pinnedOpponent.fid;
+    _pinnedOppSlot = pinnedOpponent.divisionSlot;
   }
 
   // Run NPC round (skip on first fight in a fresh division)
@@ -508,20 +575,21 @@ export function setupNextFight(state, cs, pinnedOpponent) {
     advanceDivision(state, cs);
   }
 
-  // Restore pinned slots if callout was active
+  // Restore the called-out opponent to their pinned slot.
+  // The NPC round can only move the player UP (retirements / promotions only
+  // increment playerSlot), so we never revert the player's position — doing so
+  // would silently undo a legitimate ranking gain.
   if (_pinnedOppFid) {
     const curOppIdx = cs.division.slots.indexOf(_pinnedOppFid);
     if (curOppIdx !== -1 && curOppIdx !== _pinnedOppSlot) {
       const occupant = cs.division.slots[_pinnedOppSlot];
       cs.division.slots[_pinnedOppSlot] = _pinnedOppFid;
       cs.division.slots[curOppIdx] = occupant;
-    }
-    const curPlayerIdx = cs.division.slots.indexOf('player');
-    if (curPlayerIdx !== -1 && curPlayerIdx !== _pinnedPlayerSlot) {
-      const occupant2 = cs.division.slots[_pinnedPlayerSlot];
-      cs.division.slots[_pinnedPlayerSlot] = 'player';
-      cs.division.slots[curPlayerIdx] = occupant2;
-      cs.division.playerSlot = _pinnedPlayerSlot;
+      // If the player advanced into the opponent's pinned slot during the NPC
+      // round, keep playerSlot tracking correct after the swap above.
+      if (cs.division.playerSlot === _pinnedOppSlot) {
+        cs.division.playerSlot = curOppIdx;
+      }
     }
     return divisionSlotToOpponent(_pinnedOppFid, _pinnedOppSlot, cs);
   }
@@ -531,6 +599,10 @@ export function setupNextFight(state, cs, pinnedOpponent) {
   let targetSlot;
   if (playerSlot === CHAMP_SLOT) {
     targetSlot = CHAMP_SLOT - 1;
+  } else if (cs.phaseStreak < 0) {
+    // After a loss, fight someone below the player's current rank
+    const dropSteps = Math.min(2, Math.abs(cs.phaseStreak));
+    targetSlot = Math.max(1, playerSlot - dropSteps);
   } else {
     targetSlot = Math.min(CHAMP_SLOT, playerSlot + streakSteps(cs.phaseStreak, state));
   }

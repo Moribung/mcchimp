@@ -8,7 +8,7 @@
   import {
     PHASES, FIRST_NAMES, LAST_NAMES, NICKNAMES,
     FIGHT_STYLES, getFightStyle,
-    KO_METHODS, TKO_METHODS, SUB_METHODS,
+    SELECTABLE_KO, SELECTABLE_TKO, SELECTABLE_SUB,
   } from '$lib/mma/constants.js';
   import { rng } from '$lib/mma/utils.js';
 
@@ -29,9 +29,9 @@
   let movesModalOpen = $state(false);
 
   const MOVE_GROUPS = [
-    { label: 'Knockouts',    moves: KO_METHODS  },
-    { label: 'Stoppages',    moves: TKO_METHODS },
-    { label: 'Submissions',  moves: SUB_METHODS },
+    { label: 'Knockouts',    moves: SELECTABLE_KO  },
+    { label: 'Stoppages',    moves: SELECTABLE_TKO },
+    { label: 'Submissions',  moves: SELECTABLE_SUB },
   ];
 
   const selectedStyle = $derived(getFightStyle(styleId));

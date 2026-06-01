@@ -17,6 +17,11 @@
   // ── Career choice modal ───────────────────────────────
   let choiceModalType = $state(null);
 
+  // Display name for a given phase, applying the per-career phase-2 org override
+  // (e.g. "Kings Fighting Championship" instead of the default "Apex Combat").
+  const orgPromo = (phase) =>
+    cs ? getPhaseDef({ ...cs, phase }).promo : (PHASES[phase]?.promo ?? '');
+
   const labelClass = $derived(result ? result.resultClass : '');
 
   // ── Next Fight ────────────────────────────────────────
@@ -172,30 +177,31 @@
   <div class="ccm-overlay">
     <div class="ccm-inner">
       {#if choiceModalType === 'promotion'}
-        {@const nextPhase = PHASES[cs.phase + 1]}
+        {@const nextPromo = orgPromo(cs.phase + 1)}
         <div class="ccm-icon">📋</div>
         <div class="ccm-title">Contract Offer</div>
         <div class="ccm-text">
-          {nextPhase.promo} wants to sign you. You're the champion here — you can stay and keep building
+          {nextPromo} wants to sign you. You're the champion here — you can stay and keep building
           your legacy, or make the jump.
         </div>
         <div class="ccm-row">
-          <button class="btn btn-ghost" onclick={choiceStay}>Stay in {PHASES[cs.phase].promo}</button>
-          <button class="btn btn-primary" onclick={choiceMove}>Sign with {nextPhase.promo}</button>
+          <button class="btn btn-ghost" onclick={choiceStay}>Stay in {orgPromo(cs.phase)}</button>
+          <button class="btn btn-primary" onclick={choiceMove}>Sign with {nextPromo}</button>
         </div>
       {:else}
-        {@const lowerPhase = cs.phase > 1 ? PHASES[cs.phase - 1] : null}
+        {@const hasLower   = cs.phase > 1}
+        {@const lowerPromo = hasLower ? orgPromo(cs.phase - 1) : null}
         <div class="ccm-icon">✂️</div>
         <div class="ccm-title">Released</div>
         <div class="ccm-text">
-          You've been cut from {PHASES[cs.phase].promo}.
-          {lowerPhase
-            ? `${lowerPhase.promo} will take you — or you can hang up the gloves.`
+          You've been cut from {orgPromo(cs.phase)}.
+          {hasLower
+            ? `${lowerPromo} will take you — or you can hang up the gloves.`
             : 'No one is booking you. It might be time to walk away.'}
         </div>
         <div class="ccm-row">
-          {#if lowerPhase}
-            <button class="btn btn-ghost" onclick={choiceSign}>Sign with {lowerPhase.promo}</button>
+          {#if hasLower}
+            <button class="btn btn-ghost" onclick={choiceSign}>Sign with {lowerPromo}</button>
           {/if}
           <button class="btn btn-primary" onclick={choiceRetire}>Retire</button>
         </div>

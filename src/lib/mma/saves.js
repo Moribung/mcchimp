@@ -92,6 +92,9 @@ export function exportSave(state) {
 
     // Question rotation tracker
     winsVsFighter: { ...(state.winsVsFighter || {}) },
+
+    // Head-to-head record vs individual fighters
+    h2h: { ...(state.h2h || {}) },
   };
 }
 
@@ -156,8 +159,9 @@ export function loadSave(state, blob) {
   state.methodWeights        = blob.methodWeights        || { KO: 1, TKO: 1, Submission: 1 };
   state.specificMethodCounts = blob.specificMethodCounts || {};
 
-  state._qScores     = blob.qScores       || {};
+  state._qScores      = blob.qScores       || {};
   state.winsVsFighter = blob.winsVsFighter || {};
+  state.h2h           = blob.h2h           || {};
 
   // ── Rebuild question pool ─────────────────────────────
   // _qPool, _qUsed, _qById are never serialised — always rebuilt on load

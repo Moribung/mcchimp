@@ -9,10 +9,11 @@
 import {
   PHASES, PHASE2_OPTIONS, CHAMP_SLOT, RANKED_START,
   DURABILITY_DAMAGE, FIRST_NAMES, LAST_NAMES, NICKNAMES, FIGHTER_ROSTER,
+  ALL_PROFILE_STYLES, KO_METHODS, TKO_METHODS, SUB_METHODS,
 } from './constants.js';
 
 import {
-  FIGHTERS, makeFid, buildRec, resetFighters,
+  FIGHTERS, makeFid, buildRec, resetFighters, makeSignatureMoves,
   gf, recWin, recLoss, recDraw,
   swapSlots, migrateDivSlots, buildDivision, divisionSlotToOpponent, activeNameSet,
 } from './fighters.js';
@@ -22,6 +23,25 @@ import {
 } from './questions.js';
 
 import { rng, randInt, shuffle, generateFighterName } from './utils.js';
+
+const lastName = name => name ? name.split(' ').pop() : '?';
+
+// News entry for an NPC retirement. A fighter who leaves with a winning record
+// and a real résumé is a notable departure — give it a high priority (so it
+// isn't crowded out by routine fight results) and show their final record.
+function retirementNewsItem(f) {
+  const wins   = f?.wins   || 0;
+  const losses = f?.losses || 0;
+  const total  = wins + losses;
+  const accomplished = total >= 8 && wins / total >= 0.5;
+  return {
+    priority: accomplished ? 2 : 5,
+    type: 'fight',
+    text: accomplished
+      ? `${lastName(f?.name)} retires (${f?.record || `${wins}-${losses}`})`
+      : `${lastName(f?.name)} retires`,
+  };
+}
 
 /* ── Phase helpers ───────────────────────────────────── */
 export function getPhaseDef(cs) {
@@ -178,7 +198,11 @@ export function updateDivisionAfterResult(state, cs, won, draw, extraChallengerD
       } else if (oppSlot !== null) {
         steps = oppSlot - playerSlot; // land exactly at opponent's slot
       }
-      if (steps > 0) divisionMoveUp(cs.division, steps);
+      if (steps > 0) {
+        // Only allow reaching CHAMP_SLOT by beating the actual champion
+        const cap = (oppSlot === CHAMP_SLOT) ? CHAMP_SLOT : CHAMP_SLOT - 1;
+        divisionJumpToSlot(cs.division, Math.min(cap, cs.division.playerSlot + steps));
+      }
     }
   } else {
     const lossAbs     = Math.abs(cs.phaseStreak);
@@ -189,11 +213,25 @@ export function updateDivisionAfterResult(state, cs, won, draw, extraChallengerD
 }
 
 /* ── NPC simulation ──────────────────────────────────── */
-export function simulateNPCBouts(state, div) {
+function durabilityMod(f) {
+  const d = f.npcDurability ?? 100;
+  if (d < 20) return -0.15;
+  if (d < 50) return -0.07;
+  return 0;
+}
+
+function retireChance(npcDurability) {
+  const d = npcDurability ?? 100;
+  if (d >= 30) return 0;
+  return Math.pow(1 - d / 30, 3);
+}
+
+export function simulateNPCBouts(state, div, newsLog = null) {
   migrateDivSlots(div);
   const { slots, playerSlot } = div;
   const n = slots.length;
   const numBouts = randInt(5, 12);
+  const retirees = [];
 
   for (let b = 0; b < numBouts; b++) {
     const candidates = [];
@@ -241,6 +279,9 @@ export function simulateNPCBouts(state, div) {
     rateA = Math.min(0.95, rateA * streakMod(a));
     rateB = Math.min(0.95, rateB * streakMod(bSlot));
 
+    rateA = Math.max(0.05, rateA + durabilityMod(a));
+    rateB = Math.max(0.05, rateB + durabilityMod(bSlot));
+
     const probA  = rateA / (rateA + rateB);
     const aWins  = Math.random() < probA;
     const winFid = aWins ? fidA : fidB;
@@ -272,6 +313,52 @@ export function simulateNPCBouts(state, div) {
       swapSlots(div, lp, lp - 1);
       lp--;
     }
+
+    // Retirement check for the loser
+    const lF2 = gf(loseFid);
+    if (lF2 && !lF2.isPlayer && Math.random() < retireChance(lF2.npcDurability)) {
+      const retireSlot = div.slots.indexOf(loseFid);
+      if (retireSlot > 0 && retireSlot !== playerSlot) retirees.push({ fid: loseFid, slot: retireSlot });
+    }
+
+    // News: top-5 contender fights, prospect wins, and ranked filler to ensure ≥5 items
+    if (newsLog) {
+      const topSlot = Math.max(aIdx, bIdx);
+      const lF = gf(loseFid);
+      const wR = winIdx >= RANKED_START ? `#${CHAMP_SLOT - winIdx} ` : '';
+      const lR = loseIdx >= RANKED_START ? ` #${CHAMP_SLOT - loseIdx}` : '';
+      if (topSlot >= CHAMP_SLOT - 5) {
+        newsLog.push({ priority: 2, type: 'fight', text: `${wR}${lastName(winF?.name)} def.${lR} ${lastName(lF?.name)}` });
+      } else if (winF?.isRising && winIdx >= RANKED_START) {
+        newsLog.push({ priority: 4, type: 'prospect', text: `Prospect ${lastName(winF.name)} wins at #${CHAMP_SLOT - winIdx}` });
+      } else if (topSlot >= RANKED_START) {
+        newsLog.push({ priority: 6, type: 'fight', text: `${wR}${lastName(winF?.name)} def.${lR} ${lastName(lF?.name)}` });
+      }
+
+      // Significant streak news — surfaces ranked fighters on a hot or cold run.
+      // winStreak/lossStreak were just updated by recWin/recLoss above.
+      const wStreak = winF?.winStreak || 0;
+      if (winIdx >= RANKED_START && wStreak >= 4) {
+        newsLog.push({ priority: 4, type: 'prospect',
+          text: `${lastName(winF?.name)} on a ${wStreak}-fight win streak` });
+      }
+      const lStreak = lF?.lossStreak || 0;
+      if (loseIdx >= RANKED_START && lStreak >= 4) {
+        newsLog.push({ priority: 7, type: 'fight',
+          text: `${lastName(lF?.name)} skids to ${lStreak} straight losses` });
+      }
+    }
+  }
+
+  // Process retirements collected during the bout loop
+  retirees.sort((a, b) => b.slot - a.slot); // highest slot first to avoid index drift
+  for (const { fid, slot } of retirees) {
+    if (div.slots[slot] !== fid) continue; // already displaced
+    const rf = gf(fid);
+    for (let s = slot; s > 1; s--) div.slots[s] = div.slots[s - 1];
+    div.slots[1] = null;
+    if (div.playerSlot > 0 && div.playerSlot < slot) div.playerSlot++;
+    if (newsLog) newsLog.push(retirementNewsItem(rf));
   }
 
   // Champion bout: 75% chance when player is not champ
@@ -290,6 +377,8 @@ export function simulateNPCBouts(state, div) {
       let rChall = challenger.wins > 0 ? challenger.wins / (challenger.wins + challenger.losses) : 0.30;
       if (champF.losses === 0 && champF.wins > 0)        rChamp = Math.min(0.95, rChamp * 1.5);
       if (challenger.losses === 0 && challenger.wins > 0) rChall = Math.min(0.92, rChall * 1.5);
+      rChamp = Math.max(0.05, rChamp + durabilityMod(champF));
+      rChall = Math.max(0.05, rChall + durabilityMod(challenger));
       const champWins = Math.random() < rChamp / (rChamp + rChall);
 
       if (champWins) {
@@ -304,12 +393,34 @@ export function simulateNPCBouts(state, div) {
         if (div.playerSlot === challengerIdx)  div.playerSlot = CHAMP_SLOT;
         else if (div.playerSlot === CHAMP_SLOT) div.playerSlot = challengerIdx;
       }
+
+      if (newsLog) {
+        if (champWins) {
+          newsLog.push({ priority: 1, type: 'championship', text: `${lastName(champF.name)} retains vs ${lastName(challenger.name)}` });
+        } else {
+          newsLog.push({ priority: 1, type: 'championship', text: `${lastName(challenger.name)} dethrones ${lastName(champF.name)}` });
+        }
+      }
+
+      // Retirement check for the bout loser
+      const champBoutLoserFid = champWins ? challFid : champFid;
+      const champBoutLoserF   = gf(champBoutLoserFid);
+      if (champBoutLoserF && !champBoutLoserF.isPlayer
+          && Math.random() < retireChance(champBoutLoserF.npcDurability)) {
+        const retireSlot = div.slots.indexOf(champBoutLoserFid);
+        if (retireSlot > 0 && retireSlot !== div.playerSlot) {
+          for (let s = retireSlot; s > 1; s--) div.slots[s] = div.slots[s - 1];
+          div.slots[1] = null;
+          if (div.playerSlot > 0 && div.playerSlot < retireSlot) div.playerSlot++;
+          if (newsLog) newsLog.push(retirementNewsItem(champBoutLoserF));
+        }
+      }
     }
   }
 }
 
 /* ── Inter-division exchanges ────────────────────────── */
-export function interDivisionExchanges(state, cs) {
+export function interDivisionExchanges(state, cs, newsLog = null) {
   if (!cs || !cs.divisions) return;
 
   for (let fromPhase = 1; fromPhase <= 2; fromPhase++) {
@@ -319,6 +430,106 @@ export function interDivisionExchanges(state, cs) {
     if (!fromDiv || !toDiv) continue;
 
     let exchangeDone = false;
+
+    // Champion promotion: a dominant lower-division champ (>90% win rate, ≥5 fights)
+    // vacates the belt and moves up. The top two available contenders then fight for
+    // the vacant title. Skipped if the player is already booked against this champ.
+    const champFid = fromDiv.slots[CHAMP_SLOT];
+    const champF   = champFid ? gf(champFid) : null;
+    const playerFacingChamp = cs.phase === fromPhase
+      && state.currentOpponent?.divisionSlot === CHAMP_SLOT;
+
+    if (
+      !exchangeDone && champF && !champF.isPlayer && !playerFacingChamp &&
+      (champF.wins + champF.losses) >= 5 &&
+      champF.wins / (champF.wins + champF.losses) > 0.90
+    ) {
+      const landingCandidates = [];
+      for (let j = 3; j <= 6; j++) {
+        if (toDiv.slots[j] && toDiv.slots[j] !== 'player') landingCandidates.push(j);
+      }
+      if (landingCandidates.length) {
+        const landSlot   = landingCandidates[Math.floor(Math.random() * landingCandidates.length)];
+        const displaced  = toDiv.slots[landSlot];
+        const displacedF = displaced ? gf(displaced) : null;
+
+        champF.prevSlot = null; champF.questionId = null; champF.isRising = false; champF.isNew = true; champF.divChangeCooldown = 3;
+        if (displacedF) { displacedF.prevSlot = null; displacedF.questionId = null; displacedF.isNew = true; displacedF.divChangeCooldown = 3; }
+        toDiv.slots[landSlot] = champFid;
+        if (newsLog && (fromPhase === cs.phase || toPhase === cs.phase)) {
+          newsLog.push({ priority: 1, type: 'championship', text: `${lastName(champF.name)} moves up to ${PHASES[toPhase].promo}` });
+        }
+
+        // Find top 2 available contenders for the vacant title fight
+        const contenders = [];
+        for (let c = CHAMP_SLOT - 1; c >= RANKED_START && contenders.length < 2; c--) {
+          const cfid = fromDiv.slots[c];
+          if (!cfid || cfid === 'player') continue;
+          if (state.currentOpponent?.fid === cfid) continue;
+          contenders.push({ fid: cfid, slot: c });
+        }
+
+        if (contenders.length >= 2) {
+          const [a, b] = contenders; // a is higher-ranked
+          const aF = gf(a.fid), bF = gf(b.fid);
+          const rateA = (aF.wins + aF.losses) > 0 ? aF.wins / (aF.wins + aF.losses) : 0.5;
+          const rateB = (bF.wins + bF.losses) > 0 ? bF.wins / (bF.wins + bF.losses) : 0.5;
+          const aWins = Math.random() < rateA / (rateA + rateB);
+          const winner = aWins ? a : b;
+          const loser  = aWins ? b : a;
+
+          recWin(winner.fid); recLoss(loser.fid);
+
+          // Winner becomes champion; shift slots below winner.slot up to close the gap,
+          // with the displaced fighter from the next division filling the bottom slot.
+          fromDiv.slots[CHAMP_SLOT] = winner.fid;
+          for (let s = winner.slot; s > 1; s--) fromDiv.slots[s] = fromDiv.slots[s - 1];
+          fromDiv.slots[1] = displaced || null;
+          if (fromDiv.playerSlot > 0 && fromDiv.playerSlot < winner.slot) fromDiv.playerSlot++;
+
+          // Drop loser 1–2 slots from their post-shift position
+          const loserIdx = fromDiv.slots.indexOf(loser.fid);
+          if (loserIdx > 1) {
+            const dropSteps = Math.random() < 0.4 ? 2 : 1;
+            let lp = loserIdx;
+            for (let d = 0; d < dropSteps; d++) {
+              const next = lp - 1;
+              if (next < 1 || fromDiv.slots[next] === 'player') break;
+              swapSlots(fromDiv, lp, next);
+              lp--;
+            }
+          }
+
+          const newChampF = gf(winner.fid);
+          if (newChampF) newChampF.isNew = true;
+          if (newsLog && fromPhase === cs.phase) {
+            const loserF = gf(loser.fid);
+            newsLog.push({ priority: 1, type: 'championship', text: `${lastName(newChampF?.name)} wins vacant title vs ${lastName(loserF?.name)}` });
+          }
+
+        } else if (contenders.length === 1) {
+          // Only one available contender — they claim the vacant title uncontested
+          const [a] = contenders;
+          recWin(a.fid);
+          fromDiv.slots[CHAMP_SLOT] = a.fid;
+          for (let s = a.slot; s > 1; s--) fromDiv.slots[s] = fromDiv.slots[s - 1];
+          fromDiv.slots[1] = displaced || null;
+          if (fromDiv.playerSlot > 0 && fromDiv.playerSlot < a.slot) fromDiv.playerSlot++;
+          const winF = gf(a.fid);
+          if (winF) winF.isNew = true;
+          if (newsLog && fromPhase === cs.phase) {
+            newsLog.push({ priority: 1, type: 'championship', text: `${lastName(winF?.name)} claims vacant title` });
+          }
+        } else {
+          // No contenders available — displaced fighter fills the vacant slot for now
+          fromDiv.slots[CHAMP_SLOT] = displaced || null;
+        }
+
+        exchangeDone = true;
+      }
+    }
+
+    // Regular promotion: top-4 contenders (slots 16–19) have a 20% chance each cycle
     for (let i = 16; i < CHAMP_SLOT && !exchangeDone; i++) {
       const efid = fromDiv.slots[i];
       if (!efid || efid === 'player') continue;
@@ -337,13 +548,18 @@ export function interDivisionExchanges(state, cs) {
       const demFid   = toDiv.slots[toSlot];
       const promF    = gf(promFid);
       const demF     = gf(demFid);
-      if (promF) { promF.prevSlot = null; promF.questionId = null; promF.isRising = false; promF.isNew = true; }
-      if (demF)  { demF.prevSlot  = null; demF.questionId  = null; demF.isNew = true; }
+      if (promF) { promF.prevSlot = null; promF.questionId = null; promF.isRising = false; promF.isNew = true; promF.divChangeCooldown = 3; }
+      if (demF)  { demF.prevSlot  = null; demF.questionId  = null; demF.isNew = true; demF.divChangeCooldown = 3; }
 
       toDiv.slots[toSlot] = promFid;
       for (let s = fromSlot; s > 1; s--) fromDiv.slots[s] = fromDiv.slots[s - 1];
       fromDiv.slots[1] = demFid;
       if (fromDiv.playerSlot > 0 && fromDiv.playerSlot < fromSlot) fromDiv.playerSlot++;
+      if (newsLog && (fromPhase === cs.phase || toPhase === cs.phase)) {
+        const pF  = gf(promFid);
+        const rank = fromSlot >= RANKED_START ? `#${CHAMP_SLOT - fromSlot} ` : '';
+        newsLog.push({ priority: 5, type: 'fight', text: `${rank}${lastName(pF?.name)} called up to ${PHASES[toPhase].promo}` });
+      }
 
       exchangeDone = true;
     }
@@ -357,26 +573,39 @@ export function advanceDivision(state, cs) {
   if (!cs.division) return;
 
   const allDivs = cs.divisions || { [cs.phase]: cs.division };
+  const newsLog = [];
 
-  for (const [, div] of Object.entries(allDivs)) {
+  for (const [ph, div] of Object.entries(allDivs)) {
     migrateDivSlots(div);
     div.slots.forEach((fid, i) => {
       if (!fid || fid === 'player') return;
       const f = gf(fid);
       if (f) { f.prevSlot = i; f.isNew = false; }
     });
-    simulateNPCBouts(state, div);
+    simulateNPCBouts(state, div, parseInt(ph) === cs.phase ? newsLog : null);
   }
 
-  interDivisionExchanges(state, cs);
+  interDivisionExchanges(state, cs, newsLog);
 
   for (const [ph, div] of Object.entries(allDivs)) {
-    maybeRefreshBottomSlots(state, div, parseInt(ph));
+    maybeRefreshBottomSlots(state, div, parseInt(ph), parseInt(ph) === cs.phase ? newsLog : null);
+  }
+
+  newsLog.sort((a, b) => a.priority - b.priority);
+  cs.divisionNews = newsLog.slice(0, 5);
+
+  // Tick down division-change cooldowns so protection lasts exactly 3 rounds
+  for (const [, div] of Object.entries(allDivs)) {
+    for (const fid of div.slots) {
+      if (!fid || fid === 'player') continue;
+      const f = gf(fid);
+      if (f && f.divChangeCooldown > 0) f.divChangeCooldown--;
+    }
   }
 }
 
 /* ── Bottom slot refresh ─────────────────────────────── */
-export function maybeRefreshBottomSlots(state, div, phase) {
+export function maybeRefreshBottomSlots(state, div, phase, newsLog = null) {
   if (!div || !div.slots) return;
   migrateDivSlots(div);
   const { slots, playerSlot } = div;
@@ -391,6 +620,8 @@ export function maybeRefreshBottomSlots(state, div, phase) {
 
     const total    = (f.wins || 0) + (f.losses || 0);
     const lossRate = total > 0 ? (f.losses || 0) / total : 0;
+    if (total > 0 && (f.wins || 0) / total > 0.75) continue; // >75% win rate — cannot be cut
+    if (f.divChangeCooldown > 0) continue; // recently changed division — protected for 3 rounds
     const ls       = f.lossStreak || 0;
     // Loss streak lowers the lossRate threshold and raises cut chance (caps at 0.70)
     const lossRateThreshold = Math.max(0.50, 0.70 - ls * 0.05);
@@ -430,7 +661,7 @@ export function maybeRefreshBottomSlots(state, div, phase) {
         name = nick ? `${fn} "${nick}" ${ln}` : `${fn} ${ln}`;
         tries++;
       } while (usedNames.has(name) && tries < 60);
-      const isRising = Math.random() < 0.20;
+      const isRising = Math.random() < 0.35;
       let w, l;
       if (isRising) { w = randInt(4, 8); l = Math.random() < 0.2 ? 1 : 0; }
       else {
@@ -443,12 +674,20 @@ export function maybeRefreshBottomSlots(state, div, phase) {
         fid: makeFid(), name,
         wins: w, losses: l, draws: 0,
         record: buildRec(w, l, 0),
-        style: rng(FIGHTER_ROSTER.map(r => r.style)) || '',
+        style: rng(ALL_PROFILE_STYLES),
+        signatureMoves: makeSignatureMoves(),
         rosterId: null, isPlayer: false, isRising,
         questionId: null, isNew: true, prevSlot: null, maxPhase: phase,
+        npcDurability: Math.max(20, Math.round(100 - (w + l) * 0.5)),
       };
       FIGHTERS.set(nf.fid, nf);
       newFid = nf.fid;
+    }
+    if (newsLog) {
+      const nf = gf(newFid);
+      if (nf?.isRising) {
+        newsLog.push({ priority: 3, type: 'prospect', text: `${lastName(nf.name)} enters — rising prospect` });
+      }
     }
     slots[i] = newFid;
   }
@@ -461,7 +700,10 @@ export function maybeRefreshBottomSlots(state, div, phase) {
 // title transition (won belt / defense / belt lost).
 export function updateCareerPhase(state, cs, resultType, slotBefore) {
   const phase = cs.phase;
-  const pDef  = PHASES[phase];
+  // getPhaseDef applies the per-career phase-2 org override (e.g. Kings FC vs Apex).
+  // Using PHASES[phase] directly would hardcode "Apex Combat" / "Apex Champion"
+  // into belt names, promotion offers, and cut text regardless of the chosen org.
+  const pDef  = getPhaseDef(cs);
   const won   = resultType === 'win';
   const lost  = ['loss', 'split_loss', 'finish', 'late_finish', 'timeout_finish', 'embarrassing_dec', 'timeout'].includes(resultType);
   if (slotBefore == null) slotBefore = getPlayerSlot(cs);
@@ -480,6 +722,7 @@ export function updateCareerPhase(state, cs, resultType, slotBefore) {
   if (resultType === 'draw' && t.held && slotBefore === CHAMP_SLOT) {
     t.defenseStreak++;
     t.bestDefenseStreak = Math.max(t.bestDefenseStreak, t.defenseStreak);
+    if (phase === 3) cs.titleDefenses = (cs.titleDefenses || 0) + 1;
     cs.champCalloutClout = (cs.champCalloutClout || 0) + 1;
     event = { type: phase < 3 ? 'ev-interim' : 'ev-title',
       label: `${pDef.promo} — Draw Defense #${t.defenseStreak}`,
@@ -487,6 +730,7 @@ export function updateCareerPhase(state, cs, resultType, slotBefore) {
   } else if (won && slotAfter === CHAMP_SLOT && t.held && slotBefore === CHAMP_SLOT) {
     t.defenseStreak++;
     t.bestDefenseStreak = Math.max(t.bestDefenseStreak, t.defenseStreak);
+    if (phase === 3) cs.titleDefenses = (cs.titleDefenses || 0) + 1;
     cs.champCalloutClout = (cs.champCalloutClout || 0) + 1;
     const defNum = t.defenseStreak;
     event = { type: phase < 3 ? 'ev-interim' : 'ev-title',
@@ -497,6 +741,11 @@ export function updateCareerPhase(state, cs, resultType, slotBefore) {
     t.reigns++;
     t.defenseStreak = 0;
     cs.titleName = orgBelt;
+    if (phase === 3) {
+      const _fn = (state.fightIndex ?? 0) + 1;
+      if ((cs.fightNumberOfFirstTitle ?? -1) === -1) cs.fightNumberOfFirstTitle = _fn;
+      cs._lastTitleWonAtFight = _fn;
+    }
     const nTime = t.reigns > 1 ? `${t.reigns}-Time ` : '';
     event = phase < 3
       ? { type: 'ev-interim', label: `${nTime}${pDef.promo} Champion!`, text: `You've claimed the ${orgBelt} title.` }
@@ -505,6 +754,11 @@ export function updateCareerPhase(state, cs, resultType, slotBefore) {
 
   // ── Belt lost ──
   if (lost && slotBefore === CHAMP_SLOT && slotAfter < CHAMP_SLOT && t.held) {
+    if (phase === 3) {
+      const _fn   = (state.fightIndex ?? 0) + 1;
+      const _prev = cs._lastTitleWonAtFight ?? -1;
+      if (_prev !== -1 && _fn === _prev + 1) cs.lostTitleInNextFight = true;
+    }
     const _defStr = t.defenseStreak === 0 ? 'no defenses' : `${t.defenseStreak} defense${t.defenseStreak > 1 ? 's' : ''}`;
     t.held          = false;
     t.defenseStreak = 0;
@@ -539,10 +793,11 @@ export function updateCareerPhase(state, cs, resultType, slotBefore) {
     if (promoPct > 0 && Math.random() < promoPct
         && cs.phaseWins >= Math.ceil(pDef.advanceFights * 0.4)) {
       cs.advancementPending = true;
-      const nextP  = PHASES[phase + 1];
-      const undStr = isUndefeated(state) ? ' Your undefeated record has made this unavoidable.' : '';
+      const nextP     = PHASES[phase + 1];
+      const nextPromo = (phase + 1 === 2 && cs.phase2Name) ? cs.phase2Name : nextP.promo;
+      const undStr    = isUndefeated(state) ? ' Your undefeated record has made this unavoidable.' : '';
       event = { type: 'ev-contract', label: 'Contract Offer', choiceType: 'promotion',
-        text: `${nextP.promo} is watching. Stay here or sign with the next level up.${undStr}` };
+        text: `${nextPromo} is watching. Stay here or sign with the next level up.${undStr}` };
     }
   }
 
@@ -653,9 +908,21 @@ export function initState(state, activeModId) {
     divisions:          {},
     cutPool:            [],
     freshDivision:      false,
+    divisionNews:       [],
+    newsFolded:         false,
     // Set by +page.svelte after initState — defaults here as fallback
     activeLength:       0,       // 0 = until retirement
     difficulty:         'medium',
+
+    // ── Legacy / end-screen tracking ─────────────────────
+    peakWinPct:              0,   // highest win% recorded mid-career
+    longestLosingStreak:     0,   // longest consecutive loss run
+    _currentLosingStreak:    0,   // internal counter — not displayed
+    titleDefenses:           0,   // cumulative world-title (phase-3) defenses
+    fightNumberOfFirstTitle: -1,  // fight# when first world title won (-1 = never)
+    lostTitleInNextFight:    false, // lost phase-3 belt in the fight right after winning it
+    _lastTitleWonAtFight:    -1,  // internal — fight# of most recent phase-3 title win
+    retireType:              null, // set at career end: voluntary|force|durability|natural
   };
 
   career.divisions = {
@@ -686,6 +953,7 @@ export function initState(state, activeModId) {
   state.fightIndex = 0;
   state.sparring   = false;
   state.winsVsFighter   = {};
+  state.h2h             = {};
   state.calloutUsed     = false;
   state._calloutOpponent = null;
   state.retiredVoluntarily = false;
@@ -736,13 +1004,307 @@ export function sparringCurrentQuestion(state) {
   return state.sparringPool[state.sparringPtr];
 }
 
-/* ── Legacy win rate for end screen ─────────────────── */
-export function calcLegacyTitle(wins, total) {
-  const winPct = total > 0 ? Math.round((wins / total) * 100) : 0;
-  if (winPct >= 85) return 'Greatest of All Time';
-  if (winPct >= 75) return 'Hall of Famer';
-  if (winPct >= 60) return 'Contender';
-  if (winPct >= 45) return 'Journeyman';
-  if (winPct >= 25) return 'Cult Favourite';
-  return 'The Opponent';
+/* ═══════════════════════════════════════════════════════════
+ * LEGACY / FINAL-SCREEN SYSTEM
+ * ═══════════════════════════════════════════════════════════
+ *
+ *  buildLegacyStats(state)  — derive the full career object from live state
+ *  calcLegacyTitle(career)  — main legacy label (e.g. "Hall of Famer")
+ *  calcEndTitle(career)     — headline (e.g. "Hung Up The Gloves")
+ *  calcAchievementBadges(career, legacyTitle) → string[]
+ */
+
+// Badge names whose CSS renders as muted/humorous rather than gold/positive.
+// Exported so EndScreen.svelte never has to hardcode these strings separately.
+export const HUMOROUS_BADGE_NAMES = new Set([
+  'Bathroom Break', 'Glass Cannon', 'One-Hit Wonder', 'Revolving Door',
+]);
+
+// Shared retire-type resolver — single source of truth used by both
+// buildLegacyStats() (for display) and onCareerEnd() (for archiving).
+const RETIRE_TYPES = ['voluntary', 'force', 'durability', 'natural'];
+export function deriveRetireType(cs, state) {
+  if (RETIRE_TYPES.includes(cs?.retireType)) return cs.retireType;
+  if (state?.retiredVoluntarily)                    return 'voluntary';
+  if (state?.retiredDurability)                     return 'durability';
+  if (state?.retiredForcefully || cs?.forceRetire)  return 'force';
+  return 'natural';
+}
+
+/* ── Build the derived career object ─────────────────── */
+/**
+ * Merges live state stats with the career object so that the three
+ * display functions always receive accurate, normalised data.
+ * Called from EndScreen.svelte and from onCareerEnd() in +page.svelte.
+ */
+export function buildLegacyStats(state) {
+  const cs     = state.career || {};
+  const bh     = state.boutHistory || [];
+  const titles = cs.titles || {};
+
+  const fights     = state.fightIndex ?? 0;
+  const wins       = state.wins       ?? 0;
+  const losses     = (state.losses ?? 0) + (state.finishes ?? 0);
+
+  const koWins     = state.winsByKO  ?? 0;
+  const tkoWins    = state.winsByTKO ?? 0;
+  const subWins    = state.winsBySub ?? 0;
+  const finishRate = wins > 0 ? (koWins + tkoWins + subWins) / wins : 0;
+
+  // Derived from bout history (playerSlot added to entries in combat.js)
+  const timesFinished = bh.filter(b => {
+    if (b.rc === 'win' || b.rc === 'draw') return false;
+    const m = b.method || '';
+    return KO_METHODS.includes(m) || TKO_METHODS.includes(m) || SUB_METHODS.includes(m);
+  }).length;
+
+  const knockoutsReceived = bh.filter(b => {
+    if (b.rc === 'win' || b.rc === 'draw') return false;
+    return KO_METHODS.includes(b.method || '');
+  }).length;
+
+  const finishedRate        = losses > 0 ? timesFinished / losses : 0;
+  const reachedTitleFight   = bh.some(b => b.titleFight && b.phase === 3);
+  const beatRankedContender = bh.some(b =>
+    b.rc === 'win' && (b.oppRankSlot ?? -1) >= RANKED_START
+  );
+  const wasRanked = bh.some(b =>
+    typeof b.playerSlot === 'number' && b.playerSlot >= RANKED_START
+  );
+  const upsetWins = bh.filter(b =>
+    b.rc === 'win' &&
+    typeof b.playerSlot === 'number' &&
+    typeof b.oppRankSlot === 'number' &&
+    (b.oppRankSlot - b.playerSlot) >= 4
+  ).length;
+
+  const heldWorldTitle    = (titles[3]?.reigns || 0) > 0;
+  const heldRegionalTitle = ((titles[1]?.reigns || 0) + (titles[2]?.reigns || 0)) > 0;
+  const heldTitleAtRetire = [1, 2, 3].some(ph => titles[ph]?.held);
+  const titleReigns       = titles[3]?.reigns || 0;
+  // Count orgs (phases) where any title was held — enables Multi-Division Champion
+  // to fire when a fighter won titles at two different levels (e.g. regional + world).
+  const worldTitleDivisions = [1, 2, 3].filter(ph => (titles[ph]?.reigns || 0) > 0).length;
+
+  const retireType = deriveRetireType(cs, state);
+
+  return {
+    ...cs,
+    fights,
+    wins,
+    losses,
+    draws: state.draws ?? 0,
+    finishRate,
+    finishedRate,
+    timesFinished,
+    knockoutsReceived,
+    upsetWins,
+    wasRanked,
+    beatRankedContender,
+    reachedTitleFight,
+    heldWorldTitle,
+    heldRegionalTitle,
+    heldTitleAtRetire,
+    titleReigns,
+    worldTitleDivisions,
+    longestWinStreak:        Math.max(cs.longestWinStreak        ?? 0, state.bestStreak ?? 0),
+    peakWinPct:              cs.peakWinPct              ?? 0,
+    longestLosingStreak:     cs.longestLosingStreak     ?? 0,
+    titleDefenses:           cs.titleDefenses           ?? 0,
+    fightNumberOfFirstTitle: cs.fightNumberOfFirstTitle ?? -1,
+    lostTitleInNextFight:    cs.lostTitleInNextFight    ?? false,
+    retireType,
+  };
+}
+
+/* ── Section 2: safe derived values ─────────────────── */
+function _legacyDerived(career) {
+  const cs = career || {};
+  const f  = cs.fights  ?? 0;
+  const w  = cs.wins    ?? 0;
+  const l  = cs.losses  ?? 0;
+
+  const winPct       = f > 0 ? w / f : 0;
+  const finishRate   = w > 0 ? (cs.finishRate   ?? 0) : 0;
+  const finishedRate = l > 0 ? (cs.finishedRate ?? 0) : 0;
+  const peakWinPct   = cs.peakWinPct ?? winPct;
+
+  const retireType = RETIRE_TYPES.includes(cs.retireType) ? cs.retireType : 'natural';
+
+  return {
+    f, w, l, winPct, finishRate, finishedRate, peakWinPct, retireType,
+    heldWorldTitle:       cs.heldWorldTitle       ?? false,
+    heldRegionalTitle:    cs.heldRegionalTitle     ?? false,
+    heldTitleAtRetire:    cs.heldTitleAtRetire     ?? false,
+    reachedTitleFight:    cs.reachedTitleFight     ?? false,
+    beatRankedContender:  cs.beatRankedContender   ?? false,
+    wasRanked:            cs.wasRanked             ?? false,
+    lostTitleInNextFight: cs.lostTitleInNextFight  ?? false,
+    titleDefenses:           cs.titleDefenses           ?? 0,
+    titleReigns:             cs.titleReigns             ?? 0,
+    fightNumberOfFirstTitle: cs.fightNumberOfFirstTitle ?? -1,
+    knockoutsReceived:       cs.knockoutsReceived       ?? 0,
+    timesFinished:           cs.timesFinished           ?? 0,
+    upsetWins:               cs.upsetWins               ?? 0,
+    longestWinStreak:        cs.longestWinStreak        ?? 0,
+    longestLosingStreak:     cs.longestLosingStreak     ?? 0,
+    worldTitleDivisions:     cs.worldTitleDivisions     ?? 0,
+  };
+}
+
+/* ── Section 3: calcLegacyTitle(career) ─────────────── */
+export function calcLegacyTitle(career) {
+  const d = _legacyDerived(career);
+  const {
+    f, w, l, winPct, finishRate, peakWinPct, retireType,
+    heldWorldTitle, heldRegionalTitle, heldTitleAtRetire,
+    reachedTitleFight, beatRankedContender, wasRanked, lostTitleInNextFight,
+    titleDefenses, titleReigns, fightNumberOfFirstTitle,
+    upsetWins, longestWinStreak, longestLosingStreak, worldTitleDivisions,
+  } = d;
+
+  // BLOCK 0 — NEVER FOUGHT
+  if (f === 0) return 'Never Fought';
+
+  // BLOCK A — EARLY / SHORT CAREER
+  if (f === 1 && l === 1)                                                         return 'One And Done';
+  if (f === 1 && w === 1)                                                         return 'Won One, Gone';
+  if (retireType === 'force' && f < 6 && winPct < 0.25)                           return 'Wrong Sport';
+  if (f < 5 && !heldWorldTitle && !heldRegionalTitle && !beatRankedContender)     return 'Footnote';
+  if (l === 0 && f >= 8 && heldWorldTitle && retireType === 'voluntary')          return 'Untouchable';
+  if (l === 0 && f >= 5 && !heldWorldTitle && retireType === 'voluntary')         return 'The Biggest What If';
+  if (l === 0 && f >= 5 && retireType !== 'voluntary')                            return 'Undefeated';
+  if (f < 10 && l <= 1 && heldWorldTitle)                                         return 'Shooting Star';
+  if (f < 8 && winPct >= 0.70 && retireType === 'voluntary'
+      && !heldWorldTitle && !reachedTitleFight)                                    return 'Flash In The Pan';
+  if (retireType === 'force' && f < 15 && peakWinPct >= 0.65)                    return 'Wasted Potential';
+  if (f >= 5 && f < 10 && winPct >= 0.60 && retireType === 'voluntary'
+      && !heldWorldTitle && !reachedTitleFight)                                    return 'Promising Start';
+  if (f < 10 && winPct >= 0.50 && retireType !== 'voluntary')                    return 'Cut Short';
+  if (f < 10)                                                                      return 'Brief Career';
+
+  // BLOCK B — SPECIAL ACHIEVEMENT
+  if (retireType !== 'force' && l < 3 && winPct >= 0.95
+      && titleDefenses >= 10 && heldWorldTitle)                                    return 'G.O.A.T.';
+
+  // BLOCK C — PRIMARY LEGACY
+  if (heldWorldTitle && titleDefenses >= 5 && f >= 20 && winPct >= 0.65)          return 'Hall of Famer';
+  if (heldWorldTitle && f >= 15)                                                   return 'World Champion';
+  if (heldWorldTitle && f < 15)                                                    return 'Short-Reigned Champion';
+  if (heldTitleAtRetire && retireType === 'voluntary' && l <= 2)                    return 'Retired Champion';
+  if (!heldWorldTitle && (reachedTitleFight || (winPct >= 0.60 && f >= 20)))      return 'Contender';
+  if (!heldWorldTitle && wasRanked && winPct >= 0.55 && f >= 15)                  return 'Fringe Contender';
+  if (heldRegionalTitle && winPct >= 0.55 && f >= 10)                             return 'Regional Champion';
+
+  // BLOCK D — JOURNEYMAN TIER
+  if (f >= 25 && winPct >= 0.40 && winPct < 0.55
+      && !heldWorldTitle && !heldRegionalTitle && beatRankedContender)             return 'Gatekeeper';
+  if (heldRegionalTitle && titleDefenses < 2 && winPct < 0.45)                   return 'Regional Journeyman';
+  if (f >= 15 && winPct >= 0.30 && winPct < 0.55
+      && !heldWorldTitle && !heldRegionalTitle)                                    return 'Journeyman';
+  if (f >= 10 && winPct >= 0.30 && winPct < 0.55
+      && !heldWorldTitle && !heldRegionalTitle)                                    return 'Club Fighter';
+
+  // BLOCK E — LOWER TIER
+  if (winPct >= 0.25 && winPct < 0.40 && finishRate >= 0.80 && f >= 10)          return 'Cult Favourite';
+  if (winPct >= 0.25 && winPct < 0.40 && finishRate < 0.50  && f >= 20)          return 'Trial Horse';
+  if (winPct >= 0.25 && winPct < 0.40 && f >= 10)                                return 'Durable Loser';
+  if (winPct < 0.25 && f >= 10)                                                   return 'The Opponent';
+  if (winPct < 0.25 && f >= 5)                                                    return 'Stepping Stone';
+
+  return 'Cannon Fodder'; // absolute fallback — should be unreachable
+}
+
+/* ── Section 5: calcEndTitle(career) ────────────────── */
+export function calcEndTitle(career) {
+  const { f, l, winPct, retireType, heldWorldTitle } = _legacyDerived(career);
+
+  if (f === 0) return 'The Career That Never Was';
+
+  if (retireType === 'voluntary') {
+    if (heldWorldTitle && f >= 30) return 'Hung Up The Gloves — A Legend Departs';
+    if (heldWorldTitle && f >= 15) return 'Rode Off Into The Sunset';
+    if (l === 0 && f >= 8)         return 'Left Them Wanting More';
+    if (l === 0 && f >= 1)         return 'Walked Away Clean';
+    if (f < 5)                     return 'Gone Before It Started';
+    if (f < 10)                    return 'Gone Too Soon';
+    if (winPct >= 0.60)            return 'Calling It A Career';
+    return 'Hanging Up The Gloves';
+  }
+
+  if (retireType === 'durability') {
+    if (heldWorldTitle) return 'The Body Finally Said No';
+    if (f < 10)         return "Didn't Last Long";
+    return 'Father Time Wins Again';
+  }
+
+  if (retireType === 'force') {
+    if (heldWorldTitle) return 'The Canvas Claimed A Champion';
+    if (f === 1)        return 'One And Out';
+    if (f < 6)          return 'Over Before It Began';
+    if (winPct >= 0.50) return 'Forced Out At The Top';
+    return 'The Canvas Claimed Him';
+  }
+
+  // natural — hit the fight limit
+  if (heldWorldTitle && f >= 40) return 'Every Last Drop — An Icon Signs Off';
+  if (heldWorldTitle)            return "Every Last Drop — A Champion's Journey Ends";
+  if (winPct >= 0.60)            return 'Every Last Drop';
+  return 'Went The Distance';
+}
+
+/* ── Section 4: calcAchievementBadges(career, legacyTitle) ── */
+export function calcAchievementBadges(career, legacyTitle) {
+  const d = _legacyDerived(career);
+  const {
+    f, w, l, winPct, finishRate, finishedRate,
+    heldWorldTitle, lostTitleInNextFight,
+    titleDefenses, titleReigns, fightNumberOfFirstTitle,
+    knockoutsReceived, upsetWins, longestWinStreak, longestLosingStreak,
+    worldTitleDivisions,
+  } = d;
+
+  if (f === 0) return [];
+
+  const badges = [];
+
+  // ── Positive badges — rarest first ──────────────────
+  if (worldTitleDivisions >= 2)
+    badges.push('Multi-Division Champion');
+
+  if (titleDefenses >= 7 && titleReigns === 1)
+    badges.push('Dynasty');
+
+  if (fightNumberOfFirstTitle >= 20 && heldWorldTitle)
+    badges.push('Late Bloomer');
+
+  if (longestWinStreak >= 10 && l > 0)
+    badges.push('Undefeated Streak');
+
+  if (longestLosingStreak >= 3 && heldWorldTitle && winPct >= 0.50)
+    badges.push('Comeback Kid');
+
+  if (upsetWins >= 5)
+    badges.push("People's Champion");
+
+  if (finishRate >= 0.80 && w >= 10 && legacyTitle !== 'Cult Favourite')
+    badges.push('Fan Favourite');
+
+  if (f >= 20 && knockoutsReceived === 0)
+    badges.push('Iron Chin');
+
+  // ── Negative / humorous badges ───────────────────────
+  if (finishRate < 0.20 && f >= 20 && heldWorldTitle && legacyTitle !== 'G.O.A.T.')
+    badges.push('Bathroom Break');
+
+  if (finishRate >= 0.75 && finishedRate >= 0.50 && f >= 10)
+    badges.push('Glass Cannon');
+
+  if (heldWorldTitle && titleDefenses === 0 && lostTitleInNextFight === true)
+    badges.push('One-Hit Wonder');
+
+  if (titleReigns >= 3 && titleDefenses < 2)
+    badges.push('Revolving Door');
+
+  return badges;
 }

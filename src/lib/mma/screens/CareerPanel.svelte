@@ -5,7 +5,7 @@
   import {
     getPhaseDef, getPlayerSlot, slotToRankLabel, slotToCssClass, isUndefeated,
   } from '$lib/mma/career.js';
-  import { CHAMP_SLOT, PHASES } from '$lib/mma/constants.js';
+  import { CHAMP_SLOT } from '$lib/mma/constants.js';
 
   const cs      = $derived(gs.career);
   const pDef    = $derived(cs ? getPhaseDef(cs) : null);
@@ -30,8 +30,10 @@
     for (const ph of [1, 2, 3]) {
       const t = cs.titles[ph];
       if (t && t.reigns > 0) {
-        top = { phase: ph, org: PHASES[ph]?.promo ?? `Phase ${ph}`,
-                belt: PHASES[ph]?.rankLabels?.[11] ?? 'Champion', reigns: t.reigns, held: t.held };
+        // getPhaseDef applies the per-career phase-2 org override (e.g. Kings FC).
+        const d = getPhaseDef({ ...cs, phase: ph });
+        top = { phase: ph, org: d.promo ?? `Phase ${ph}`,
+                belt: d.rankLabels?.[11] ?? 'Champion', reigns: t.reigns, held: t.held };
       }
     }
     const cur = cs.titles[cs.phase];
@@ -80,13 +82,23 @@
     const lSub = gs.lossBySub || 0, lDec = gs.lossByDec || 0;
     let winLabel = null;
     if (w >= 5) {
-      const wMax = Math.max(wKO, wTKO, wSub, wDec);
-      const tied = [wKO, wTKO, wSub, wDec].filter(v => v === wMax).length > 1;
-      if (tied || wMax === 0)  winLabel = 'Allrounder';
-      else if (wKO === wMax)   winLabel = 'KO Artist';
-      else if (wTKO === wMax)  winLabel = 'Pressure Fighter';
-      else if (wSub === wMax)  winLabel = 'Submission Artist';
-      else                     winLabel = 'Decision Merchant';
+      const cats    = [['KO', wKO], ['TKO', wTKO], ['Sub', wSub], ['Dec', wDec]];
+      const wMax    = Math.max(wKO, wTKO, wSub, wDec);
+      const leaders = cats.filter(([, v]) => v === wMax).map(([k]) => k);
+      const are = (...keys) => leaders.length === keys.length && keys.every(k => leaders.includes(k));
+
+      if (wMax === 0)              winLabel = 'Allrounder';
+      else if (leaders.length === 1) {
+        if (wKO === wMax)         winLabel = 'KO Artist';
+        else if (wTKO === wMax)   winLabel = 'Pressure Fighter';
+        else if (wSub === wMax)   winLabel = 'Submission Artist';
+        else                      winLabel = 'Decision Merchant';
+      }
+      // Co-dominant finish pairs get their own identity
+      else if (are('KO', 'TKO'))  winLabel = 'Marauder';
+      else if (are('TKO', 'Sub')) winLabel = 'Deep Water Specialist';
+      // KO+Sub, anything tied with decisions, 3-/4-way ties → balanced
+      else                        winLabel = 'Allrounder';
     }
     let lossLabel = null;
     if (l >= 5) {
