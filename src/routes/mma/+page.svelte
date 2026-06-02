@@ -52,7 +52,7 @@
       if (isPlayer && i !== playerSlot) continue; // stale 'player' string left in slots after division change
       const totalLosses = (gs.losses || 0) + (gs.finishes || 0);
       const f = isPlayer
-        ? { name: cs.fighterName, record: `${gs.wins}-${totalLosses}`, wins: gs.wins, losses: totalLosses, draws: gs.draws || 0, isPlayer: true }
+        ? { name: cs.fighterName, record: `${gs.wins}-${totalLosses}`, wins: gs.wins, losses: totalLosses, draws: gs.draws || 0, isPlayer: true, flag: cs.playerFlag || '' }
         : gf(fid);
       if (!f) continue;
       const rankNum = i === CHAMP_SLOT ? 'C' : i < RANKED_START ? '–' : `#${CHAMP_SLOT - i}`;
@@ -122,7 +122,7 @@
       return 'GFL Fight Night';
     }
     if (phase === 2) return cs.phase2Name || 'Apex Combat';
-    return 'Regional FC';
+    return cs.phase1OrgName || 'Regional FC';
   })());
 
   // Every 3rd defence is mandatory (defenseStreak of 2, 5, 8… means next is the 3rd, 6th, 9th…)
@@ -274,6 +274,8 @@
 
   // ── Save status banner ────────────────────────────────
   let saveError = $state(null);
+  // Full-screen "Saving…" overlay shown while a save round-trip is in flight.
+  let savingExit = $state(false);
 
   // ── Cloud save ────────────────────────────────────────
   // Returns true on success, false on failure (with saveError set).
@@ -302,16 +304,22 @@
 
   // ── Save & Exit (suspend career, return to menu) ──────
   async function saveAndExit() {
-    const ok = await saveToCloud();
-    if (!ok) return; // keep the player on the current screen so the error banner is visible
-    // Clear the in-memory career so MenuScreen shows the main menu,
-    // not the mid-career switcher. The career is safely persisted in the DB.
-    gs.career          = null;
-    gs.currentOpponent = null;
-    gs.saveId          = null;
-    gs.sparring        = false;
-    gs.screen          = 'menu';
-    await refreshCounts();
+    if (savingExit) return;          // ignore double-clicks while a save is in flight
+    savingExit = true;
+    try {
+      const ok = await saveToCloud();
+      if (!ok) return;               // keep the player on the current screen so the error banner is visible
+      // Clear the in-memory career so MenuScreen shows the main menu,
+      // not the mid-career switcher. The career is safely persisted in the DB.
+      gs.career          = null;
+      gs.currentOpponent = null;
+      gs.saveId          = null;
+      gs.sparring        = false;
+      gs.screen          = 'menu';
+      await refreshCounts();
+    } finally {
+      savingExit = false;
+    }
   }
 
   // ── Career end → archive + delete active save ─────────
@@ -505,6 +513,15 @@
     </div>
   {/if}
 
+  {#if savingExit}
+    <div class="saving-overlay" role="status" aria-live="polite">
+      <div class="saving-box">
+        <div class="saving-spinner"></div>
+        <div class="saving-text">Saving your career…</div>
+      </div>
+    </div>
+  {/if}
+
   {#if gs.screen !== 'menu' && gs.screen !== 'end' && gs.screen !== 'saved_careers' && gs.screen !== 'past_careers'}
     <div class="fight-meta">
       {#if gs.sparring}
@@ -609,6 +626,9 @@
                 {#if opp.classLabel}{opp.classEmoji} {opp.classLabel}{/if}{#if opp.classLabel && opp.style} · {/if}{#if opp.style}<span class="so-style">{opp.style}</span>{/if}
               </div>
             {/if}
+            {#if opp.nationality}
+              <div class="so-nat">{opp.flag} {opp.nationality}</div>
+            {/if}
             {#if gs.h2h?.[opp.fid] && (gs.h2h[opp.fid].w + gs.h2h[opp.fid].l + gs.h2h[opp.fid].d) > 0}
               {@const h = gs.h2h[opp.fid]}
               <div class="so-h2h">vs YOU · {h.w}W-{h.l}L{h.d > 0 ? `-${h.d}D` : ''}</div>
@@ -674,7 +694,7 @@
                   >
                     <td class="rt-rank">{row.rankNum}</td>
                     <td class="rt-name">
-                      {row.f.name}
+                      {#if row.f.flag}<span class="rt-flag">{row.f.flag}</span> {/if}{row.f.name}
                       {#if row.isPlayer}<span class="rt-you">YOU</span>{/if}
                       {#if row.isNext}<span class="rt-next-badge">NEXT</span>{/if}
                       {#if gs.screen === 'prefight'}
@@ -952,6 +972,7 @@
   .so-style  { color: var(--text-muted); font-style: italic; font-weight: 600; }
   .so-bio    { font-size: 10px; color: var(--text-muted); line-height: 1.5; }
   .so-venue  { font-size: 9px; color: var(--text-muted); margin-top: 6px; letter-spacing: 0.05em; border-top: 1px solid var(--border); padding-top: 6px; }
+  .so-nat    { font-size: 10px; color: var(--text-muted); letter-spacing: 0.05em; margin-bottom: 4px; }
   .so-h2h    { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 4px; }
 
   /* Sidebar: divisional news */
@@ -983,6 +1004,7 @@
   .rt-table td { padding: 5px 12px; }
   .rt-rank { font-family: var(--font-display); font-size: 12px; letter-spacing: 0.04em; color: var(--text-muted); width: 32px; }
   .rt-name { color: var(--text); font-size: 11px; }
+  .rt-flag { font-size: 11px; margin-right: 6px; }
   .rt-rec  { color: var(--text-muted); font-size: 10px; text-align: right; }
   .rt-player { background: rgba(232,193,74,0.06); }
   .rt-player .rt-rank { color: var(--accent); }
@@ -1021,6 +1043,13 @@
   .rtp-style { color: var(--text-muted); font-style: italic; font-weight: 600; }
   .rtp-rising{ font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--green); margin-top: 3px; }
   .rtp-vs    { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); margin-top: 3px; }
+
+  /* Saving overlay */
+  .saving-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.82); display: flex; align-items: center; justify-content: center; z-index: 10000; }
+  .saving-box { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+  .saving-spinner { width: 42px; height: 42px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: saving-spin 0.8s linear infinite; }
+  .saving-text { font-family: var(--font-display); font-size: 16px; letter-spacing: 0.06em; color: var(--text); }
+  @keyframes saving-spin { to { transform: rotate(360deg); } }
 
   /* Callout modal */
   .callout-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.80); display: flex; align-items: center; justify-content: center; z-index: 9999; }

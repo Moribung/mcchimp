@@ -10,6 +10,9 @@
     FIGHT_STYLES, getFightStyle,
     SELECTABLE_KO, SELECTABLE_TKO, SELECTABLE_SUB,
   } from '$lib/mma/constants.js';
+  import { REGIONS, REGIONAL_PROMOTIONS, REGIONAL_PROMOTION_IDS } from '$lib/mma/regions.js';
+  import { COUNTRY_OPTIONS, COUNTRY_BY_NAME, flagFor, countryName, isoToFlag } from '$lib/mma/countries.js';
+  import { pickEthnicGroup, pickFighterName } from '$lib/mma/names.js';
   import { rng } from '$lib/mma/utils.js';
 
   const { onsave } = $props();  // ── Form fields ───────────────────────────────────────
@@ -24,9 +27,41 @@
   // 2 clicks on one move → that move appears twice (a "double").
   let moveSlots = $state([]);
 
+  // ── Origin: city (free text) + country (auto-suggests promotion) ──
+  let city                = $state('');
+  let selectedCountryName = $state('Unknown');   // default: no flag
+  let selectedPromoId     = $state('');
+  let selectedPromoName   = $state('');
+  let promoOverridden     = $state(false);   // true once the player manually picks a promotion
+
   // ── Popups ────────────────────────────────────────────
   let styleModalOpen = $state(false);
   let movesModalOpen = $state(false);
+  let promoModalOpen = $state(false);
+
+  // Effective region = the chosen promotion's region (drives the division spread),
+  // else the country's suggested region, else '' (uniform mix).
+  function effectiveRegionId() {
+    if (selectedPromoId) return REGIONAL_PROMOTIONS[selectedPromoId].regionId;
+    return COUNTRY_BY_NAME[selectedCountryName]?.regionId || '';
+  }
+
+  function onCountryChange(name) {
+    selectedCountryName = name;
+    if (!promoOverridden) {
+      const suggested = COUNTRY_BY_NAME[name]?.regionId;
+      const pid = suggested ? REGIONS[suggested].promotionId : '';
+      selectedPromoId   = pid;
+      selectedPromoName = pid ? REGIONAL_PROMOTIONS[pid].name : '';
+    }
+  }
+
+  function pickPromotion(pid) {
+    selectedPromoId   = pid;
+    selectedPromoName = REGIONAL_PROMOTIONS[pid].name;
+    promoOverridden   = true;
+    promoModalOpen    = false;
+  }
 
   const MOVE_GROUPS = [
     { label: 'Knockouts',    moves: SELECTABLE_KO  },
@@ -93,10 +128,22 @@
 
   function applyName(name) {
     if (!gs.career) return;
-    gs.career.fighterName = name;
+    const c   = COUNTRY_BY_NAME[selectedCountryName];   // may be UNKNOWN_COUNTRY / undefined
+    const rid = effectiveRegionId();
+    const isUnknown = !c || c.iso === '';
+    gs.career.fighterName       = name;
+    gs.career.fightingOutOf     = city.trim() && selectedCountryName && !isUnknown
+      ? `${city.trim()}, ${selectedCountryName}`
+      : (city.trim() || '');
+    gs.career.regionId          = rid;                   // drives Phase-1 NPC spread ('' → uniform mix)
+    gs.career.phase1OrgName     = selectedPromoName || 'Regional FC';
+    gs.career.playerNat         = c?.iso || '';
+    gs.career.playerFlag        = flagFor(c);            // real flag, 🏴 for Unknown, or ''
+    gs.career.playerNationality = c?.iso ? countryName(c.iso) : '';
     applyFightStyle();
-    // Rebuild phase-1 division with the confirmed name
-    const newDiv = buildDivision(PHASES[1], name);
+    // Rebuild phase-1 division with the confirmed name + region spread
+    const dist = rid ? REGIONS[rid]?.ethnicDistribution : null;
+    const newDiv = buildDivision(PHASES[1], name, dist);
     gs.career.divisions = gs.career.divisions || {};
     gs.career.divisions[1] = newDiv;
     gs.career.division    = newDiv;
@@ -114,10 +161,14 @@
   }
 
   // ── Generate random (name only) ───────────────────────
+  // Reflects the effective region's ethnic spread when one is selected.
   function generateRandom() {
-    first = rng(FIRST_NAMES);
-    last  = rng(LAST_NAMES);
-    nick  = Math.random() > 0.4 ? rng(NICKNAMES) : '';
+    const rid  = effectiveRegionId();
+    const dist = rid ? REGIONS[rid]?.ethnicDistribution : null;
+    const { fn, ln, nick: rn } = pickFighterName(pickEthnicGroup(dist));
+    first = fn;
+    last  = ln;
+    nick  = rn || '';
   }
 
   function toMenu() {
@@ -127,10 +178,10 @@
   // ── Key shortcuts ─────────────────────────────────────
   function onKeydown(e) {
     if (e.key === 'Escape') {
-      if (styleModalOpen || movesModalOpen) { styleModalOpen = false; movesModalOpen = false; }
+      if (styleModalOpen || movesModalOpen || promoModalOpen) { styleModalOpen = false; movesModalOpen = false; promoModalOpen = false; }
       return;
     }
-    if (e.key === 'Enter' && canConfirm && !styleModalOpen && !movesModalOpen) confirm();
+    if (e.key === 'Enter' && canConfirm && !styleModalOpen && !movesModalOpen && !promoModalOpen) confirm();
   }
 </script>
 
@@ -192,6 +243,38 @@
     </div>
   </div>
 
+  <!-- ── Fighting out of: city + country ──────────────── -->
+  <div class="naming-row">
+    <div class="naming-field">
+      <label class="naming-label" for="naming-city">
+        City <span class="optional">(optional)</span>
+      </label>
+      <input
+        class="naming-input"
+        id="naming-city"
+        bind:value={city}
+        placeholder="e.g. Houston"
+        maxlength="32"
+        autocomplete="off"
+      />
+    </div>
+    <div class="naming-field">
+      <label class="naming-label" for="naming-country">
+        Country <span class="optional">(optional)</span>
+      </label>
+      <select
+        class="naming-input"
+        id="naming-country"
+        value={selectedCountryName}
+        onchange={(e) => onCountryChange(e.currentTarget.value)}
+      >
+        {#each COUNTRY_OPTIONS as c}
+          <option value={c.name}>{flagFor(c)} {c.name}</option>
+        {/each}
+      </select>
+    </div>
+  </div>
+
   <!-- ── Primary actions ──────────────────────────────── -->
   <div class="btn-row">
     <button class="btn btn-primary" disabled={!canConfirm} onclick={confirm}>
@@ -218,6 +301,25 @@
   {:else}
     <button type="button" class="selector selector-empty" onclick={() => (styleModalOpen = true)}>
       <span>Choose Your Style</span>
+      <span class="selector-edit">Select →</span>
+    </button>
+  {/if}
+
+  <!-- ── Starting promotion (popup) ───────────────────── -->
+  <div class="section-head">
+    Starting Promotion <span class="optional">(optional)</span>
+  </div>
+  {#if selectedPromoName}
+    <button type="button" class="selector selected" onclick={() => (promoModalOpen = true)}>
+      <span class="selector-main">
+        <span class="style-name">{selectedPromoName}</span>
+        <span class="style-tag">{REGIONAL_PROMOTIONS[selectedPromoId]?.tagline || ''}</span>
+      </span>
+      <span class="selector-edit">Change</span>
+    </button>
+  {:else}
+    <button type="button" class="selector selector-empty" onclick={() => (promoModalOpen = true)}>
+      <span>Choose Your Promotion</span>
       <span class="selector-edit">Select →</span>
     </button>
   {/if}
@@ -263,6 +365,32 @@
           >
             <span class="style-name">{s.name}</span>
             <span class="style-tag">{s.tagline}</span>
+          </button>
+        {/each}
+      </div>
+    </div>
+  </div>
+{/if}
+
+<!-- ── Starting promotion modal ───────────────────────── -->
+{#if promoModalOpen}
+  <div class="modal-overlay" role="presentation" onclick={() => (promoModalOpen = false)}>
+    <div class="modal" role="dialog" aria-modal="true" onclick={(e) => e.stopPropagation()}>
+      <div class="modal-head">
+        <h3 class="modal-title">Starting Promotion</h3>
+        <button type="button" class="modal-close" aria-label="Close" onclick={() => (promoModalOpen = false)}>✕</button>
+      </div>
+      <div class="style-grid">
+        {#each REGIONAL_PROMOTION_IDS as pid}
+          {@const promo = REGIONAL_PROMOTIONS[pid]}
+          <button
+            type="button"
+            class="style-card"
+            class:selected={selectedPromoId === pid}
+            onclick={() => pickPromotion(pid)}
+          >
+            <span class="style-name">{promo.name}</span>
+            <span class="style-tag">{promo.tagline}</span>
           </button>
         {/each}
       </div>

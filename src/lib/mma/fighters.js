@@ -19,6 +19,8 @@ import {
 } from './constants.js';
 
 import { shuffle, rng, randInt } from './utils.js';
+import { pickEthnicGroup, pickFighterName, pickFightStyleForEthnicity, pickNationality, STYLE_ID_TO_PROFILE } from './names.js';
+import { isoToFlag, countryName } from './countries.js';
 
 /* ── The registry ─────────────────────────────────────── */
 export let FIGHTERS = new Map();
@@ -292,6 +294,8 @@ export function rosterFighterToOpponent(rf, phase) {
     gflCity: city,
     rosterId: rf.id,
     style:    rf.style,
+    flag:        isoToFlag(rf.nat),
+    nationality: countryName(rf.nat),
   };
 }
 
@@ -337,6 +341,8 @@ export function divisionSlotToOpponent(fidOrObj, slot, cs) {
     badgeClass,
     rosterId:     f.rosterId,
     style:        f.style || '',
+    flag:         f.flag || '',
+    nationality:  f.nationality || '',
     signatureMoves: f.signatureMoves,
     divisionSlot: slot,
     classLabel:   clf.label,
@@ -345,8 +351,29 @@ export function divisionSlotToOpponent(fidOrObj, slot, cs) {
   };
 }
 
+/* ── Procedural fighter generator ─────────────────────────
+   Rolls an ethnicity from a region/tier distribution (or uniform when null),
+   pulls name parts from that ethnicity's per-part mixes (with collision avoidance),
+   maps to a style profile, and stamps a curated nationality/flag.
+   Returns plain fields — the caller builds the fighter object. */
+export function generateProcedural({ ethnicDist = null, usedFirstNames, usedLastNames, usedNicks } = {}) {
+  const id = pickEthnicGroup(ethnicDist);
+  let fn, ln, nick, name, outer = 0;
+  do {
+    let a = 0; do { ({ fn } = pickFighterName(id)); a++; } while (usedFirstNames?.has(fn) && a < 60);
+    a = 0;     do { ({ ln } = pickFighterName(id)); a++; } while (usedLastNames?.has(ln) && a < 60);
+    ({ nick } = pickFighterName(id));
+    if (nick && usedNicks?.has(nick)) nick = null;
+    name = nick ? `${fn} "${nick}" ${ln}` : `${fn} ${ln}`;
+    outer++;
+  } while (nameTaken(name) && outer < 40);
+  const nat   = pickNationality(id);
+  const style = STYLE_ID_TO_PROFILE[pickFightStyleForEthnicity(id)] || rng(ALL_PROFILE_STYLES);
+  return { fn, ln, nick, name, style, flag: nat.flag, nationality: nat.name };
+}
+
 /* ── Division builder ────────────────────────────────── */
-export function buildDivision(phaseDef, fighterName) {
+export function buildDivision(phaseDef, fighterName, ethnicDist = null) {
   const slots          = [];
   const usedFirstNames = new Set();
   const usedLastNames  = new Set();
@@ -370,24 +397,15 @@ export function buildDivision(phaseDef, fighterName) {
       usedFirstNames.add(rf.fn);
       usedLastNames.add(rf.ln);
       usedNicks.add(rf.nick);
-      return { name: rosterName, rosterId: rf.id, style: rf.style };
+      return { name: rosterName, rosterId: rf.id, style: rf.style, flag: isoToFlag(rf.nat), nationality: countryName(rf.nat) };
     }
     // Procedural fallback when roster is exhausted — unique within the division
     // (by name part) and globally (full name not already in the registry).
-    let name, fn, ln, nick, outer = 0;
-    do {
-      let a = 0; do { fn = rng(FIRST_NAMES); a++; } while (usedFirstNames.has(fn) && a < 60);
-      a = 0;     do { ln = rng(LAST_NAMES);  a++; } while (usedLastNames.has(ln)  && a < 60);
-      nick = null;
-      if (Math.random() > 0.5) {
-        a = 0; do { nick = rng(NICKNAMES); a++; } while (usedNicks.has(nick) && a < 40);
-      }
-      name = nick ? `${fn} "${nick}" ${ln}` : `${fn} ${ln}`;
-      outer++;
-    } while (nameTaken(name) && outer < 40);
-    if (nick) usedNicks.add(nick);
-    usedFirstNames.add(fn); usedLastNames.add(ln);
-    return { name, rosterId: null, style: rng(ALL_PROFILE_STYLES) };
+    // Ethnicity/flag/name parts driven by the division's region/tier distribution.
+    const gen = generateProcedural({ ethnicDist, usedFirstNames, usedLastNames, usedNicks });
+    if (gen.nick) usedNicks.add(gen.nick);
+    usedFirstNames.add(gen.fn); usedLastNames.add(gen.ln);
+    return { name: gen.name, rosterId: null, style: gen.style, flag: gen.flag, nationality: gen.nationality };
   }
 
   // Derive phase number from phaseDef.name (caller passes PHASES[n])
@@ -404,7 +422,7 @@ export function buildDivision(phaseDef, fighterName) {
     if (i === 0) {
       slots.push('player');
     } else {
-      const { name, rosterId, style } = nextRosterOrProcedural();
+      const { name, rosterId, style, flag, nationality } = nextRosterOrProcedural();
       let w, l, d = 0;
       const rank = i;
 
@@ -460,6 +478,7 @@ export function buildDivision(phaseDef, fighterName) {
         wins: w, losses: l, draws: d,
         isPlayer:       false,
         rosterId,       style,
+        flag, nationality,
         signatureMoves: makeSignatureMoves(),
         isRising:       risingSlots.has(i),
         prevSlot:       i,

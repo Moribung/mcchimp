@@ -16,7 +16,10 @@ import {
   FIGHTERS, makeFid, buildRec, resetFighters, makeSignatureMoves,
   gf, recWin, recLoss, recDraw,
   swapSlots, migrateDivSlots, buildDivision, divisionSlotToOpponent, activeNameSet,
+  generateProcedural,
 } from './fighters.js';
+
+import { REGIONS, TIER_ETHNIC_SPREADS, phase2SpreadKey } from './regions.js';
 
 import {
   ensureQPool, assignDivisionQuestions, tierForFight, buildSparringPool,
@@ -46,6 +49,13 @@ function retirementNewsItem(f) {
 /* ── Phase helpers ───────────────────────────────────── */
 export function getPhaseDef(cs) {
   const def = PHASES[cs.phase] || PHASES[3];
+  if (cs.phase === 1 && cs.phase1OrgName) {
+    return {
+      ...def,
+      promo:      cs.phase1OrgName,
+      rankLabels: { ...def.rankLabels, 11: `${cs.phase1OrgName} Champion` },
+    };
+  }
   if (cs.phase === 2 && cs.phase2Name) {
     return {
       ...def,
@@ -54,6 +64,15 @@ export function getPhaseDef(cs) {
     };
   }
   return def;
+}
+
+/* Ethnic distribution that should populate the division for the active phase:
+   Phase 1 → the player's region spread; Phase 2 → the chosen org's tier spread;
+   Phase 3 → GFL. null (Phase 1 with no region) → uniform mix. */
+export function divisionEthnicDist(cs) {
+  if (cs.phase === 1) return cs.regionId ? (REGIONS[cs.regionId]?.ethnicDistribution || null) : null;
+  if (cs.phase === 2) return TIER_ETHNIC_SPREADS[phase2SpreadKey(cs.phase2Name)];
+  return TIER_ETHNIC_SPREADS.gfl;
 }
 export function getPlayerSlot(cs) { return cs.division ? cs.division.playerSlot : 0; }
 export function isPhaseChampion(cs) { return getPlayerSlot(cs) === CHAMP_SLOT; }
@@ -164,7 +183,7 @@ export function divisionMoveDown(div, steps) {
 export function syncDivisionAlias(state, cs) {
   if (!cs || !cs.divisions) return;
   if (!cs.divisions[cs.phase]) {
-    cs.divisions[cs.phase] = buildDivision(PHASES[cs.phase], cs.fighterName);
+    cs.divisions[cs.phase] = buildDivision(PHASES[cs.phase], cs.fighterName, divisionEthnicDist(cs));
     assignDivisionQuestions(state, cs.divisions[cs.phase], cs.phase);
   }
   cs.division = cs.divisions[cs.phase];
@@ -673,14 +692,13 @@ export function maybeRefreshBottomSlots(state, div, phase, newsLog = null) {
       newFid = drawn;
     }
     if (!newFid) {
-      let name, tries = 0;
+      // Replacement reflects the current phase's ethnic spread (region / tier).
+      const ethnicDist = divisionEthnicDist(state.career);
+      let gen, tries = 0;
       do {
-        const fn   = rng(FIRST_NAMES);
-        const ln   = rng(LAST_NAMES);
-        const nick = Math.random() > 0.55 ? rng(NICKNAMES) : null;
-        name = nick ? `${fn} "${nick}" ${ln}` : `${fn} ${ln}`;
+        gen = generateProcedural({ ethnicDist });
         tries++;
-      } while (usedNames.has(name) && tries < 60);
+      } while (usedNames.has(gen.name) && tries < 60);
       const isRising = Math.random() < 0.35;
       let w, l;
       if (isRising) { w = randInt(4, 8); l = Math.random() < 0.2 ? 1 : 0; }
@@ -691,10 +709,11 @@ export function maybeRefreshBottomSlots(state, div, phase, newsLog = null) {
         else                  { w = randInt(1, 4); l = randInt(2, 5); }
       }
       const nf = {
-        fid: makeFid(), name,
+        fid: makeFid(), name: gen.name,
         wins: w, losses: l, draws: 0,
         record: buildRec(w, l, 0),
-        style: rng(ALL_PROFILE_STYLES),
+        style: gen.style,
+        flag: gen.flag, nationality: gen.nationality,
         signatureMoves: makeSignatureMoves(),
         rosterId: null, isPlayer: false, isRising,
         questionId: null, isNew: true, prevSlot: null, maxPhase: phase,
@@ -916,6 +935,13 @@ export function initState(state, activeModId) {
     defenseStreak:      0,        // legacy mirror of titles[phase].defenseStreak
     champCalloutClout: 0,        // accumulated callout power as champion; resets on low-ranked callout
     ...((() => { const p2 = PHASE2_OPTIONS[Math.floor(Math.random() * PHASE2_OPTIONS.length)]; return { phase2Name: p2.promo, phase2Belt: p2.belt }; })()),
+    // ── Origin / regional promotion (set by NamingScreen) ─
+    regionId:           '',          // Phase-1 region driving the division ethnic spread
+    phase1OrgName:      'Regional FC',
+    fightingOutOf:      '',
+    playerNat:          '',
+    playerFlag:         '',
+    playerNationality:  '',
     gflEventNum:       randInt(1, 300), // GFL event counter, advances every fight
     titles:             { 1: blankTitle(), 2: blankTitle(), 3: blankTitle() },
     calloutRecord:      {},
@@ -946,9 +972,10 @@ export function initState(state, activeModId) {
   };
 
   career.divisions = {
-    1: buildDivision(PHASES[1], career.fighterName),
-    2: buildDivision(PHASES[2], '—'),
-    3: buildDivision(PHASES[3], '—'),
+    // Phase 1 rebuilt by NamingScreen once the player's region is known → null spread here.
+    1: buildDivision(PHASES[1], career.fighterName, null),
+    2: buildDivision(PHASES[2], '—', TIER_ETHNIC_SPREADS[phase2SpreadKey(career.phase2Name)]),
+    3: buildDivision(PHASES[3], '—', TIER_ETHNIC_SPREADS.gfl),
   };
   career.division = career.divisions[1];
 
