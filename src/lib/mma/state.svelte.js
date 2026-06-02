@@ -55,6 +55,10 @@ export const state = $state({
   lastQid:  null,   // last question served — never repeat immediately
   fightIndex: 0,
 
+  // ── Learning system (internal — not serialised to save) ─
+  activeSetMeta: null,  // { setId, source: 'builtin'|'public'|'library', name }
+  _srStates:     null,  // Map<questionId, srStateRow> — FSRS state loaded from DB
+
   // ── Sparring ──────────────────────────────────────────
   sparring:      false,
   sparringPool:  null,  // shuffled flat pool for sparring mode

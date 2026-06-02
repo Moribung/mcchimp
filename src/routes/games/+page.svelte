@@ -29,16 +29,17 @@
       <div class="card-accent accent-gold"></div>
     </a>
 
-    <a href="/football" class="game-card">
+    <a href="/embeds/football.html" class="game-card">
       <div class="card-num">02</div>
-      <div class="card-tag tag-live">● Live Now</div>
+      <div class="card-tag tag-ongoing">● Ongoing</div>
       <div class="card-title">Football<br>Trivia</div>
       <p class="card-desc">Manage a career across the football pyramid. Tactics, transfers, and trivia — your knowledge of the game determines everything.</p>
+      <p class="card-notice">Demo only — progress is not saved and question uploads are not supported.</p>
       <div class="card-meta">
         <span class="meta-pill">Career Mode</span>
         <span class="meta-pill">Adaptive Difficulty</span>
       </div>
-      <div class="card-arrow">Play Now →</div>
+      <div class="card-arrow">Play Demo →</div>
       <div class="card-accent accent-green"></div>
     </a>
 
@@ -212,6 +213,7 @@
     border-radius: 2px;
   }
   .tag-live { background: rgba(46,139,87,0.15); color: #4CAF85; border: 1px solid rgba(46,139,87,0.3); }
+  .tag-ongoing { background: rgba(42,94,173,0.15); color: #6B9FE4; border: 1px solid rgba(42,94,173,0.35); }
   .tag-soon { background: rgba(107,107,107,0.1); color: var(--muted); border: 1px solid rgba(107,107,107,0.2); }
 
   .card-title {
@@ -221,6 +223,13 @@
     line-height: 1.05;
     color: var(--white);
     margin-bottom: 16px;
+  }
+  .card-notice {
+    font-size: 11px;
+    color: rgba(242,239,232,0.3);
+    line-height: 1.4;
+    margin-top: 10px;
+    font-style: italic;
   }
   .card-desc {
     font-size: 14px;

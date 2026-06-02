@@ -12,6 +12,7 @@
     getUserLimits,
   }                   from '$lib/saves.js';
   import { fetchIndex, fetchSet } from '$lib/questions.js';
+  import { logAnswer, difficultyToQScore } from '$lib/progress.js';
 
   import { state as gs }    from '$lib/mma/state.svelte.js';
   import {
@@ -281,6 +282,28 @@
   // Returns true on success, false on failure (with saveError set).
   async function saveToCloud() {
     const sess = get(session);
+
+    // Fire-and-forget answer log + FSRS update (never blocks save)
+    if (sess && gs.fightResult && (gs.activeSetMeta || gs.fightResult.q?.__setId)) {
+      const { ratio, score, maxPts, q } = gs.fightResult;
+      // In group play each question carries its origin set, so progress is
+      // attributed to the real member set rather than the synthetic group id.
+      const meta = q?.__setId
+        ? { setId: q.__setId, source: q.__setSource, name: q.__setName }
+        : gs.activeSetMeta;
+      logAnswer(
+        sess.user.id, q, meta,
+        gs.sparring ? 'mma_sparring' : 'mma',
+        ratio, score, maxPts
+      ).then(() => {
+        // Sync _qScores from updated FSRS difficulty once the DB write completes
+        const qid = String(q?.id ?? q?._id ?? q?.question ?? '');
+        if (qid && gs._srStates?.get?.(qid)) {
+          gs._qScores[qid] = difficultyToQScore(gs._srStates.get(qid).difficulty);
+        }
+      });
+    }
+
     if (!sess) { saveError = 'Not logged in — cannot save. Log in to save careers.'; return false; }
     if (!gs.career) return false;
     try {

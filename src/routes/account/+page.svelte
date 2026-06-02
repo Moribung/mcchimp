@@ -135,11 +135,29 @@
       .select('*')
       .eq('user_id', $session.user.id);
 
+    const { data: srState } = await supabase
+      .from('question_sr_state')
+      .select('*')
+      .eq('user_id', $session.user.id);
+
+    const { data: answerLog } = await supabase
+      .from('question_answer_log')
+      .select('*')
+      .eq('user_id', $session.user.id);
+
+    const { data: learningSets } = await supabase
+      .from('user_learning_sets')
+      .select('*')
+      .eq('user_id', $session.user.id);
+
     const blob = new Blob([JSON.stringify({
       profile,
       career_saves: saves,
       career_history: history,
       question_progress: progress,
+      question_sr_state: srState,
+      question_answer_log: answerLog,
+      user_learning_sets: learningSets,
       exported_at: new Date().toISOString()
     }, null, 2)], { type: 'application/json' });
 

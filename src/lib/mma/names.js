@@ -27,9 +27,9 @@ export const ETHNIC_GROUPS = {
   american: {
     firstNames:['Tyler','Chase','Colt','Dean','Jake','Brent','Ray','Shane','Joel','Darryl','Zeke','Kyle','Dustin','Wade','Brett','Cody','Travis','Logan','Hunter','Blake','Austin','Cole','Tanner','Garrett','Jared','Nate','Marcus','Dion'],
     lastNames:['Reed','Pierce','Steele','Cross','Bell','Vance','Hayden','Yates','Moss','Flynn','Holt','Grant','Burns','Knox','Tate','Foley','Shaw','Craig','Webb','Stone','Cash','Hawk','Ford','Brooks'],
-    nicknames:['The Hammer','Rampage','Stone Cold','Iron Fist','Wildcard','The Natural','Lights Out','The Machine','Chainsaw','The Predator','Pitbull','The Reaper','Iceman','The Butcher','War Machine','The Outlaw'],
+    nicknames:['Big Bear','Big Dog','Lion','Predator of the Prey that is hiding','The Hammer','Rampage','Stone Cold','Iron Fist','Wildcard','The Natural','Lights Out','The Machine','Chainsaw','The Predator','Pitbull','The Reaper','Iceman','The Butcher','War Machine','The Outlaw'],
     styleWeights:[3,3,4,2,4,2,3,2],
-    firstMix:{american:82,british_irish:5,'*':13}, lastMix:{american:68,british_irish:10,west_african:2,eastern_european:4,latino:4,'*':12}, nickMix:{american:68,vintage:12,'*':20},
+    firstMix:{american:82,british_irish:5,'*':13}, lastMix:{american:68,british_irish:10,west_african:2,eastern_european:4,latino:4,'*':12}, nickMix:{american:78,vintage:12,'*':10},
     flags:{ US:100 },
   },
   latino: {
@@ -53,7 +53,7 @@ export const ETHNIC_GROUPS = {
     lastNames:['Petrov','Novak','Volkov','Kovalev','Smirnov','Ivanov','Sokolov','Lebedev','Kozlov','Morozov','Popov','Fedorov','Zaitsev','Sobolev','Tarasov','Bogdanov','Makarov','Orlov','Belov','Komarov','Grigoryev','Nikitin'],
     nicknames:['Iron Curtain','The Bear','The Tank','Brickwall','The Machine','The Destroyer','Stone Hands','Ice Blood','The Siberian','The Wolf','Colossus','The Beast','The Engineer','The Anvil','Nighthawk'],
     styleWeights:[2,2,1,1,6,3,3,2],
-    firstMix:{eastern_european:90,'*':10}, lastMix:{eastern_european:90,'*':10}, nickMix:{eastern_european:60,american:18,'*':22},
+    firstMix:{eastern_european:96,'*':4}, lastMix:{eastern_european:96,'*':4}, nickMix:{eastern_european:90,american:8,'*':2},
     flags:{ RU:50, UA:38, PL:5, GE:3, CZ:2, RO:2 },
   },
   west_african: {
@@ -93,13 +93,13 @@ export const ETHNIC_GROUPS = {
     lastNames:['Alvarez','Garcia','Lopez','Martinez','Morales','Barrera','Marquez','Ruiz','Cotto','Gomez','Fuentes','Espinoza','Vera','Orozco','Guerrero','Zarate','Sanchez','Heredia','Jimenez','Lara','Pineda'],
     nicknames:['El Canelo','La Cobra','El Guerrero','El Terrible','The Aztec Warrior','El Matador','El Vengador','El Zorro','La Bestia Mexicana','El Toro','El Demoledor','Sangre Azteca','El Bronco','El Torito'],
     styleWeights:[2,5,4,2,2,1,6,1],
-    firstMix:{mexican:82,latino:10,'*':8}, lastMix:{mexican:80,latino:10,'*':10}, nickMix:{mexican:64,latino:8,american:12,'*':16},
+    firstMix:{mexican:82,latino:16,'*':2}, lastMix:{mexican:80,latino:19,'*':1}, nickMix:{mexican:64,latino:8,american:12,'*':16},
     flags:{ MX:100 },
   },
   vintage: {
     firstNames:FIRST_NAMES, lastNames:LAST_NAMES, nicknames:NICKNAMES,
     styleWeights:[4,3,3,3,3,3,3,3],
-    firstMix:{vintage:92,'*':8}, lastMix:{vintage:92,'*':8}, nickMix:{vintage:90,'*':10},
+    firstMix:{vintage:100}, lastMix:{vintage:100}, nickMix:{vintage:100},
     flags:{ US:55, GB:12, BR:10, MX:8, RU:8, JP:7 },
   },
 };

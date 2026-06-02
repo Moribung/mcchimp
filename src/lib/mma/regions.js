@@ -47,6 +47,9 @@ export const REGIONAL_PROMOTIONS = {
 };
 export const REGIONAL_PROMOTION_IDS = Object.keys(REGIONAL_PROMOTIONS);
 
+// Default spread for the generic "Regional FC" fallback (no region selected).
+export const REGIONAL_FC_DIST = { vintage: 90, american: 4, british_irish: 3, latino: 3 };
+
 // Higher-tier ethnic spreads (editable). `gfl` sums to 100 → vintage is exactly 1%.
 export const TIER_ETHNIC_SPREADS = {
   apex: { japanese:16, korean:14, eastern_european:20, british_irish:14, brazilian:8, american:10, latino:6, mexican:6, west_african:6, vintage:3 },

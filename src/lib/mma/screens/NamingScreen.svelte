@@ -10,7 +10,7 @@
     FIGHT_STYLES, getFightStyle,
     SELECTABLE_KO, SELECTABLE_TKO, SELECTABLE_SUB,
   } from '$lib/mma/constants.js';
-  import { REGIONS, REGIONAL_PROMOTIONS, REGIONAL_PROMOTION_IDS } from '$lib/mma/regions.js';
+  import { REGIONS, REGIONAL_PROMOTIONS, REGIONAL_PROMOTION_IDS, REGIONAL_FC_DIST } from '$lib/mma/regions.js';
   import { COUNTRY_OPTIONS, COUNTRY_BY_NAME, flagFor, countryName, isoToFlag } from '$lib/mma/countries.js';
   import { pickEthnicGroup, pickFighterName } from '$lib/mma/names.js';
   import { rng } from '$lib/mma/utils.js';
@@ -142,7 +142,7 @@
     gs.career.playerNationality = c?.iso ? countryName(c.iso) : '';
     applyFightStyle();
     // Rebuild phase-1 division with the confirmed name + region spread
-    const dist = rid ? REGIONS[rid]?.ethnicDistribution : null;
+    const dist = rid ? REGIONS[rid]?.ethnicDistribution : REGIONAL_FC_DIST;
     const newDiv = buildDivision(PHASES[1], name, dist);
     gs.career.divisions = gs.career.divisions || {};
     gs.career.divisions[1] = newDiv;

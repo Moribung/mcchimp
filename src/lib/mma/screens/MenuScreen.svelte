@@ -8,6 +8,7 @@
   import { gf } from '$lib/mma/fighters.js';
   import { ensureQPool, assignDivisionQuestions } from '$lib/mma/questions.js';
   import { fetchPublicCatalog, fetchSet } from '$lib/questions.js';
+  import { loadSrStates, loadSrStatesForSets, difficultyToQScore, loadGroups } from '$lib/progress.js';
 
   const {
     onstartcareer, onstartsparring,
@@ -40,6 +41,12 @@
   }
   function totalQuestions(mod) {
     return TIER_ORDER.reduce((n, t) => n + (mod.tiers?.[t] || []).length, 0);
+  }
+  function modTagLabel(mod) {
+    return mod?.tag === 'group' ? 'Group' : mod?.tag === 'library' ? 'Library' : 'Public';
+  }
+  function modTagClass(mod) {
+    return mod?.tag === 'group' ? 'tag-group' : mod?.tag === 'library' ? 'tag-library' : 'tag-public';
   }
 
   // ── Selected module display ───────────────────────────
@@ -90,6 +97,8 @@
   let libLoading = $state(false);
   let libError   = $state('');
   let libItems   = $state([]);
+  let libGroups  = $state([]);
+  let building   = $state(false); // assembling a group module
 
   async function openBrowse(tab = 'public') {
     browseTab   = tab;
@@ -104,18 +113,62 @@
     if (!sess) { libError = 'Log in to access your library.'; return; }
     libLoading = true; libError = ''; libItems = [];
     try {
-      const { data, error } = await supabase
-        .from('user_question_sets')
-        .select('id, name, description, question_count, data')
-        .eq('user_id', sess.user.id)
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      libItems = data || [];
+      const [setsRes, groupsRes] = await Promise.all([
+        supabase
+          .from('user_question_sets')
+          .select('id, name, description, question_count, data, starred')
+          .eq('user_id', sess.user.id)
+          .order('created_at', { ascending: false }),
+        loadGroups(sess.user.id),
+      ]);
+      if (setsRes.error) throw setsRes.error;
+      const byStar = (a, b) => (b.starred ? 1 : 0) - (a.starred ? 1 : 0);
+      libItems  = (setsRes.data || []).sort(byStar);
+      libGroups = (groupsRes || []).filter(g => (g.question_set_group_members || []).length > 0).sort(byStar);
     } catch (e) {
       libError = '⚠ Could not load library: ' + e.message;
     } finally {
       libLoading = false;
     }
+  }
+
+  function pickGroup(group) { browsePicked = { source: 'group', group }; }
+
+  // Assemble all member sets of a group into one combined module.
+  // Each question is tagged with its origin set so progress is attributed correctly.
+  // Handles library / public / builtin members (public + builtin = future-proofing).
+  async function buildGroupModule(group) {
+    const members = group.question_set_group_members || [];
+    const merged  = {};
+    for (const m of members) {
+      let data = null;
+      if (m.set_source === 'library') {
+        const { data: row } = await supabase
+          .from('user_question_sets').select('data').eq('id', m.set_id).maybeSingle();
+        data = row?.data;
+      } else if (m.set_source === 'public') {
+        try { data = await fetchSet(m.set_id.endsWith('.json') ? m.set_id : m.set_id + '.json'); } catch { /* skip */ }
+      } else {
+        data = gs.loadedModules?.[m.set_id] || gs.loadedModules?.[m.set_id.replace('.json', '')];
+        if (!data) { try { data = await fetchSet(m.set_id); } catch { /* skip */ } }
+      }
+      if (!data?.tiers) continue;
+      for (const t of TIER_ORDER) {
+        const qs = data.tiers[t] || [];
+        if (!qs.length) continue;
+        (merged[t] ||= []).push(
+          ...qs.map(q => ({ ...q, __setId: m.set_id, __setSource: m.set_source, __setName: m.set_name }))
+        );
+      }
+    }
+    return {
+      id: 'grp_' + group.id,
+      tag: 'group',
+      name: group.name,
+      description: `${members.length} set${members.length !== 1 ? 's' : ''}`,
+      tiers: merged,
+      __group: { id: group.id, color: group.color, members },
+    };
   }
 
   async function switchTab(tab) {
@@ -129,10 +182,23 @@
 
   function pickLibraryItem(item) { browsePicked = { source: 'library', item }; }
 
-  function confirmBrowsePick() {
+  async function confirmBrowsePick() {
     if (!browsePicked) return;
     let pickedId;
-    if (browsePicked.source === 'public') {
+    if (browsePicked.source === 'group') {
+      building = true; libError = '';
+      try {
+        const mod = await buildGroupModule(browsePicked.group);
+        if (totalQuestions(mod) === 0) { libError = 'This group has no questions yet.'; return; }
+        if (!gs.loadedModules[mod.id]) gs.availableModules = [...gs.availableModules, mod];
+        gs.loadedModules[mod.id] = mod; // refresh in case membership changed
+        pickedId = mod.id;
+      } catch (e) {
+        libError = '⚠ Could not build group: ' + e.message; return;
+      } finally {
+        building = false;
+      }
+    } else if (browsePicked.source === 'public') {
       const mod = browsePicked.mod;
       // Catalog sets aren't auto-loaded — import on first use.
       if (!gs.loadedModules[mod.id]) {
@@ -162,9 +228,50 @@
 
   function closeBrowse() { browseOpen = false; browsePicked = null; }
 
+  // ── Set meta + FSRS seed ──────────────────────────────
+  function applySetMeta(modId) {
+    const mod = gs.loadedModules?.[modId];
+    if (!mod) return;
+    const sess = get(session);
+
+    // Group module: questions carry their own __setId; preload FSRS across all members.
+    if (mod.tag === 'group') {
+      const members = mod.__group?.members || [];
+      gs.activeSetMeta = {
+        setId: modId, source: 'group', name: mod.name, isGroup: true,
+        members: members.map(m => ({ setId: m.set_id, source: m.set_source })),
+      };
+      if (sess) {
+        loadSrStatesForSets(sess.user.id, members.map(m => m.set_id)).then(perSet => {
+          const flat = new Map();
+          for (const [, qmap] of perSet) for (const [qid, sr] of qmap) flat.set(qid, sr);
+          gs._srStates = flat;
+          for (const [qid, sr] of flat) gs._qScores[qid] = difficultyToQScore(sr.difficulty);
+        }).catch(() => {});
+      }
+      return;
+    }
+
+    const source = !mod.tag ? 'builtin' : mod.tag === 'library' ? 'library' : 'public';
+    const setId  = mod.tag === 'library'
+      ? modId.replace(/^lib_/, '')
+      : (mod.filename || modId);
+    gs.activeSetMeta = { setId, source, name: mod.name };
+
+    if (sess) {
+      loadSrStates(sess.user.id, setId).then(srMap => {
+        gs._srStates = srMap;
+        for (const [qid, sr] of srMap.entries()) {
+          gs._qScores[qid] = difficultyToQScore(sr.difficulty);
+        }
+      }).catch(() => {}); // non-fatal
+    }
+  }
+
   // ── Start ─────────────────────────────────────────────
   function onStart() {
     if (!selectedId) return;
+    applySetMeta(selectedId);
     if (mode === 'sparring') {
       onstartsparring?.({ modId: selectedId });
     } else {
@@ -175,6 +282,7 @@
   // ── Switcher ──────────────────────────────────────────
   function onSwitchConfirm() {
     if (!switcherSelectedId || switcherSelectedId === gs.activeModId) return;
+    applySetMeta(switcherSelectedId);
     gs.activeModId = switcherSelectedId;
     gs._qPool = null; gs._qUsed = null; gs._qById = null; gs.lastQid = null;
     if (gs.career?.divisions) {
@@ -234,9 +342,7 @@
           onclick={() => switcherSelectedId = mod.id}>
           <div class="msw-card-name">
             {mod.name}
-            <span class="module-tag {mod.tag === 'library' ? 'tag-library' : 'tag-public'}">
-              {mod.tag === 'library' ? 'Library' : 'Public'}
-            </span>
+            <span class="module-tag {modTagClass(mod)}">{modTagLabel(mod)}</span>
             {#if mod.id === gs.activeModId}<span class="msw-active-tag">Active</span>{/if}
           </div>
           <div class="msw-card-desc">{totalQuestions(mod)} questions</div>
@@ -314,9 +420,7 @@
             </div>
           </div>
           <div class="module-card-meta">
-            <span class="module-tag {selectedMod.tag === 'library' ? 'tag-library' : 'tag-public'}">
-              {selectedMod.tag === 'library' ? 'Library' : 'Public'}
-            </span>
+            <span class="module-tag {modTagClass(selectedMod)}">{modTagLabel(selectedMod)}</span>
             <span class="module-q-count">{totalQuestions(selectedMod)} q</span>
             <span class="selected-clear" role="button" tabindex="0"
               onclick={(e) => { e.stopPropagation(); selectedId = null; }}
@@ -498,11 +602,31 @@
           </div>
         {:else}
           <div class="lib-list">
+            {#if libGroups.length > 0}
+              <div class="lib-sublabel">Groups</div>
+              {#each libGroups as group (group.id)}
+                {@const memberCount = (group.question_set_group_members || []).length}
+                <button class="lib-item lib-group-item"
+                  style="--gc:{group.color || '#E8C14A'}"
+                  class:selected={browsePicked?.source === 'group' && browsePicked?.group?.id === group.id}
+                  onclick={() => pickGroup(group)}>
+                  <div class="lib-item-name">
+                    {#if group.starred}<span class="star-ind">★</span>{/if}
+                    <span class="lib-group-dot" style="background:{group.color || '#E8C14A'}"></span>{group.name}
+                    <span class="import-tag" style="background:color-mix(in srgb,{group.color || '#E8C14A'} 18%,transparent);color:{group.color || '#E8C14A'}">Group</span>
+                  </div>
+                  <div class="lib-item-meta">
+                    Plays every set in this group · {memberCount} set{memberCount !== 1 ? 's' : ''}
+                  </div>
+                </button>
+              {/each}
+              <div class="lib-sublabel">Individual Sets</div>
+            {/if}
             {#each libItems as item (item.id)}
               <button class="lib-item"
                 class:selected={browsePicked?.source === 'library' && browsePicked?.item?.id === item.id}
                 onclick={() => pickLibraryItem(item)}>
-                <div class="lib-item-name">{item.name}</div>
+                <div class="lib-item-name">{#if item.starred}<span class="star-ind">★</span>{/if}{item.name}</div>
                 <div class="lib-item-meta">
                   {item.description ?? ''}
                   {#if item.question_count} · {item.question_count} questions{/if}
@@ -514,8 +638,8 @@
       {/if}
 
       <div class="lib-footer">
-        <button class="btn btn-primary" disabled={!browsePicked} onclick={confirmBrowsePick}>
-          Use This Set
+        <button class="btn btn-primary" disabled={!browsePicked || building} onclick={confirmBrowsePick}>
+          {building ? 'Building…' : browsePicked?.source === 'group' ? 'Use This Group' : 'Use This Set'}
         </button>
         <button class="btn btn-ghost" onclick={closeBrowse}>Cancel</button>
       </div>
@@ -550,6 +674,7 @@
   .tag-default  { background: rgba(74,158,232,0.15); color: var(--blue); }
   .tag-library  { background: rgba(74,232,122,0.15); color: var(--green); }
   .tag-public   { background: rgba(180,74,232,0.15); color: #b44ae8; }
+  .tag-group    { background: rgba(232,193,74,0.15); color: var(--accent); }
   .import-tag   { font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 700; padding: 2px 6px; border-radius: 3px; margin-left: 8px; vertical-align: middle; background: rgba(180,74,232,0.15); color: #b44ae8; }
   .module-q-count { font-size: 11px; color: var(--text-muted); }
   .selected-clear {
@@ -643,8 +768,14 @@
   .lib-item    { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; cursor: pointer; text-align: left; width: 100%; color: var(--text); font-family: var(--font-body); transition: border-color 0.15s, background 0.15s; }
   .lib-item:hover    { border-color: var(--border-hover); }
   .lib-item.selected { border-color: var(--accent); background: var(--accent-dim); }
-  .lib-item-name { font-weight: 600; font-size: 14px; margin-bottom: 3px; }
+  .lib-item-name { font-weight: 600; font-size: 14px; margin-bottom: 3px; display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
   .lib-item-meta { font-size: 11px; color: var(--text-muted); }
+  .lib-sublabel { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin: 4px 2px 2px; }
+  .lib-sublabel:first-child { margin-top: 0; }
+  .lib-group-item { border-left: 3px solid var(--gc); }
+  .lib-group-item.selected { border-color: var(--gc); }
+  .lib-group-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  .star-ind { color: var(--accent); font-size: 12px; flex-shrink: 0; }
   .lib-footer  { display: flex; gap: 10px; padding: 12px 16px; border-top: 1px solid var(--border); flex-shrink: 0; }
 
   /* Save panels */

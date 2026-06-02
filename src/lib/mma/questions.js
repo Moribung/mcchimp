@@ -11,6 +11,7 @@
 import { CHAMP_SLOT, TIER_ORDER, QSCORE_UP_THRESHOLD, QSCORE_DOWN_THRESHOLD } from './constants.js';
 import { gf, migrateDivSlots } from './fighters.js';
 import { shuffle } from './utils.js';
+import { isDue } from '$lib/fsrs.js';
 
 /* ── Stable question identity ─────────────────────────── */
 /**
@@ -194,7 +195,13 @@ function pickQuestion(state, targetTier, { allowReuse = false } = {}) {
   for (const t of order) {
     let pool = all.filter(x => x.eff === t && !x.used && x.qid !== state.lastQid);
     if (!pool.length) pool = all.filter(x => x.eff === t && !x.used);
-    if (pool.length) return choose(pool);
+    if (!pool.length) continue;
+    // 70% chance to prefer due questions when FSRS states are loaded
+    if (state._srStates?.size > 0) {
+      const due = pool.filter(x => isDue(state._srStates.get(x.qid)));
+      if (due.length > 0 && Math.random() < 0.7) return choose(due);
+    }
+    return choose(pool);
   }
   if (!allowReuse) return null;
 

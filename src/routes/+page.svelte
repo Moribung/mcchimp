@@ -28,7 +28,7 @@
   <p class="hero-sub fade-up delay-2">Multiple-choice trivia games built around real sports careers. Answer questions. Climb the rankings. Win the belt.</p>
   <div class="hero-actions fade-up delay-3">
     <a href="/mma" class="btn-primary">Play MMA Trivia</a>
-    <a href="/football" class="btn-primary" style="background:var(--blue)">Play Football Trivia</a>
+    <a href="/embeds/football.html" class="btn-primary" style="background:var(--blue)">Play Football Demo</a>
     <a href="#games" class="btn-ghost">See All Games</a>
   </div>
 </section>
@@ -37,13 +37,13 @@
 <div class="ticker-wrap">
   <div class="ticker">
     <div class="ticker-item"><span>MMA Career Trivia</span> Now Live</div>
-    <div class="ticker-item"><span>Football Trivia</span> Now Live</div>
+    <div class="ticker-item"><span>Football Trivia</span> In Development</div>
     <div class="ticker-item"><span>Multiple Choice</span> Gameplay</div>
     <div class="ticker-item"><span>Career Mode</span> Included</div>
     <div class="ticker-item"><span>Sparring Mode</span> Practice Free</div>
     <div class="ticker-item"><span>Question Sets</span> Modular</div>
     <div class="ticker-item"><span>MMA Career Trivia</span> Now Live</div>
-    <div class="ticker-item"><span>Football Trivia</span> Now Live</div>
+    <div class="ticker-item"><span>Football Trivia</span> In Development</div>
     <div class="ticker-item"><span>Multiple Choice</span> Gameplay</div>
     <div class="ticker-item"><span>Career Mode</span> Included</div>
     <div class="ticker-item"><span>Sparring Mode</span> Practice Free</div>
@@ -66,12 +66,13 @@
       <div class="card-accent accent-gold"></div>
     </a>
 
-    <a href="/football" class="game-card">
+    <a href="/embeds/football.html" class="game-card">
       <div class="card-num">02</div>
-      <div class="card-tag tag-live">● Live Now</div>
+      <div class="card-tag tag-ongoing">● Ongoing</div>
       <div class="card-title">Football<br>Trivia</div>
       <p class="card-desc">Manage a career across the football pyramid. Tactics, transfers, and trivia — your knowledge of the game determines everything.</p>
-      <div class="card-arrow">Play Now</div>
+      <p class="card-notice">Demo only — progress is not saved and question uploads are not supported.</p>
+      <div class="card-arrow">Play Demo</div>
       <div class="card-accent accent-green"></div>
     </a>
 
@@ -328,6 +329,7 @@
     border-radius: 2px;
   }
   .tag-live { background: rgba(46,139,87,0.15); color: #4CAF85; border: 1px solid rgba(46,139,87,0.3); }
+  .tag-ongoing { background: rgba(42,94,173,0.15); color: #6B9FE4; border: 1px solid rgba(42,94,173,0.35); }
   .card-title {
     font-family: 'Bebas Neue', sans-serif;
     font-size: 48px;
@@ -341,6 +343,13 @@
     color: rgba(242,239,232,0.45);
     line-height: 1.6;
     max-width: 320px;
+  }
+  .card-notice {
+    font-size: 11px;
+    color: rgba(242,239,232,0.3);
+    line-height: 1.4;
+    margin-top: 10px;
+    font-style: italic;
   }
   .card-arrow {
     font-family: 'Barlow Condensed', sans-serif;

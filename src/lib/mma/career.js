@@ -19,13 +19,14 @@ import {
   generateProcedural,
 } from './fighters.js';
 
-import { REGIONS, TIER_ETHNIC_SPREADS, phase2SpreadKey } from './regions.js';
+import { REGIONS, TIER_ETHNIC_SPREADS, REGIONAL_FC_DIST, phase2SpreadKey } from './regions.js';
 
 import {
   ensureQPool, assignDivisionQuestions, tierForFight, buildSparringPool,
 } from './questions.js';
 
 import { rng, randInt, shuffle, generateFighterName } from './utils.js';
+import { isDue } from '$lib/fsrs.js';
 
 const lastName = name => name ? name.split(' ').pop() : '?';
 
@@ -70,7 +71,7 @@ export function getPhaseDef(cs) {
    Phase 1 → the player's region spread; Phase 2 → the chosen org's tier spread;
    Phase 3 → GFL. null (Phase 1 with no region) → uniform mix. */
 export function divisionEthnicDist(cs) {
-  if (cs.phase === 1) return cs.regionId ? (REGIONS[cs.regionId]?.ethnicDistribution || null) : null;
+  if (cs.phase === 1) return cs.regionId ? (REGIONS[cs.regionId]?.ethnicDistribution || REGIONAL_FC_DIST) : REGIONAL_FC_DIST;
   if (cs.phase === 2) return TIER_ETHNIC_SPREADS[phase2SpreadKey(cs.phase2Name)];
   return TIER_ETHNIC_SPREADS.gfl;
 }
@@ -972,8 +973,8 @@ export function initState(state, activeModId) {
   };
 
   career.divisions = {
-    // Phase 1 rebuilt by NamingScreen once the player's region is known → null spread here.
-    1: buildDivision(PHASES[1], career.fighterName, null),
+    // Phase 1 rebuilt by NamingScreen once the player's region is known → vintage default here.
+    1: buildDivision(PHASES[1], career.fighterName, REGIONAL_FC_DIST),
     2: buildDivision(PHASES[2], '—', TIER_ETHNIC_SPREADS[phase2SpreadKey(career.phase2Name)]),
     3: buildDivision(PHASES[3], '—', TIER_ETHNIC_SPREADS.gfl),
   };
@@ -1044,6 +1045,42 @@ export function initSparringState(state, activeModId) {
 
 /* ── Sparring question accessor ──────────────────────── */
 export function sparringCurrentQuestion(state) {
+  // When FSRS states are loaded, use priority-bucket selection (in-game study mode).
+  // Falls back to plain shuffle-cycle for logged-out / not-yet-loaded users.
+  if (state._srStates?.size > 0) {
+    const pool = state.sparringPool;
+    const now  = Date.now();
+    const buckets = { due: [], learning: [], fresh: [], deferred: [] };
+
+    for (const q of pool) {
+      const qid = q.id || q._id || q.question;
+      const sr  = state._srStates.get(String(qid));
+      if (!sr || sr.card_state === 'new') {
+        buckets.fresh.push(q);
+      } else if (sr.due_date && new Date(sr.due_date).getTime() <= now) {
+        buckets.due.push(q);
+      } else if (sr.card_state === 'learning' || sr.card_state === 'relearning') {
+        buckets.learning.push(q);
+      } else {
+        buckets.deferred.push(q);
+      }
+    }
+
+    // Pick from highest-priority non-empty bucket
+    const prioritized = buckets.due.length      ? buckets.due
+      : buckets.learning.length                 ? buckets.learning
+      : buckets.fresh.length                    ? buckets.fresh
+      : buckets.deferred;
+
+    // Avoid immediate repeat (same courtesy as career mode)
+    const candidates = prioritized.filter(q => (q.id || q._id || q.question) !== state.lastQid);
+    const from = candidates.length ? candidates : prioritized;
+    const chosen = from[Math.floor(Math.random() * from.length)];
+    state.sparringPtr++;
+    return chosen;
+  }
+
+  // Plain shuffle-cycle fallback
   if (state.sparringPtr >= state.sparringPool.length) {
     state.sparringPool = shuffle([...state.sparringPool]);
     state.sparringPtr  = 0;

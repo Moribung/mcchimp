@@ -53,7 +53,7 @@
 
   .tab-bar {
     display: flex; border-bottom: 1px solid rgba(255,255,255,0.06);
-    padding: 0 48px; position: sticky; top: 64px; z-index: 100;
+    padding: 0 48px; position: sticky; top: 64px; z-index: 50;
     background: rgba(10,10,10,0.96); backdrop-filter: blur(12px);
   }
   .tab-btn {

@@ -75,6 +75,7 @@
         <a class="nav-link-q nav-login" href="/account">{displayName || 'Account'}&#8202;<span class="chevron">&#9662;</span></a>
         <div class="dropdown">
           <a href="/dashboard"><span class="dd-label">Dashboard</span></a>
+          <a href="/learn"><span class="dd-label">Learning Progress</span></a>
           <a href="/account"><span class="dd-label">Settings</span></a>
         </div>
       </div>
@@ -104,6 +105,7 @@
   {#if $session}
     <a href="/dashboard" onclick={toggleMobileNav} style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{displayName || 'Account'}</a>
     <a href="/dashboard" onclick={toggleMobileNav} style="font-size:20px;color:var(--muted);padding:3px 0;padding-left:12px;">Dashboard</a>
+    <a href="/learn"     onclick={toggleMobileNav} style="font-size:20px;color:var(--muted);padding:3px 0;padding-left:12px;">Learning Progress</a>
     <a href="/account"   onclick={toggleMobileNav} style="font-size:20px;color:var(--muted);padding:3px 0;padding-left:12px;">Settings</a>
   {:else}
     <a href="/auth/login" onclick={toggleMobileNav} class="mobile-login">Login</a>
