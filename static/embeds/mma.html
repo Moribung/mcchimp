@@ -607,6 +607,51 @@
   .naming-divider::before, .naming-divider::after { content:''; flex:1; height:1px; background:var(--border); }
   #naming-preview { font-family:var(--font-display); font-size:22px; letter-spacing:0.04em; color:var(--text-muted); margin-bottom:20px; min-height:1.4em; }
   #naming-preview span { color:var(--accent); }
+
+  /* ── QUESTION TYPES: true_false / typed / fill_gap ── */
+  .tf-options { display:flex; gap:12px; }
+  .tf-btn {
+    flex:1; font-family:var(--font-display); font-size:22px; letter-spacing:0.06em;
+    padding:22px 16px; justify-content:center;
+  }
+
+  .typed-wrap { display:flex; flex-direction:column; gap:10px; }
+  .typed-row  { display:flex; align-items:center; gap:10px; }
+  .typed-num  { font-family:var(--font-display); font-size:16px; color:var(--text-muted); min-width:20px; text-align:right; flex-shrink:0; }
+  .typed-field {
+    flex:1; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius);
+    color:var(--text); font-family:var(--font-body); font-size:15px;
+    padding:11px 14px; outline:none; transition:border-color 0.15s;
+  }
+  .typed-field:focus  { border-color:var(--accent); }
+  .typed-field:disabled { opacity:0.7; cursor:default; }
+  .typed-field.t-correct { border-color:var(--green); background:var(--green-dim); }
+  .typed-field.t-wrong   { border-color:var(--red);   background:var(--red-dim); }
+  .typed-field.t-missed  { border-color:rgba(232,193,74,0.3); }
+  .typed-icon { font-size:16px; min-width:20px; text-align:center; flex-shrink:0; }
+  .typed-accepted { font-size:11px; color:var(--text-muted); margin-top:6px; font-style:italic; line-height:1.6; }
+  .typed-accepted strong { color:var(--accent); margin-right:4px; }
+
+  .fill-gap-wrap { }
+  .fill-gap-sentence { font-size:18px; font-weight:500; line-height:2.4; color:var(--text); }
+  .gap-text { vertical-align:middle; }
+  .gap-input-wrap { display:inline-block; vertical-align:middle; margin:0 4px; }
+  .gap-field {
+    background:transparent; border:none; border-bottom:2px solid var(--accent);
+    color:var(--text); font-family:var(--font-body); font-size:17px; font-weight:600;
+    padding:2px 6px; outline:none; width:130px; text-align:center;
+    transition:border-color 0.15s, background 0.15s;
+  }
+  .gap-field:focus { background:color-mix(in srgb, var(--accent) 8%, transparent); }
+  .gap-field:disabled { opacity:0.8; cursor:default; }
+  .gap-input-wrap.gap-correct .gap-field { border-color:var(--green); background:var(--green-dim); }
+  .gap-input-wrap.gap-wrong   .gap-field { border-color:var(--red);   background:var(--red-dim); }
+  .gap-input-wrap.gap-missed  .gap-field { border-color:rgba(232,193,74,0.3); }
+
+  @media (max-width:768px) {
+    .fill-gap-sentence { font-size:15px; }
+    .gap-field { width:90px; font-size:14px; }
+  }
 </style>
 </head>
 <body>
@@ -3564,10 +3609,18 @@ function validateModule(obj) {
     for (let i = 0; i < qs.length; i++) {
       const q = qs[i];
       if (!q.question) return `tiers.${tier}[${i}]: missing "question".`;
-      if (!Array.isArray(q.options) || q.options.length < 2) return `tiers.${tier}[${i}]: "options" needs ≥2 items.`;
-      const answers = q.answers || (typeof q.answer === 'number' ? [q.answer] : null);
-      if (!answers || !answers.length) return `tiers.${tier}[${i}]: "answers" must be a non-empty array of indices.`;
-      if (answers.some(a => a < 0 || a >= q.options.length)) return `tiers.${tier}[${i}]: "answers" contains out-of-range index.`;
+      const qtype = q.type || '';
+      const isTextType = qtype === 'typed' || qtype === 'fill_gap';
+      if (!isTextType) {
+        // Option-based types require options array and index-based answers
+        if (!Array.isArray(q.options) || q.options.length < 2) return `tiers.${tier}[${i}]: "options" needs ≥2 items.`;
+        const answers = q.answers || (typeof q.answer === 'number' ? [q.answer] : null);
+        if (!answers || !answers.length) return `tiers.${tier}[${i}]: "answers" must be a non-empty array of indices.`;
+        if (answers.some(a => a < 0 || a >= q.options.length)) return `tiers.${tier}[${i}]: "answers" contains out-of-range index.`;
+      } else {
+        // Text types require at least one answer string
+        if (!Array.isArray(q.answers) || !q.answers.length) return `tiers.${tier}[${i}]: "answers" must be a non-empty array.`;
+      }
     }
   }
   if (countTierQs(obj) < 1) return 'Module must have at least 1 question.';
@@ -3804,6 +3857,12 @@ function resetFromSwitcher() {
 }
 
 /* ── FILE UPLOAD ── */
+function flatToTiers(flatArr) {
+  const tiers = { easy: [], medium: [], hard: [], elite: [] };
+  flatArr.forEach(q => { if (tiers[q.difficulty]) tiers[q.difficulty].push(q); });
+  return tiers;
+}
+
 function handleFileUpload(event) {
   const file = event.target.files[0]; if (!file) return;
   const errEl = document.getElementById('upload-error');
@@ -3811,7 +3870,23 @@ function handleFileUpload(event) {
   const reader = new FileReader();
   reader.onload = e => {
     try {
-      const obj = JSON.parse(e.target.result);
+      const raw = JSON.parse(e.target.result);
+      let obj = raw;
+      // Accept flat array format (each question has a "difficulty" field)
+      if (Array.isArray(raw)) {
+        obj = {
+          name: file.name.replace(/\.json$/i, '') || 'Custom',
+          description: 'Uploaded custom questions',
+          tiers: flatToTiers(raw.map((q, i) => {
+            if (q.answer !== undefined && !q.answers) q = { ...q, answers: [q.answer] };
+            if (!q.id) q = { ...q, id: `custom_${Date.now()}_${i}` };
+            if (!q.difficulty || !['easy','medium','hard','elite'].includes(q.difficulty)) q = { ...q, difficulty: 'medium' };
+            return q;
+          })),
+        };
+      }
+      // Fall back to filename if name is missing
+      if (!obj.name) obj = { ...obj, name: file.name.replace(/\.json$/i, '') || 'Custom' };
       const err = validateModule(obj);
       if (err) { errEl.textContent = '⚠ ' + err; errEl.style.display = 'block'; return; }
       const id = registerModule(obj, 'uploaded');
@@ -4359,6 +4434,111 @@ function updateMeter(q) {
 }
 
 /* ─────────────────────────────────────────
+   TYPED / FILL_GAP HELPERS
+───────────────────────────────────────── */
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Returns a Set of INPUT indices that were correct (pool match, unordered)
+function scoreTypedInputs(q, inputs) {
+  const pool      = (q.answers || []).map(a => String(a).toLowerCase().trim());
+  const remaining = [...pool];
+  const matched   = new Set();
+  inputs.forEach((val, i) => {
+    const given = String(val || '').toLowerCase().trim();
+    if (!given) return;
+    const idx = remaining.indexOf(given);
+    if (idx !== -1) { matched.add(i); remaining.splice(idx, 1); }
+  });
+  return matched;
+}
+
+// Returns a Set of BLANK indices that were correct (positional)
+function scoreFillGapInputs(q, inputs) {
+  const answers = (q.answers || []).map(a => String(a).toLowerCase().trim());
+  const matched  = new Set();
+  inputs.forEach((val, i) => {
+    if (i < answers.length && String(val || '').toLowerCase().trim() === answers[i]) matched.add(i);
+  });
+  return matched;
+}
+
+// Collect current text-input values from the DOM
+function collectTypedInputs(qtype, q) {
+  if (qtype === 'typed') {
+    const count = q.required_count ?? q.answers.length ?? 1;
+    return Array.from({ length: count }, (_, i) => {
+      const el = document.getElementById(`typed-inp-${i}`); return el ? el.value : '';
+    });
+  }
+  if (qtype === 'fill_gap') {
+    const template = q.template || q.question;
+    const gapCount = (template.match(/___/g) || []).length;
+    return Array.from({ length: gapCount }, (_, i) => {
+      const el = document.getElementById(`gap-inp-${i}`); return el ? el.value : '';
+    });
+  }
+  return [];
+}
+
+// Re-render the #options container to show typed/fill_gap results after reveal
+function showTypedReveal(q) {
+  const qtype = q.type;
+  const inputs = state._typedInputs || [];
+  const optContainer = document.getElementById('options');
+  if (qtype === 'typed') {
+    const matched = scoreTypedInputs(q, inputs);
+    const count = q.required_count ?? q.answers.length ?? 1;
+    let html = '<div class="typed-wrap">';
+    for (let i = 0; i < count; i++) {
+      const val = inputs[i] || '';
+      const correct = matched.has(i);
+      const cls = val ? (correct ? 't-correct' : 't-wrong') : 't-missed';
+      html += `<div class="typed-row">
+        <span class="typed-num">${i+1}</span>
+        <input class="typed-field ${cls}" type="text" value="${escHtml(val)}" disabled>
+        <span class="typed-icon">${val ? (correct ? '✓' : '✗') : '–'}</span>
+      </div>`;
+    }
+    html += `<div class="typed-accepted"><strong>Accepted:</strong>${escHtml((q.answers||[]).join(', '))}</div></div>`;
+    optContainer.innerHTML = html;
+  } else if (qtype === 'fill_gap') {
+    const matched  = scoreFillGapInputs(q, inputs);
+    const template = q.template || q.question;
+    const parts    = template.split('___');
+    const gapCount = parts.length - 1;
+    let html = '<div class="fill-gap-wrap"><div class="fill-gap-sentence">';
+    parts.forEach((part, i) => {
+      html += `<span class="gap-text">${escHtml(part)}</span>`;
+      if (i < gapCount) {
+        const val = inputs[i] || '';
+        const correct = matched.has(i);
+        const cls = val ? (correct ? 'gap-correct' : 'gap-wrong') : 'gap-missed';
+        html += `<span class="gap-input-wrap ${cls}"><input class="gap-field" type="text" value="${escHtml(val)}" disabled></span>`;
+      }
+    });
+    html += `</div><div class="typed-accepted" style="margin-top:8px"><strong>Answers:</strong>${escHtml((q.answers||[]).join(' · '))}</div></div>`;
+    optContainer.innerHTML = html;
+  }
+}
+
+// Called on input change — kept for onkeydown plumbing
+function onTypedInput() {}
+function onTypedKey(e, idx, count) {
+  if (e.key !== 'Enter') return;
+  e.stopPropagation();
+  const next = document.getElementById(`typed-inp-${idx + 1}`);
+  if (next) next.focus(); else submitAnswer();
+}
+function onGapKey(e, idx, count) {
+  if (e.key !== 'Enter') return;
+  e.stopPropagation();
+  const next = document.getElementById(`gap-inp-${idx + 1}`);
+  if (next) next.focus(); else submitAnswer();
+}
+
+/* ─────────────────────────────────────────
    GAME LOOP
 ───────────────────────────────────────── */
 function startFight() {
@@ -4374,53 +4554,115 @@ function startFight() {
   state.currentQuestion = q; // overwritten below after option shuffle
   document.getElementById('q-fight-num').textContent   = state.fightIndex + 1;
   document.getElementById('q-fight-total').textContent = getTotalFights() === Infinity ? "∞" : getTotalFights();
-  document.getElementById('question-text').textContent = q.question;
+  const qtype = q.type || (Array.isArray(q.answers) && q.answers.length > 1 ? 'multi_select' : 'multiple_choice');
+  const isTextType = qtype === 'typed' || qtype === 'fill_gap';
+
+  // Question text — for fill_gap the template is shown inside #options, not here
+  document.getElementById('question-text').textContent = (qtype === 'fill_gap' && q.template) ? '' : q.question;
 
   const diff = document.getElementById('question-diff');
   diff.textContent = DIFF_LABELS[q._tier] + ' question';
   diff.style.color = DIFF_COLORS[q._tier];
 
-  // Hint: tell player how many answers to look for
-  const n = q.answers.length;
-  document.getElementById('question-hint').textContent =
-    n === 1 ? 'Select one answer.' : 'Select all that apply.';
-
-  // Shuffle display order of options, remapping answers to new positions
-  const optCount = q.options.length;
-  const displayOrder = shuffle([...Array(optCount).keys()]); // shuffled original indices
-  // Build a reverse map: original index → display position
-  const origToDisplay = new Array(optCount);
-  displayOrder.forEach((origIdx, dispPos) => { origToDisplay[origIdx] = dispPos; });
-  // Remap answer indices to display positions
-  const remappedAnswers = new Set(q.answers.map(a => origToDisplay[a]));
-  // Store a local question view with shuffled options and remapped answers
-  const qView = {
-    ...q,
-    options: displayOrder.map(i => q.options[i]),
-    answers: [...remappedAnswers],
-    _displayOrder: displayOrder,  // kept for debugging if needed
+  // Hint per type
+  const qtypeHints = {
+    true_false:      'True or False?',
+    multiple_choice: 'Select one answer.',
+    multi_select:    'Select all that apply.',
+    typed:           `Name ${q.required_count ?? q.answers.length ?? 1} answer${(q.required_count ?? q.answers.length ?? 1) > 1 ? 's' : ''}.`,
+    fill_gap:        'Fill in the blanks.',
   };
-  state.currentQuestion = qView; // override with shuffled view
+  document.getElementById('question-hint').textContent = qtypeHints[qtype] || (q.answers.length > 1 ? 'Select all that apply.' : 'Select one answer.');
 
-  // Build options
+  state.selected     = new Set();
+  state._typedInputs = [];
+  state.submitted    = false;
+
   const optContainer = document.getElementById('options');
   optContainer.innerHTML = '';
-  state.selected = new Set();
-  state.submitted = false;
 
-  const labels = ['A','B','C','D','E','F','G'];
-  qView.options.forEach((opt, i) => {
-    const btn = document.createElement('button');
-    btn.className = 'option-btn';
-    btn.dataset.index = i;
-    btn.innerHTML = `<span class="opt-label">${labels[i]}</span><span class="opt-text">${opt}</span><span class="opt-check"></span>`;
-    btn.onclick = () => toggleOption(i, qView);
-    optContainer.appendChild(btn);
-  });
+  // Hide score meter for text-input types (no live feedback possible)
+  document.getElementById('score-meter').style.display = isTextType ? 'none' : '';
 
-  // Reset meter
-  updateMeter(q);
-  document.getElementById('selected-count').textContent = '';
+  if (isTextType) {
+    // ── typed / fill_gap ──────────────────────────────────────────────
+    if (qtype === 'typed') {
+      const count = q.required_count ?? q.answers.length ?? 1;
+      let html = '<div class="typed-wrap">';
+      for (let i = 0; i < count; i++) {
+        html += `<div class="typed-row">
+          <span class="typed-num">${i+1}</span>
+          <input class="typed-field" id="typed-inp-${i}" type="text" placeholder="Your answer…"
+            oninput="onTypedInput()" onkeydown="onTypedKey(event,${i},${count})">
+        </div>`;
+      }
+      html += '</div>';
+      optContainer.innerHTML = html;
+    } else {
+      // fill_gap
+      const template = q.template || q.question;
+      const parts    = template.split('___');
+      const gapCount = parts.length - 1;
+      let html = '<div class="fill-gap-wrap"><div class="fill-gap-sentence">';
+      parts.forEach((part, i) => {
+        html += `<span class="gap-text">${escHtml(part)}</span>`;
+        if (i < gapCount) {
+          html += `<span class="gap-input-wrap">
+            <input class="gap-field" id="gap-inp-${i}" type="text" placeholder="___"
+              oninput="onTypedInput()" onkeydown="onGapKey(event,${i},${gapCount})">
+          </span>`;
+        }
+      });
+      html += '</div></div>';
+      optContainer.innerHTML = html;
+    }
+    state.currentQuestion = q; // no shuffle for text types
+    document.getElementById('selected-count').textContent = '';
+
+  } else if (qtype === 'true_false') {
+    // ── true_false — two large side-by-side buttons, no shuffle ──────
+    const opts = (q.options && q.options.length >= 2) ? q.options : ['True', 'False'];
+    const qView = { ...q, options: opts };
+    state.currentQuestion = qView;
+    const wrap = document.createElement('div');
+    wrap.className = 'tf-options';
+    opts.forEach((opt, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'option-btn tf-btn';
+      btn.dataset.index = i;
+      btn.textContent = opt;
+      btn.onclick = () => toggleOption(i, qView);
+      wrap.appendChild(btn);
+    });
+    optContainer.appendChild(wrap);
+    document.getElementById('selected-count').textContent = '';
+
+  } else {
+    // ── multiple_choice / multi_select — shuffled option buttons ─────
+    const optCount     = q.options.length;
+    const displayOrder = shuffle([...Array(optCount).keys()]);
+    const origToDisplay = new Array(optCount);
+    displayOrder.forEach((origIdx, dispPos) => { origToDisplay[origIdx] = dispPos; });
+    const remappedAnswers = new Set(q.answers.map(a => origToDisplay[a]));
+    const qView = {
+      ...q,
+      options:       displayOrder.map(i => q.options[i]),
+      answers:       [...remappedAnswers],
+      _displayOrder: displayOrder,
+    };
+    state.currentQuestion = qView;
+    const labels = ['A','B','C','D','E','F','G'];
+    qView.options.forEach((opt, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'option-btn';
+      btn.dataset.index = i;
+      btn.innerHTML = `<span class="opt-label">${labels[i]}</span><span class="opt-text">${opt}</span><span class="opt-check"></span>`;
+      btn.onclick = () => toggleOption(i, qView);
+      optContainer.appendChild(btn);
+    });
+    updateMeter(q);
+    document.getElementById('selected-count').textContent = '';
+  }
 
   // Reset timer — duration depends on career durability
   const effectiveTimer = (!state.sparring && state.career)
@@ -4438,13 +4680,29 @@ function startFight() {
 
 function toggleOption(index, q) {
   if (state.submitted) return;
-  const btn = document.querySelector(`.option-btn[data-index="${index}"]`);
-  if (state.selected.has(index)) {
-    state.selected.delete(index);
-    btn.classList.remove('selected');
+  const qtype = q.type || (Array.isArray(q.answers) && q.answers.length > 1 ? 'multi_select' : 'multiple_choice');
+  // Radio behaviour for single-answer types
+  if (qtype === 'multiple_choice' || qtype === 'true_false') {
+    if (!state.selected.has(index)) {
+      // Deselect previously selected btn
+      state.selected.forEach(prev => {
+        const prevBtn = document.querySelector(`.option-btn[data-index="${prev}"]`);
+        if (prevBtn) prevBtn.classList.remove('selected');
+      });
+      state.selected = new Set([index]);
+      const btn = document.querySelector(`.option-btn[data-index="${index}"]`);
+      if (btn) btn.classList.add('selected');
+    }
   } else {
-    state.selected.add(index);
-    btn.classList.add('selected');
+    // Checkbox behaviour for multi_select
+    const btn = document.querySelector(`.option-btn[data-index="${index}"]`);
+    if (state.selected.has(index)) {
+      state.selected.delete(index);
+      if (btn) btn.classList.remove('selected');
+    } else {
+      state.selected.add(index);
+      if (btn) btn.classList.add('selected');
+    }
   }
   updateMeter(q);
   const n = state.selected.size;
@@ -4458,9 +4716,19 @@ function submitAnswer() {
   clearInterval(state.timerInterval);
   const q = state.currentQuestion;
   if (!q) { console.error('submitAnswer: no currentQuestion'); return; }
-  const T = state.effectiveTimer || getBaseTimer();
+  const qtype   = q.type || (Array.isArray(q.answers) && q.answers.length > 1 ? 'multi_select' : 'multiple_choice');
+  const T       = state.effectiveTimer || getBaseTimer();
   const pctUsed = 1 - state.timeLeft / T;
-  resolveResult(q, state.selected, pctUsed);
+  if (qtype === 'typed' || qtype === 'fill_gap') {
+    const inputs   = collectTypedInputs(qtype, q);
+    state._typedInputs = inputs;
+    const matched  = qtype === 'typed' ? scoreTypedInputs(q, inputs) : scoreFillGapInputs(q, inputs);
+    const required = qtype === 'typed' ? (q.required_count ?? q.answers.length ?? 1) : (q.answers || []).length;
+    const ratio    = required > 0 ? matched.size / required : 0;
+    resolveResult(q, state.selected, pctUsed, ratio);
+  } else {
+    resolveResult(q, state.selected, pctUsed);
+  }
 }
 
 function startTimer() {
@@ -4478,34 +4746,39 @@ function startTimer() {
     else if (pct < 0.6) document.getElementById('timer-bar').style.background = '#e8944a';
     if (remaining <= 0) {
       clearInterval(state.timerInterval);
-      if (!state.submitted) {
-        state.submitted = true;
-        const q = state.currentQuestion;
-        if (!q) { console.error('timer expire: no currentQuestion'); return; }
-        resolveResult(q, state.selected, 1);
-      }
+      if (!state.submitted) submitAnswer();
     }
   }, 80);
 }
 
 function updateTimerBar(pct) { document.getElementById('timer-bar').style.width = (pct * 100) + '%'; }
 
-function resolveResult(q, selectedSet, pctUsed) {
-  // Reveal options
-  const correctSet = new Set(q.answers);
-  document.querySelectorAll('.option-btn').forEach(btn => {
-    btn.disabled = true;
-    const i = parseInt(btn.dataset.index);
-    const wasSel = selectedSet.has(i);
-    const isCorrect = correctSet.has(i);
-    if (wasSel && isCorrect)  btn.classList.add('reveal-correct');  // correctly selected
-    else if (wasSel && !isCorrect) btn.classList.add('reveal-wrong'); // wrongly selected
-    else if (!wasSel && isCorrect) btn.classList.add('reveal-missed'); // correct but missed
-    btn.classList.remove('selected');
-  });
+function resolveResult(q, selectedSet, pctUsed, overrideRatio) {
+  const isTextType = overrideRatio !== undefined;
 
-  const { score, maxPts, ratio } = scoreQuestion(q, selectedSet);
-  const timedOut = selectedSet.size === 0 && pctUsed >= 1;
+  if (!isTextType) {
+    // Reveal option buttons
+    const correctSet = new Set(q.answers);
+    document.querySelectorAll('.option-btn').forEach(btn => {
+      btn.disabled = true;
+      const i = parseInt(btn.dataset.index);
+      const wasSel = selectedSet.has(i);
+      const isCorrect = correctSet.has(i);
+      if (wasSel && isCorrect)  btn.classList.add('reveal-correct');
+      else if (wasSel && !isCorrect) btn.classList.add('reveal-wrong');
+      else if (!wasSel && isCorrect) btn.classList.add('reveal-missed');
+      btn.classList.remove('selected');
+    });
+  } else {
+    // Reveal typed/fill_gap inputs in the #options container
+    showTypedReveal(q);
+    document.getElementById('score-meter').style.display = 'none';
+  }
+
+  const { score, maxPts, ratio } = isTextType
+    ? { score: 0, maxPts: 1, ratio: overrideRatio }
+    : scoreQuestion(q, selectedSet);
+  const timedOut = !isTextType && selectedSet.size === 0 && pctUsed >= 1;
 
   setTimeout(() => {
     let outcome, icon, desc, resultClass, dmgKey;
@@ -6789,9 +7062,11 @@ document.addEventListener('keydown', e => {
   const tag = document.activeElement ? document.activeElement.tagName : '';
 
   if (active.id === 'screen-question') {
-    // Always intercept on question screen — blur any focused option btn first
-    // so its native click doesn't fire, then trigger Lock In.
-    if (document.activeElement) document.activeElement.blur();
+    const ae = document.activeElement;
+    // Let typed/fill_gap inputs handle Enter themselves (advance field or submit)
+    if (ae && ae.tagName === 'INPUT' && (ae.id.startsWith('typed-inp-') || ae.id.startsWith('gap-inp-'))) return;
+    // For option buttons and everything else: blur then Lock In
+    if (ae) ae.blur();
     const btn = document.getElementById('submit-btn');
     if (btn && !btn.disabled) { btn.click(); e.preventDefault(); }
     return;
