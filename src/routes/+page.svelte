@@ -23,45 +23,60 @@
 <!-- HERO -->
 <section class="hero">
   <div class="hero-bg"></div>
-  <div class="hero-tag fade-up">Sports Trivia Platform</div>
-  <h1 class="fade-up delay-1">Know Your<br><em>Sport</em></h1>
-  <p class="hero-sub fade-up delay-2">Multiple-choice trivia games built around real sports careers. Answer questions. Climb the rankings. Win the belt.</p>
+  <div class="hero-tag fade-up">Sports Career Simulation</div>
+  <h1 class="fade-up delay-1">Your Knowledge.<br><em>Your Career.</em></h1>
+  <p class="hero-sub fade-up delay-2">Sports career games where every result comes down to what you know. Not stats. Not luck. Your answers determine everything — from the opening bell to the final whistle.</p>
   <div class="hero-actions fade-up delay-3">
-    <a href="/mma" class="btn-primary">Play MMA Trivia</a>
-    <a href="/embeds/football.html" class="btn-primary" style="background:var(--blue)">Play Football Demo</a>
-    <a href="#games" class="btn-ghost">See All Games</a>
+    <a href="/mma" class="btn-primary">Play MMA</a>
+    <a href="/embeds/football.html" class="btn-primary" style="background:var(--blue)">Football Demo</a>
+    <a href="/how" class="btn-ghost">How It Works</a>
   </div>
 </section>
 
 <!-- TICKER -->
 <div class="ticker-wrap">
   <div class="ticker">
-    <div class="ticker-item"><span>MMA Career Trivia</span> Now Live</div>
-    <div class="ticker-item"><span>Football Trivia</span> In Development</div>
-    <div class="ticker-item"><span>Multiple Choice</span> Gameplay</div>
-    <div class="ticker-item"><span>Career Mode</span> Included</div>
-    <div class="ticker-item"><span>Sparring Mode</span> Practice Free</div>
-    <div class="ticker-item"><span>Question Sets</span> Modular</div>
-    <div class="ticker-item"><span>MMA Career Trivia</span> Now Live</div>
-    <div class="ticker-item"><span>Football Trivia</span> In Development</div>
-    <div class="ticker-item"><span>Multiple Choice</span> Gameplay</div>
-    <div class="ticker-item"><span>Career Mode</span> Included</div>
-    <div class="ticker-item"><span>Sparring Mode</span> Practice Free</div>
-    <div class="ticker-item"><span>Question Sets</span> Modular</div>
+    <div class="ticker-item"><span>MMA Career</span> Live Now</div>
+    <div class="ticker-item"><span>Football Manager</span> In Development</div>
+    <div class="ticker-item"><span>Knowledge</span> Is Your Only Stat</div>
+    <div class="ticker-item"><span>Career Mode</span> Full Progression</div>
+    <div class="ticker-item"><span>Adaptive Difficulty</span> Learns From You</div>
+    <div class="ticker-item"><span>Swappable</span> Question Sets</div>
+    <div class="ticker-item"><span>MMA Career</span> Live Now</div>
+    <div class="ticker-item"><span>Football Manager</span> In Development</div>
+    <div class="ticker-item"><span>Knowledge</span> Is Your Only Stat</div>
+    <div class="ticker-item"><span>Career Mode</span> Full Progression</div>
+    <div class="ticker-item"><span>Adaptive Difficulty</span> Learns From You</div>
+    <div class="ticker-item"><span>Swappable</span> Question Sets</div>
   </div>
 </div>
+
+<!-- THE CONCEPT -->
+<section class="section concept-section" id="concept">
+  <div class="concept-grid">
+    <div class="concept-left">
+      <div class="section-label">The Concept</div>
+      <div class="section-title">Knowledge<br>as Gameplay</div>
+    </div>
+    <div class="concept-right">
+      <p class="concept-lead">Most sports games give you sliders and stats. Here, your knowledge is the mechanic — not a modifier on top of it.</p>
+      <p class="concept-body">Answer a question correctly and your fighter lands the shot. Get it wrong and the opponent does. Your career arc — wins, losses, titles, relegations — is a direct record of what you know and how fast you learn it.</p>
+      <p class="concept-body">The game adapts. Questions you've answered correctly become harder over time. Questions you miss come back more often, slightly easier. There's no fixed difficulty curve — only the shape of your own knowledge.</p>
+    </div>
+  </div>
+</section>
 
 <!-- GAMES -->
 <section class="section" id="games">
   <div class="section-label">The Games</div>
-  <div class="section-title">Pick Your Sport</div>
+  <div class="section-title">Start a Career</div>
   <div class="games-grid">
 
     <a href="/mma" class="game-card">
       <div class="card-num">01</div>
       <div class="card-tag tag-live">● Live Now</div>
-      <div class="card-title">MMA Career<br>Trivia</div>
-      <p class="card-desc">Build a fighter from the regional circuit to world champion. Every fight is decided by a trivia question. How far can your knowledge take you?</p>
+      <div class="card-title">MMA Career<br>Simulator</div>
+      <p class="card-desc">Build a fighter from unsigned prospect to world champion. Three career phases — regional, national, world-class. Every fight is resolved by a question. Wrong answers cost you.</p>
       <div class="card-arrow">Play Now</div>
       <div class="card-accent accent-gold"></div>
     </a>
@@ -69,8 +84,8 @@
     <a href="/embeds/football.html" class="game-card">
       <div class="card-num">02</div>
       <div class="card-tag tag-ongoing">● Ongoing</div>
-      <div class="card-title">Football<br>Trivia</div>
-      <p class="card-desc">Manage a career across the football pyramid. Tactics, transfers, and trivia — your knowledge of the game determines everything.</p>
+      <div class="card-title">Football Career<br>Manager</div>
+      <p class="card-desc">Guide a club from the lower divisions to the top of the table. Tactics set the match tempo — play attacking and face more questions per match, or sit back for fewer. Your answers decide the score.</p>
       <p class="card-notice">Demo only — progress is not saved and question uploads are not supported.</p>
       <div class="card-arrow">Play Demo</div>
       <div class="card-accent accent-green"></div>
@@ -81,32 +96,32 @@
 
 <!-- HOW IT WORKS -->
 <section class="section" id="how" style="padding-top:0">
-  <div class="section-label">The Format</div>
+  <div class="section-label">The Mechanics</div>
   <div class="section-title">How It Works</div>
   <div class="how-grid">
 
     <div class="how-card">
-      <div class="how-num">01 / Answer</div>
-      <div class="how-title">Every Match is a Question</div>
-      <p class="how-desc">Answer a trivia question under a countdown timer. Get it right and your team converts. Get it wrong and the opponent does. Speed and accuracy determine the scoreline — not luck.</p>
+      <div class="how-num">01 / The Action</div>
+      <div class="how-title">Your Answer Resolves the Match</div>
+      <p class="how-desc">Each fight or match comes down to a question under a countdown timer. Answer correctly and your side converts the chance. Answer wrong and the opponent does. The scoreline isn't random — it's a function of your knowledge and how quickly you apply it.</p>
     </div>
 
     <div class="how-card">
-      <div class="how-num">02 / Compete</div>
-      <div class="how-title">Build a Real Career</div>
-      <p class="how-desc">Fight your way up from the regional circuit to a world title, or guide a club from the second division to the top of the table. Every promotion, every win, every trophy — earned through knowledge.</p>
+      <div class="how-num">02 / The Progression</div>
+      <div class="how-title">A Career That Reacts to You</div>
+      <p class="how-desc">Win fights, climb divisions, earn titles. Lose too many and your ranking drops. In the MMA game, your fighter's durability degrades — early in a career you have more time per question; championships are decided under real pressure. In football, results feed a live league table that follows actual promotion and relegation logic.</p>
     </div>
 
     <div class="how-card">
-      <div class="how-num">03 / Adapt</div>
-      <div class="how-title">Questions Learn From You</div>
-      <p class="how-desc">Questions you get right become easier over time. Questions you miss get harder. The difficulty calibrates to your knowledge — not a fixed curve, but a moving target shaped by your own history.</p>
+      <div class="how-num">03 / The Intelligence</div>
+      <div class="how-title">Questions That Learn From You</div>
+      <p class="how-desc">The difficulty of each question shifts based on your history with it. Questions you get right consistently become harder — they're worth less, and cost more when you miss. Questions you miss regularly ease back down until you're ready. The game never plateaus; it always finds your edge.</p>
     </div>
 
     <div class="how-card">
-      <div class="how-num">04 / Decide</div>
-      <div class="how-title">Tactics Change Everything</div>
-      <p class="how-desc">Play aggressive and face more questions per match — higher risk, higher reward. Sit back defensively and face fewer. Every game lets you choose how much you want to stake on your knowledge.</p>
+      <div class="how-num">04 / The Engine</div>
+      <div class="how-title">Any Topic. Any Sport.</div>
+      <p class="how-desc">The career engine and the question sets are completely separate. The default sets cover MMA, football, animals, and economics — but any compatible JSON can be loaded in. Play an MMA career on geography questions. Run a football season with history. The career logic doesn't care what the questions are about.</p>
     </div>
 
   </div>
@@ -162,7 +177,7 @@
   }
   h1 {
     font-family: 'Bebas Neue', sans-serif;
-    font-size: clamp(72px, 11vw, 160px);
+    font-size: clamp(56px, 7.5vw, 110px);
     line-height: .92;
     letter-spacing: .02em;
     color: var(--white);
@@ -190,7 +205,7 @@
     font-weight: 400;
     color: rgba(242,239,232,0.55);
     margin-top: 36px;
-    max-width: 520px;
+    max-width: 560px;
     line-height: 1.4;
     position: relative;
     z-index: 1;
@@ -283,13 +298,45 @@
   .section-label::before { content: ''; display: block; width: 24px; height: 1px; background: var(--gold); }
   .section-title {
     font-family: 'Bebas Neue', sans-serif;
-    font-size: clamp(42px, 6vw, 80px);
+    font-size: clamp(32px, 4vw, 52px);
     line-height: 1;
     letter-spacing: .03em;
     color: var(--white);
     margin-bottom: 60px;
   }
 
+  /* CONCEPT SECTION */
+  .concept-section {
+    border-top: 1px solid rgba(255,255,255,0.04);
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    background: rgba(232,193,74,0.015);
+  }
+  .concept-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.6fr;
+    gap: 80px;
+    max-width: 1100px;
+    align-items: start;
+  }
+  .concept-left .section-title { margin-bottom: 0; }
+  .concept-lead {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: clamp(20px, 2.4vw, 28px);
+    font-weight: 500;
+    color: var(--white);
+    line-height: 1.35;
+    margin-bottom: 24px;
+  }
+  .concept-body {
+    font-size: 15px;
+    color: rgba(242,239,232,0.5);
+    line-height: 1.7;
+    margin-bottom: 16px;
+    max-width: 520px;
+  }
+  .concept-body:last-child { margin-bottom: 0; }
+
+  /* GAMES */
   .games-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -328,7 +375,7 @@
     padding: 4px 10px;
     border-radius: 2px;
   }
-  .tag-live { background: rgba(46,139,87,0.15); color: #4CAF85; border: 1px solid rgba(46,139,87,0.3); }
+  .tag-live    { background: rgba(46,139,87,0.15); color: #4CAF85; border: 1px solid rgba(46,139,87,0.3); }
   .tag-ongoing { background: rgba(42,94,173,0.15); color: #6B9FE4; border: 1px solid rgba(42,94,173,0.35); }
   .card-title {
     font-family: 'Bebas Neue', sans-serif;
@@ -366,9 +413,10 @@
     bottom: 0; left: 0; right: 0;
     height: 2px;
   }
-  .accent-gold { background: var(--gold); }
+  .accent-gold  { background: var(--gold); }
   .accent-green { background: var(--green); }
 
+  /* HOW IT WORKS */
   .how-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -429,6 +477,7 @@
 @media (max-width: 900px) {
   .hero { padding: 100px 24px 60px; }
   .section { padding: 80px 24px; }
+  .concept-grid { grid-template-columns: 1fr; gap: 40px; }
   .games-grid { grid-template-columns: 1fr; }
   .how-grid { grid-template-columns: 1fr 1fr; }
   .signup-section { flex-direction: column; gap: 40px; padding: 80px 24px; align-items: flex-start; }

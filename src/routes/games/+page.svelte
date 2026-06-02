@@ -1,13 +1,13 @@
 <svelte:head>
   <title>Games — McChimp</title>
-  <meta name="description" content="All McChimp sports trivia games. MMA, Football and more." />
+  <meta name="description" content="Sports career simulators powered by knowledge. MMA career builder and football manager — your answers decide every result." />
 </svelte:head>
 
 <!-- PAGE HERO -->
 <div class="page-hero">
   <div class="page-hero-tag">The Platform</div>
   <h1>All<br><em>Games</em></h1>
-  <p>Every game runs on the same engine — modular question sets, adaptive difficulty, and a career mode that rewards real knowledge.</p>
+  <p>Sports career simulators where knowledge is the mechanic, not a stat. The same engine powers both games — swap in any question set and the career logic runs unchanged.</p>
 </div>
 
 <!-- GAMES GRID -->
@@ -18,8 +18,8 @@
     <a href="/mma" class="game-card">
       <div class="card-num">01</div>
       <div class="card-tag tag-live">● Live Now</div>
-      <div class="card-title">MMA Career<br>Trivia</div>
-      <p class="card-desc">Build a fighter from the regional circuit to world champion. Every fight is decided by a trivia question. How far can your knowledge take you?</p>
+      <div class="card-title">MMA Career<br>Simulator</div>
+      <p class="card-desc">Build a fighter from unsigned prospect to world champion across three career phases. Every fight is resolved by a question — correct answers mean your fighter lands; wrong answers mean the opponent does.</p>
       <div class="card-meta">
         <span class="meta-pill">Career Mode</span>
         <span class="meta-pill">Sparring Mode</span>
@@ -32,8 +32,8 @@
     <a href="/embeds/football.html" class="game-card">
       <div class="card-num">02</div>
       <div class="card-tag tag-ongoing">● Ongoing</div>
-      <div class="card-title">Football<br>Trivia</div>
-      <p class="card-desc">Manage a career across the football pyramid. Tactics, transfers, and trivia — your knowledge of the game determines everything.</p>
+      <div class="card-title">Football Career<br>Manager</div>
+      <p class="card-desc">Guide a club through the football pyramid. Tactics set the match tempo — play attacking for more questions per match, or sit deep for fewer. Your answers decide the score, the table, and the season.</p>
       <p class="card-notice">Demo only — progress is not saved and question uploads are not supported.</p>
       <div class="card-meta">
         <span class="meta-pill">Career Mode</span>
@@ -75,22 +75,22 @@
 <!-- HOW THE ENGINE WORKS -->
 <section class="section engine-section">
   <div class="section-label">Under The Hood</div>
-  <div class="section-title">One Engine.<br>Every Sport.</div>
+  <div class="section-title">One Engine.<br>Any Topic.</div>
   <div class="engine-grid">
     <div class="engine-card">
       <div class="engine-num">01</div>
-      <div class="engine-title">Modular Questions</div>
-      <p class="engine-desc">Every game loads from a JSON question set. Swap the set, change the sport. The engine handles timers, scoring, and difficulty automatically.</p>
+      <div class="engine-title">Swappable Question Sets</div>
+      <p class="engine-desc">The career engine and the question sets are completely separate. Load any compatible JSON — the default sets cover MMA, football, animals, and economics, but the engine doesn't care what the questions are about.</p>
     </div>
     <div class="engine-card">
       <div class="engine-num">02</div>
       <div class="engine-title">Adaptive Difficulty</div>
-      <p class="engine-desc">Questions you get right become easier. Questions you miss get harder. Difficulty is personal — shaped by your own history, not a fixed curve.</p>
+      <p class="engine-desc">Each question tracks your history with it individually. Answer it right consistently and it gets harder; miss it repeatedly and it eases back down. The difficulty is never fixed — it maps to the shape of what you know.</p>
     </div>
     <div class="engine-card">
       <div class="engine-num">03</div>
-      <div class="engine-title">Career Progression</div>
-      <p class="engine-desc">Win fights, climb divisions, earn titles. Every promotion is earned through knowledge — not luck, not random number generators.</p>
+      <div class="engine-title">Real Career Mechanics</div>
+      <p class="engine-desc">Rankings, titles, league tables, promotions, relegations — the simulation logic runs on real sporting structure. Your knowledge performance feeds directly into a career that has actual stakes at every stage.</p>
     </div>
   </div>
 </section>

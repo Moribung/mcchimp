@@ -47,8 +47,8 @@
 </script>
 
 <svelte:head>
-  <title>Football Trivia — McChimp</title>
-  <meta name="description" content="Manage a football career across the pyramid. Tactics, transfers, and trivia." />
+  <title>Football Career Manager — McChimp</title>
+  <meta name="description" content="Guide a club through the football pyramid. Your answers decide every result. Tactics, transfers, league tables — all driven by knowledge." />
 </svelte:head>
 
 <div class="back-bar">

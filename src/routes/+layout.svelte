@@ -41,8 +41,8 @@
 <svelte:head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>McChimp — Know Your Sport</title>
-  <meta name="description" content="Sports trivia games that actually test you. MMA, Football and more." />
+  <title>McChimp — Your Knowledge. Your Career.</title>
+  <meta name="description" content="Sports career simulators where your knowledge decides every result. Build a fighter. Manage a club. Your answers are the only stat that matters." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500&display=swap" rel="stylesheet" />
 </svelte:head>
@@ -50,6 +50,7 @@
 <header>
   <a class="logo" href="/">Mc<span>Chimp</span></a>
   <nav>
+    <a href="/how">How it works</a>
     <div class="nav-item">
       <a class="nav-link-q" href="/games">Games&#8202;<span class="chevron">&#9662;</span></a>
       <div class="dropdown">
@@ -57,7 +58,6 @@
         <a href="/football"><span class="dd-label">Football Game</span></a>
       </div>
     </div>
-    <a href="/#how">How it works</a>
     <div class="nav-item">
       <a class="nav-link-q" href="/questions">Questions&#8202;<span class="chevron">&#9662;</span></a>
       <div class="dropdown">
@@ -69,7 +69,13 @@
         {/if}
       </div>
     </div>
-    <a href="/#contact">Contact</a>
+    <div class="nav-item">
+      <a class="nav-link-q" href="/about">About&#8202;<span class="chevron">&#9662;</span></a>
+      <div class="dropdown">
+        <a href="/about"><span class="dd-label">About Us</span></a>
+        <a href="/about#contact"><span class="dd-label">Contact Us</span></a>
+      </div>
+    </div>
     {#if $session}
       <div class="nav-item">
         <a class="nav-link-q nav-login" href="/account">{displayName || 'Account'}&#8202;<span class="chevron">&#9662;</span></a>
@@ -90,10 +96,10 @@
 
 <div class="mobile-nav" class:open={mobileNavOpen}>
   <button class="mobile-nav-close" onclick={toggleMobileNav}>&#215;</button>
+  <a href="/how" onclick={toggleMobileNav}>How It Works</a>
   <a href="/games" onclick={toggleMobileNav}>Games</a>
   <a href="/mma"      onclick={toggleMobileNav} style="font-size:20px;color:var(--muted);padding:3px 0;padding-left:12px;">MMA Game</a>
   <a href="/football" onclick={toggleMobileNav} style="font-size:20px;color:var(--muted);padding:3px 0;padding-left:12px;">Football Game</a>
-  <a href="/#how" onclick={toggleMobileNav}>How It Works</a>
   <a href="/questions" onclick={toggleMobileNav}>Questions</a>
   <a href="/questions/sets"      onclick={toggleMobileNav} style="font-size:20px;color:var(--muted);padding:3px 0;padding-left:12px;">Question Sets</a>
   <a href="/questions/guide"     onclick={toggleMobileNav} style="font-size:20px;color:var(--muted);padding:3px 0;padding-left:12px;">AI Guide</a>
@@ -101,7 +107,8 @@
   {#if $session}
     <a href="/questions/library" onclick={toggleMobileNav} style="font-size:20px;color:var(--muted);padding:3px 0;padding-left:12px;">My Library</a>
   {/if}
-  <a href="/#contact" onclick={toggleMobileNav}>Contact</a>
+  <a href="/about" onclick={toggleMobileNav}>About Us</a>
+  <a href="/about#contact" onclick={toggleMobileNav} style="font-size:20px;color:var(--muted);padding:3px 0;padding-left:12px;">Contact Us</a>
   {#if $session}
     <a href="/dashboard" onclick={toggleMobileNav} style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{displayName || 'Account'}</a>
     <a href="/dashboard" onclick={toggleMobileNav} style="font-size:20px;color:var(--muted);padding:3px 0;padding-left:12px;">Dashboard</a>
@@ -117,9 +124,10 @@
 <footer>
   <div class="footer-logo">McChimp</div>
   <div class="footer-links">
-    <a href="/mma">MMA Trivia</a>
+    <a href="/mma">MMA Career</a>
     <a href="/games">Games</a>
-    <a href="/#contact">Contact</a>
+    <a href="/about">About Us</a>
+    <a href="/about#contact">Contact</a>
     <a href="/privacy">Privacy Policy</a>
   </div>
   <div class="footer-copy">© 2026 McChimp</div>

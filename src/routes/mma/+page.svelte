@@ -517,7 +517,7 @@
   </div>
 
   <header class="mma-header">
-    <h1 class="mma-title">MMA Career Trivia</h1>
+    <h1 class="mma-title">MMA Career Simulator</h1>
     {#if !gs.sparring && gs.career}
       <div class="score-display">
         <span class="score-w">{gs.wins}W</span>
