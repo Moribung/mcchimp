@@ -37,7 +37,7 @@
     <div class="step-body">
       <h2>Start a game and pick your set</h2>
       <p>
-        Head to <a href="/mma">MMA Career</a> or the <a href="/embeds/football.html">Football demo</a> and start a new career or sparring session.
+        Head to <a href="/mma">MMA Career</a> or <a href="/football">Football Career Manager</a> and start a new career or sparring session.
         Before the first fight you'll choose which question set to play with — your saved library sets appear alongside the built-in ones.
         Pick a set, choose your career length and difficulty, and go.
         Each match resolves through a question: answer correctly and your side converts; answer wrong and the opponent does.

@@ -29,17 +29,17 @@
       <div class="card-accent accent-gold"></div>
     </a>
 
-    <a href="/embeds/football.html" class="game-card">
+    <a href="/football" class="game-card">
       <div class="card-num">02</div>
-      <div class="card-tag tag-ongoing">● Ongoing</div>
+      <div class="card-tag tag-live">● Live Now</div>
       <div class="card-title">Football Career<br>Manager</div>
       <p class="card-desc">Guide a club through the football pyramid. Tactics set the match tempo — play attacking for more questions per match, or sit deep for fewer. Your answers decide the score, the table, and the season.</p>
-      <p class="card-notice">Demo only — progress is not saved and question uploads are not supported.</p>
       <div class="card-meta">
         <span class="meta-pill">Career Mode</span>
         <span class="meta-pill">Adaptive Difficulty</span>
+        <span class="meta-pill">Cloud Saves</span>
       </div>
-      <div class="card-arrow">Play Demo →</div>
+      <div class="card-arrow">Play Now →</div>
       <div class="card-accent accent-green"></div>
     </a>
 
@@ -68,6 +68,35 @@
       <div class="card-arrow" style="color:var(--muted)">Coming Soon</div>
       <div class="card-accent" style="background:var(--muted);opacity:.2"></div>
     </div>
+
+  </div>
+</section>
+
+<!-- PLAY DEMOS -->
+<section class="section demo-section">
+  <div class="section-label">Play Demos</div>
+  <p class="demo-intro">Want to see how the games originally started? These are the standalone embed versions — no accounts, no saves, no question integration. Pure proof of concept.</p>
+  <div class="games-grid">
+
+    <a href="/embeds/mma.html" class="game-card game-card--demo">
+      <div class="card-num">01</div>
+      <div class="card-tag tag-demo">● Demo</div>
+      <div class="card-title">MMA Career<br>Simulator</div>
+      <p class="card-desc">The original standalone MMA career builder — the prototype that started it all.</p>
+      <p class="card-notice">Question integration is not available in demo mode.</p>
+      <div class="card-arrow">Open Demo →</div>
+      <div class="card-accent" style="background:rgba(232,193,74,0.3)"></div>
+    </a>
+
+    <a href="/embeds/football.html" class="game-card game-card--demo">
+      <div class="card-num">02</div>
+      <div class="card-tag tag-demo">● Demo</div>
+      <div class="card-title">Football Career<br>Manager</div>
+      <p class="card-desc">The original standalone football manager — before cloud saves, adaptive questions, and the full career engine.</p>
+      <p class="card-notice">Question integration is not available in demo mode.</p>
+      <div class="card-arrow">Open Demo →</div>
+      <div class="card-accent" style="background:rgba(62,207,106,0.3)"></div>
+    </a>
 
   </div>
 </section>
@@ -215,6 +244,7 @@
   .tag-live { background: rgba(46,139,87,0.15); color: #4CAF85; border: 1px solid rgba(46,139,87,0.3); }
   .tag-ongoing { background: rgba(42,94,173,0.15); color: #6B9FE4; border: 1px solid rgba(42,94,173,0.35); }
   .tag-soon { background: rgba(107,107,107,0.1); color: var(--muted); border: 1px solid rgba(107,107,107,0.2); }
+  .tag-demo { background: rgba(107,107,107,0.08); color: rgba(242,239,232,0.35); border: 1px solid rgba(107,107,107,0.15); }
 
   .card-title {
     font-family: 'Bebas Neue', sans-serif;
@@ -269,6 +299,20 @@
   }
   .accent-gold { background: var(--gold); }
   .accent-green { background: var(--green); }
+
+  .demo-section { border-top: 1px solid rgba(255,255,255,0.06); padding-top: 80px; }
+  .demo-intro {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: clamp(15px, 1.8vw, 18px);
+    color: rgba(242,239,232,0.35);
+    max-width: 520px;
+    line-height: 1.55;
+    margin-bottom: 40px;
+  }
+  .game-card--demo { opacity: .7; }
+  .game-card--demo:hover { opacity: 1; }
+  .game-card--demo .card-arrow { color: rgba(242,239,232,0.4); }
+  .game-card--demo:hover .card-arrow { color: var(--gold); transform: translate(4px, -4px); }
 
   .engine-section { border-top: 1px solid rgba(255,255,255,0.06); }
   .engine-grid {

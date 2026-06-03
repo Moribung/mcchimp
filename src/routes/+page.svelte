@@ -28,7 +28,7 @@
   <p class="hero-sub fade-up delay-2">Sports career games where every result comes down to what you know. Not stats. Not luck. Your answers determine everything — from the opening bell to the final whistle.</p>
   <div class="hero-actions fade-up delay-3">
     <a href="/mma" class="btn-primary">Play MMA</a>
-    <a href="/embeds/football.html" class="btn-primary" style="background:var(--blue)">Football Demo</a>
+    <a href="/football" class="btn-primary" style="background:var(--blue)">Play Football</a>
     <a href="/how" class="btn-ghost">How It Works</a>
   </div>
 </section>
@@ -37,13 +37,13 @@
 <div class="ticker-wrap">
   <div class="ticker">
     <div class="ticker-item"><span>MMA Career</span> Live Now</div>
-    <div class="ticker-item"><span>Football Manager</span> In Development</div>
+    <div class="ticker-item"><span>Football Manager</span> Live Now</div>
     <div class="ticker-item"><span>Knowledge</span> Is Your Only Stat</div>
     <div class="ticker-item"><span>Career Mode</span> Full Progression</div>
     <div class="ticker-item"><span>Adaptive Difficulty</span> Learns From You</div>
     <div class="ticker-item"><span>Swappable</span> Question Sets</div>
     <div class="ticker-item"><span>MMA Career</span> Live Now</div>
-    <div class="ticker-item"><span>Football Manager</span> In Development</div>
+    <div class="ticker-item"><span>Football Manager</span> Live Now</div>
     <div class="ticker-item"><span>Knowledge</span> Is Your Only Stat</div>
     <div class="ticker-item"><span>Career Mode</span> Full Progression</div>
     <div class="ticker-item"><span>Adaptive Difficulty</span> Learns From You</div>
@@ -81,13 +81,12 @@
       <div class="card-accent accent-gold"></div>
     </a>
 
-    <a href="/embeds/football.html" class="game-card">
+    <a href="/football" class="game-card">
       <div class="card-num">02</div>
-      <div class="card-tag tag-ongoing">● Ongoing</div>
+      <div class="card-tag tag-live">● Live Now</div>
       <div class="card-title">Football Career<br>Manager</div>
       <p class="card-desc">Guide a club from the lower divisions to the top of the table. Tactics set the match tempo — play attacking and face more questions per match, or sit back for fewer. Your answers decide the score.</p>
-      <p class="card-notice">Demo only — progress is not saved and question uploads are not supported.</p>
-      <div class="card-arrow">Play Demo</div>
+      <div class="card-arrow">Play Now</div>
       <div class="card-accent accent-green"></div>
     </a>
 

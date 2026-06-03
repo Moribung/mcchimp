@@ -87,7 +87,10 @@
         try   { return { id: f.replace('.json', ''), filename: f, tag: 'public', ...(await fetchSet(f)) }; }
         catch { return null; }
       }));
-      catalogSets = sets.filter(Boolean);
+      // Drop any catalog set that is already a bundled default (public.json is a
+      // shared master list, so it can include this game's defaults).
+      const bundledIds = new Set(bundledSets.map(b => b.id));
+      catalogSets = sets.filter(s => s && !bundledIds.has(s.id));
     } catch {
       catalogSets = [];
     }
