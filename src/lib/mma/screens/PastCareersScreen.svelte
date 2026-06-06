@@ -8,6 +8,7 @@
     loadPastCareers, toggleHistoryStar, deleteHistory, getUserLimits,
   } from '$lib/saves.js';
   import { state as gs } from '$lib/mma/state.svelte.js';
+  import FighterAvatar from '$lib/avatar/FighterAvatar.svelte';
 
   const { onback } = $props();
 
@@ -118,6 +119,15 @@
               title={career.starred ? 'Unstar' : 'Star'}
               onclick={() => onStar(career)}
             >★</button>
+
+            <div class="pc-avatar">
+              <FighterAvatar
+                avatar={career.stat_breakdown?.avatar}
+                beltType={career.stat_breakdown?.highestBeltType ?? null}
+                gloveColor="#8f1f1f"
+                size={48}
+              />
+            </div>
 
             <div class="pc-info">
               <div class="pc-name">{career.fighter_name || '—'}</div>
@@ -263,6 +273,8 @@
   }
   .pc-star:hover  { color: var(--accent); }
   .pc-star.starred { color: var(--accent); }
+
+  .pc-avatar { flex-shrink: 0; }
 
   .pc-info { flex: 1; min-width: 0; }
   .pc-name {

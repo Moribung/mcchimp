@@ -106,6 +106,30 @@ export const ETHNIC_GROUPS = {
 
 export const ETHNIC_GROUP_IDS = Object.keys(ETHNIC_GROUPS);
 
+// ── Surname-origin override for appearance ──
+// Distinctive Asian (JP/KR) and West-African surnames should drive a fighter's
+// look regardless of their generated ethnicity. Pan-ethnic surnames that also
+// read as Western (Lee, Park, Williams, Johnson…) are excluded so they don't
+// wrongly override.
+const _SURNAME_EXCLUDE = new Set(['lee', 'park', 'song', 'williams', 'johnson']);
+const _lc = s => s.toLowerCase();
+const _ASIAN_SURNAMES = new Set(
+  [...ETHNIC_GROUPS.japanese.lastNames, ...ETHNIC_GROUPS.korean.lastNames]
+    .map(_lc).filter(n => !_SURNAME_EXCLUDE.has(n))
+);
+const _WAFRICAN_SURNAMES = new Set(
+  ETHNIC_GROUPS.west_african.lastNames.map(_lc).filter(n => !_SURNAME_EXCLUDE.has(n))
+);
+
+/** Appearance origin implied by a (distinctive) surname, else null. */
+export function surnameLookOverride(fullName) {
+  if (!fullName) return null;
+  const ln = String(fullName).split(' ').pop().toLowerCase();
+  if (_WAFRICAN_SURNAMES.has(ln)) return 'west_african';
+  if (_ASIAN_SURNAMES.has(ln))    return 'japanese'; // JP/KR share an appearance spread
+  return null;
+}
+
 // FIGHT_STYLES id → closest FIGHTER_PROFILES key for NPC style assignment.
 export const STYLE_ID_TO_PROFILE = {
   allrounder:'All-rounder', brawler:'Unorthodox brawler', boxer:'Boxer', kickboxer:'Kickboxer',

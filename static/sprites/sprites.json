@@ -1,0 +1,21 @@
+{
+  "version": "1.0",
+  "sceneWidth": 96,
+  "sceneHeight": 48,
+  "displayScale": 8,
+  "sprites": [
+    { "id": "bg_empty",        "file": "bg_empty.png",        "width": 96, "height": 48, "anchorX": 0,  "anchorY": 0  },
+    { "id": "bg_crowd_medium", "file": "bg_crowd_medium.png", "width": 96, "height": 48, "anchorX": 0,  "anchorY": 0  },
+    { "id": "bg_crowd_packed", "file": "bg_crowd_packed.png", "width": 96, "height": 48, "anchorX": 0,  "anchorY": 0  },
+    { "id": "oct_gfl",         "file": "oct_gfl.png",         "width": 96, "height": 48, "anchorX": 0,  "anchorY": 0  },
+    { "id": "oct_cage",        "file": "oct_cage.png",        "width": 96, "height": 48, "anchorX": 0,  "anchorY": 0  },
+    { "id": "oct_ring",        "file": "oct_ring.png",        "width": 96, "height": 48, "anchorX": 0,  "anchorY": 0  },
+    { "id": "fighter_side",    "file": "fighter_side.png",    "width": 32, "height": 48, "anchorX": 16, "anchorY": 34 },
+    { "id": "fighter_forward", "file": "fighter_forward.png", "width": 32, "height": 48, "anchorX": 16, "anchorY": 34 },
+    { "id": "fighter_win_one", "file": "fighter_win_one.png", "width": 32, "height": 48, "anchorX": 16, "anchorY": 34 },
+    { "id": "fighter_win_both","file": "fighter_win_both.png","width": 32, "height": 48, "anchorX": 16, "anchorY": 34 },
+    { "id": "fighter_loss",    "file": "fighter_loss.png",    "width": 32, "height": 48, "anchorX": 16, "anchorY": 34 },
+    { "id": "ref_neutral",     "file": "ref_neutral.png",     "width": 24, "height": 40, "anchorX": 12, "anchorY": 27 },
+    { "id": "ref_raise",       "file": "ref_raise.png",       "width": 24, "height": 40, "anchorX": 12, "anchorY": 27 }
+  ]
+}

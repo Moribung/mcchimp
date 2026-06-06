@@ -38,8 +38,66 @@
     CHAMP_SLOT, RANKED_START,
     DIFF_LABELS, DIFF_COLORS, DIFF_BG,
   }                      from '$lib/mma/constants.js';
-  import { getPhaseDef, getPlayerSlot, calloutSuccessPct } from '$lib/mma/career.js';
+  import { getPhaseDef, getPlayerSlot, calloutSuccessPct, divisionPants, divisionBeltColor, divisionBeltType, CHAMP_PANTS, gloveColorFor } from '$lib/mma/career.js';
   import { divisionSlotToOpponent }  from '$lib/mma/fighters.js';
+  import { surnameLookOverride }      from '$lib/mma/names.js';
+  import { COUNTRY_BY_NAME }         from '$lib/mma/countries.js';
+  import { REGIONS }                 from '$lib/mma/regions.js';
+  import { nationalityFit }          from '$lib/avatar/nationalityFits.js';
+  import { ethnicAvatar }            from '$lib/avatar/ethnicLooks.js';
+  import FighterAvatar               from '$lib/avatar/FighterAvatar.svelte';
+
+  const BLACK = '#181820';
+
+  // Best-guess ethnicity for roster fighters (no stored ethnicity): the dominant
+  // ethnic group of their country's region.
+  function ethForNationality(name) {
+    const dist = REGIONS[COUNTRY_BY_NAME[name]?.regionId]?.ethnicDistribution;
+    if (!dist) return 'vintage';
+    let best = 'vintage', bw = -1;
+    for (const [k, w] of Object.entries(dist)) { if (k !== '*' && w > bw) { bw = w; best = k; } }
+    return best;
+  }
+
+  // Championship bout: player challenging the champ, or champion defending.
+  const titleFight = $derived((() => {
+    const opp = gs.currentOpponent, cs = gs.career;
+    if (!opp || !cs) return false;
+    return opp.divisionSlot === CHAMP_SLOT || getPlayerSlot(cs) === CHAMP_SLOT;
+  })());
+
+  // Opponent avatar: ethnicity-based look + division pants + nationality/champion colours.
+  const oppAvatar = $derived((() => {
+    const opp = gs.currentOpponent;
+    if (!opp) return null;
+    // Use the stored appearance snapshot; older saves fall back to deriving it.
+    const look = opp.look
+      || ethnicAvatar(surnameLookOverride(opp.name) || opp.ethnicity || ethForNationality(opp.nationality), opp.fid || opp.name || 'x');
+    const iso  = COUNTRY_BY_NAME[opp.nationality]?.iso || '';
+    const playerMain = (gs.career?.avatar?.shortsBase || '').toLowerCase();
+    const oppIsChamp = opp.divisionSlot === CHAMP_SLOT;
+    let main, trim;
+    if (oppIsChamp && playerMain !== BLACK) {
+      main = CHAMP_PANTS.main; trim = CHAMP_PANTS.trim;   // champion: black/gold
+    } else {
+      let fit = nationalityFit(iso, 0);
+      const collides = fit.main.toLowerCase() === (oppIsChamp ? BLACK : playerMain);
+      if (collides) fit = nationalityFit(iso, 1);
+      main = fit.main; trim = fit.trim;
+    }
+    return { ...look, shortsBase: main, shortsTrim: trim };
+  })());
+  const oppPants = $derived(gs.career ? divisionPants(gs.career) : 'gfl');
+  // Opponent wears the division belt (correct design) when they're the champion.
+  const oppIsChampion = $derived(gs.currentOpponent?.divisionSlot === CHAMP_SLOT && !!gs.career);
+  const oppBeltType = $derived(oppIsChampion ? divisionBeltType(gs.career) : null);
+  const oppBelt     = $derived(oppIsChampion ? divisionBeltColor(gs.career) : null);
+  // Gloves: gold in title bouts, else red (higher rank) / blue (lower rank).
+  const oppGlove = $derived((() => {
+    const opp = gs.currentOpponent, cs = gs.career;
+    if (!opp || !cs) return null;
+    return gloveColorFor(opp.divisionSlot, getPlayerSlot(cs), titleFight, false);
+  })());
 
   // ── Sidebar: ranking rows ─────────────────────────────
   const rankingRows = $derived((() => {
@@ -73,18 +131,29 @@
 
   function showRowPop(e, row) {
     if (row.isPlayer || !gs.career) { hoverPop = null; return; }
-    const f = row.f;
+    const f   = row.f;
+    const cs  = gs.career;
     const w = f.wins || 0, l = f.losses || 0, d = f.draws || 0;
     const total = w + l + d;
     const rate  = total > 0 ? Math.round((100 * w) / total) : 0;
     const rateColor = rate >= 70 ? 'var(--green)' : rate >= 50 ? 'var(--amber, #e8c14a)' : 'var(--red)';
-    const clf = classifyFighter(f, row.i, gs.career.phase, row.isChamp);
+    const clf = classifyFighter(f, row.i, cs.phase, row.isChamp);
     const rect = e.currentTarget.getBoundingClientRect();
     const h2h  = gs.h2h?.[row.fid];
     const h2hTotal = h2h ? (h2h.w + h2h.l + h2h.d) : 0;
     const vsRecord = h2hTotal > 0
       ? `${h2h.w}W-${h2h.l}L${h2h.d > 0 ? `-${h2h.d}D` : ''}`
       : null;
+
+    // Build fighter avatar for the popup.
+    const look = f.look
+      || ethnicAvatar(surnameLookOverride(f.name) || f.ethnicity || ethForNationality(f.nationality), row.fid || f.name || 'x');
+    const iso = COUNTRY_BY_NAME[f.nationality]?.iso || '';
+    const fit = nationalityFit(iso, 0);
+    const avatar = { ...look, shortsBase: fit.main || '#181820', shortsTrim: fit.trim || '#e8e8ec', org: divisionPants(cs) };
+    const beltType  = row.isChamp ? divisionBeltType(cs)  : null;
+    const beltColor = row.isChamp ? divisionBeltColor(cs) : null;
+
     hoverPop = {
       // Anchor to the LEFT of the row (sidebar sits on the right edge of the screen).
       x: rect.left,
@@ -96,6 +165,7 @@
       style: f.style || '',
       rising: !!f.isRising,
       vsRecord,
+      avatar, beltType, beltColor,
     };
   }
 
@@ -370,6 +440,11 @@
     const titles  = gs.career.titles || {};
     const champCount  = [1, 2, 3].reduce((n, ph) => n + (titles[ph]?.reigns || 0), 0);
     const maxDefenses = [1, 2, 3].reduce((m, ph) => Math.max(m, titles[ph]?.bestDefenseStreak || 0), 0);
+    const highestBeltPhase = [3, 2, 1].find(ph => (titles[ph]?.reigns || 0) > 0) ?? null;
+    const highestBeltType  = !highestBeltPhase ? null
+      : highestBeltPhase === 3 ? 'gfl'
+      : highestBeltPhase === 2 ? (/king/i.test(cs.phase2Name || '') ? 'kfc' : 'apex')
+      : 'regional';
     const statBreakdown = {
       wins: gs.wins, losses: gs.losses, draws: gs.draws,
       finishes: gs.finishes, fightIndex: gs.fightIndex,
@@ -378,6 +453,8 @@
       bestStreak: gs.bestStreak, bestUnbeatenStreak: gs.bestUnbeatenStreak,
       champCount,
       defenseStreak: maxDefenses,
+      avatar: cs.avatar ?? null,
+      highestBeltType,
       // Per-organisation belts
       titles: [1, 2, 3].map(ph => {
         const d = getPhaseDef({ ...cs, phase: ph });
@@ -637,11 +714,18 @@
               <div class="so-event">{currentEventName}</div>
             {/if}
             <div class="so-label">Your Opponent</div>
-            <div class="so-name">{opp.name}</div>
-            <div class="so-row2">
-              <span class="so-record">{opp.record}</span>
-              {#if opp.badge}
-                <span class="so-badge {opp.badgeClass}">{opp.badge}</span>
+            <div class="so-head">
+              <div class="so-head-text">
+                <div class="so-name">{opp.name}</div>
+                <div class="so-row2">
+                  <span class="so-record">{opp.record}</span>
+                  {#if opp.badge}
+                    <span class="so-badge {opp.badgeClass}">{opp.badge}</span>
+                  {/if}
+                </div>
+              </div>
+              {#if oppAvatar}
+                <div class="so-avatar"><FighterAvatar avatar={oppAvatar} org={oppPants} beltType={oppBeltType} beltColor={oppBelt} gloveColor={oppGlove} size={64} /></div>
               {/if}
             </div>
             {#if opp.classLabel || opp.style}
@@ -751,19 +835,26 @@
         class="rt-popup"
         style="left: {hoverPop.x}px; top: {hoverPop.y}px;"
       >
-        <div class="rtp-name">{hoverPop.name}</div>
-        <div class="rtp-rec">
-          {hoverPop.record} · <span style="color: {hoverPop.rateColor}">{hoverPop.rate}% win rate</span> ({hoverPop.total} fights)
+        <div class="rtp-body">
+          <div class="rtp-avatar">
+            <FighterAvatar avatar={hoverPop.avatar} beltType={hoverPop.beltType} beltColor={hoverPop.beltColor} size={48} />
+          </div>
+          <div class="rtp-text">
+            <div class="rtp-name">{hoverPop.name}</div>
+            <div class="rtp-rec">
+              {hoverPop.record} · <span style="color: {hoverPop.rateColor}">{hoverPop.rate}%</span> ({hoverPop.total} fights)
+            </div>
+            <div class="rtp-clf">
+              {hoverPop.clfEmoji} {hoverPop.clfLabel}{#if hoverPop.style} · <span class="rtp-style">{hoverPop.style}</span>{/if}
+            </div>
+            {#if hoverPop.rising}
+              <div class="rtp-rising">🚀 Hot Prospect</div>
+            {/if}
+            {#if hoverPop.vsRecord}
+              <div class="rtp-vs">vs YOU · {hoverPop.vsRecord}</div>
+            {/if}
+          </div>
         </div>
-        <div class="rtp-clf">
-          {hoverPop.clfEmoji} {hoverPop.clfLabel}{#if hoverPop.style} · <span class="rtp-style">{hoverPop.style}</span>{/if}
-        </div>
-        {#if hoverPop.rising}
-          <div class="rtp-rising">🚀 Hot Prospect</div>
-        {/if}
-        {#if hoverPop.vsRecord}
-          <div class="rtp-vs">vs YOU · {hoverPop.vsRecord}</div>
-        {/if}
       </div>
     {/if}
 
@@ -984,6 +1075,9 @@
   }
   .so-event  { font-family: var(--font-display); font-size: 22px; letter-spacing: 0.04em; line-height: 1.1; margin-bottom: 8px; color: var(--text); }
   .so-label  { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 3px; }
+  .so-head   { display: flex; gap: 10px; align-items: flex-start; }
+  .so-head-text { flex: 1; min-width: 0; }
+  .so-avatar { flex-shrink: 0; width: 64px; height: 64px; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
   .so-name   { font-family: var(--font-display); font-size: 20px; letter-spacing: 0.04em; line-height: 1.1; margin-bottom: 4px; word-break: break-word; }
   .so-row2   { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 3px; }
   .so-record { font-family: var(--font-display); font-size: 12px; color: var(--text-muted); }
@@ -1053,14 +1147,17 @@
     background: var(--surface2);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 10px 14px;
-    min-width: 180px;
-    max-width: 240px;
+    padding: 10px 12px;
+    min-width: 200px;
+    max-width: 260px;
     pointer-events: none;
     box-shadow: 0 8px 24px rgba(0,0,0,0.6);
     line-height: 1.6;
   }
-  .rtp-name  { font-family: var(--font-display); font-size: 16px; letter-spacing: 0.04em; margin-bottom: 2px; color: var(--text); }
+  .rtp-body  { display: flex; align-items: center; gap: 10px; }
+  .rtp-avatar { flex-shrink: 0; }
+  .rtp-text  { flex: 1; min-width: 0; }
+  .rtp-name  { font-family: var(--font-display); font-size: 15px; letter-spacing: 0.04em; margin-bottom: 2px; color: var(--text); }
   .rtp-rec   { color: var(--text-muted); font-size: 11px; margin-bottom: 3px; }
   .rtp-clf   { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); }
   .rtp-style { color: var(--text-muted); font-style: italic; font-weight: 600; }

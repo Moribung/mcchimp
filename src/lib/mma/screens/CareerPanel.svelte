@@ -4,13 +4,58 @@
   import { state as gs } from '$lib/mma/state.svelte.js';
   import {
     getPhaseDef, getPlayerSlot, slotToRankLabel, slotToCssClass, isUndefeated,
+    divisionPants, divisionBeltColor, divisionBeltType, CHAMP_PANTS, gloveColorFor,
   } from '$lib/mma/career.js';
   import { CHAMP_SLOT } from '$lib/mma/constants.js';
+  import { HAIR_STYLES, BEARD_STYLES } from '$lib/avatar/fighterRenderer.js';
+  import { nationalityFit } from '$lib/avatar/nationalityFits.js';
+  import FighterAvatar from '$lib/avatar/FighterAvatar.svelte';
 
   const cs      = $derived(gs.career);
   const pDef    = $derived(cs ? getPhaseDef(cs) : null);
   const slot    = $derived(cs ? getPlayerSlot(cs) : 0);
   const isChamp = $derived(slot === CHAMP_SLOT && !!cs?.titleHeld);
+
+  // Avatar pants follow the current division; belt shown only while champion.
+  const pants     = $derived(cs ? divisionPants(cs) : 'gfl');
+  const beltType  = $derived(cs?.titleHeld ? divisionBeltType(cs) : null);
+  const beltColor = $derived(cs?.titleHeld ? divisionBeltColor(cs) : null);
+  // Championship bout (player challenging the champ, or champion defending) → gold gloves;
+  // otherwise red for the higher-ranked fighter and blue for the lower-ranked one.
+  const titleFight = $derived(!!cs && (gs.currentOpponent?.divisionSlot === CHAMP_SLOT || slot === CHAMP_SLOT));
+  const gloveColor = $derived((() => {
+    const oppSlot = gs.currentOpponent?.divisionSlot;
+    if (!cs || oppSlot == null) return null;
+    return gloveColorFor(slot, oppSlot, titleFight, true); // player wins ties (red)
+  })());
+
+  // ── Click-to-edit appearance popup (prefight only) ──
+  let editOpen = $state(false);
+  let dirty    = $state(false);  // any change made this session?
+  const canEdit = $derived(gs.screen === 'prefight' && !!cs?.avatar);
+  // The avatar can be customised once per round; after that, options grey out.
+  const locked = $derived(!!cs && (cs.avatarEditFight ?? -1) === gs.fightIndex);
+
+  // Pants colour presets for the popup.
+  const PANTS_OPTS = $derived(cs ? [
+    { id: 'custom',    label: 'Custom',     ...{ main: cs.avatar?.customBase, trim: cs.avatar?.customTrim } },
+    { id: 'national1', label: 'National 1', ...nationalityFit(cs.playerNat || '', 0) },
+    { id: 'national2', label: 'National 2', ...nationalityFit(cs.playerNat || '', 1) },
+    ...(isChamp ? [{ id: 'champion', label: 'Champion', ...CHAMP_PANTS }] : []),
+  ] : []);
+
+  function setHair(h)  { if (locked) return; cs.avatar = { ...cs.avatar, hairStyle: h };  dirty = true; }
+  function setBeard(b) { if (locked) return; cs.avatar = { ...cs.avatar, beardStyle: b }; dirty = true; }
+  function setPants(opt) {
+    if (locked) return;
+    cs.avatar = { ...cs.avatar, pantsChoice: opt.id, shortsBase: opt.main, shortsTrim: opt.trim };
+    dirty = true;
+  }
+  function closeEdit() {
+    if (dirty && cs) cs.avatarEditFight = gs.fightIndex;  // consume this round's edit
+    dirty = false;
+    editOpen = false;
+  }
 
   const rankText = $derived(
     !cs || !pDef ? '' :
@@ -132,13 +177,26 @@
 
 {#if cs}
   <div class="career-panel">
-    <div class="cp-fighter">{cs.fighterName}{cs.titleHeld ? ' 🏆' : ''}</div>
-    <div class="cp-record-line">
-      <span class="r-w">{gs.wins}</span>W&nbsp;–&nbsp;<span class="r-l">{gs.losses + gs.finishes}</span>L&nbsp;–&nbsp;<span class="r-d">{gs.draws}</span>D
-    </div>
-    <div class="cp-org-row">
-      <span class="cp-promo">{pDef?.promo}</span>
-      <span class="cp-rank {rankClass}">{rankText}</span>
+    <div class="cp-header">
+      <div class="cp-header-text">
+        <div class="cp-fighter">{cs.fighterName}{cs.titleHeld ? ' 🏆' : ''}</div>
+        <div class="cp-record-line">
+          <span class="r-w">{gs.wins}</span>W&nbsp;–&nbsp;<span class="r-l">{gs.losses + gs.finishes}</span>L&nbsp;–&nbsp;<span class="r-d">{gs.draws}</span>D
+        </div>
+        <div class="cp-org-row">
+          <span class="cp-promo">{pDef?.promo}</span>
+          <span class="cp-rank {rankClass}">{rankText}</span>
+        </div>
+      </div>
+      {#if cs.avatar}
+        {#if canEdit}
+          <button class="cp-avatar cp-avatar-btn" title="Change hair & beard" onclick={() => editOpen = true}>
+            <FighterAvatar avatar={cs.avatar} org={pants} {beltType} {beltColor} {gloveColor} size={72} />
+          </button>
+        {:else}
+          <div class="cp-avatar"><FighterAvatar avatar={cs.avatar} org={pants} {beltType} {beltColor} {gloveColor} size={72} /></div>
+        {/if}
+      {/if}
     </div>
 
     <div class="cp-divider"></div>
@@ -200,10 +258,84 @@
       </div>
     {/if}
   </div>
+
+  {#if editOpen}
+    <div class="av-overlay" role="presentation" onclick={closeEdit}>
+      <div class="av-modal" role="dialog" aria-modal="true" onclick={(e) => e.stopPropagation()}>
+        <div class="av-head">
+          <h3 class="av-title">Appearance</h3>
+          <button class="av-close" aria-label="Close" onclick={closeEdit}>✕</button>
+        </div>
+        <div class="av-preview">
+          <FighterAvatar avatar={cs.avatar} org={pants} {beltType} {beltColor} {gloveColor} size={96} />
+        </div>
+        {#if locked}
+          <p class="av-locked">Already customised this round.</p>
+        {/if}
+        <div class="av-ctrl">
+          <span class="av-label">Hairstyle</span>
+          <div class="av-btns">
+            {#each HAIR_STYLES as h}
+              <button class="av-btn" class:sel={cs.avatar.hairStyle === h} disabled={locked}
+                onclick={() => setHair(h)}>{h}</button>
+            {/each}
+          </div>
+        </div>
+        <div class="av-ctrl">
+          <span class="av-label">Beard</span>
+          <div class="av-btns">
+            {#each BEARD_STYLES as b}
+              <button class="av-btn" class:sel={cs.avatar.beardStyle === b} disabled={locked}
+                onclick={() => setBeard(b)}>{b}</button>
+            {/each}
+          </div>
+        </div>
+        <div class="av-ctrl">
+          <span class="av-label">Pants colour</span>
+          <div class="av-btns">
+            {#each PANTS_OPTS as opt}
+              <button class="av-btn av-pants" class:sel={(cs.avatar.pantsChoice || 'custom') === opt.id} disabled={locked}
+                onclick={() => setPants(opt)}>
+                <span class="av-swatch" style="background: {opt.main}; border-color: {opt.trim}"></span>{opt.label}
+              </button>
+            {/each}
+          </div>
+        </div>
+        <button class="av-done" onclick={closeEdit}>Done</button>
+      </div>
+    </div>
+  {/if}
 {/if}
 
 <style>
   .career-panel { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px; margin-bottom:16px; }
+  .cp-header { display:flex; gap:12px; align-items:flex-start; }
+  .cp-header-text { flex:1; min-width:0; }
+  .cp-avatar { flex-shrink:0; width:72px; height:72px; background:rgba(255,255,255,0.04); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+  .cp-avatar-btn { position:relative; padding:0; cursor:pointer; transition:border-color 0.15s; }
+  .cp-avatar-btn:hover { border-color:var(--accent); }
+  .cp-avatar-edit { position:absolute; right:2px; bottom:1px; font-size:10px; color:var(--accent); background:rgba(0,0,0,0.55); border-radius:3px; padding:0 3px; line-height:1.5; pointer-events:none; }
+
+  /* Appearance popup */
+  .av-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.72); display:flex; align-items:center; justify-content:center; z-index:9999; padding:20px; }
+  .av-modal { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:18px 20px 20px; max-width:340px; width:100%; }
+  .av-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+  .av-title { font-family:var(--font-display); font-size:20px; letter-spacing:0.04em; color:var(--accent); }
+  .av-close { background:none; border:none; color:var(--text-muted); font-size:16px; cursor:pointer; padding:2px 6px; }
+  .av-close:hover { color:var(--accent); }
+  .av-preview { display:flex; justify-content:center; background:#0c0e16; border:1px solid var(--border); border-radius:var(--radius); padding:10px 0; margin-bottom:14px; }
+  .av-preview :global(canvas) { image-rendering:pixelated; }
+  .av-ctrl { margin-bottom:12px; }
+  .av-label { display:block; font-size:10px; letter-spacing:0.12em; text-transform:uppercase; color:var(--text-muted); margin-bottom:6px; }
+  .av-btns { display:flex; gap:5px; flex-wrap:wrap; }
+  .av-btn { font-size:11px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; background:var(--surface2); border:1px solid var(--border); border-radius:4px; color:var(--text-muted); padding:5px 9px; cursor:pointer; transition:all 0.12s; }
+  .av-btn:hover:not(:disabled) { border-color:var(--accent); color:var(--text); }
+  .av-btn.sel { border-color:var(--accent); color:var(--accent); background:rgba(232,193,74,0.1); }
+  .av-btn:disabled { opacity:0.4; cursor:not-allowed; }
+  .av-pants { display:inline-flex; align-items:center; gap:6px; }
+  .av-swatch { width:12px; height:12px; border-radius:3px; border:2px solid; flex-shrink:0; }
+  .av-locked { font-size:11px; color:var(--amber); text-align:center; margin:-4px 0 12px; }
+  .av-done { width:100%; margin-top:6px; background:var(--accent); color:#0d0d0f; border:none; border-radius:var(--radius); font-family:var(--font-display); font-size:15px; letter-spacing:0.05em; padding:9px; cursor:pointer; }
   .cp-fighter { font-family:var(--font-display); font-size:22px; letter-spacing:0.04em; color:var(--text); line-height:1.1; width:100%; word-break:break-word; margin-bottom:3px; }
   .cp-record-line { font-family:var(--font-display); font-size:14px; letter-spacing:0.04em; color:var(--text-muted); margin-bottom:4px; }
   .cp-record-line .r-w { color:var(--green); } .cp-record-line .r-d { color:var(--amber); } .cp-record-line .r-l { color:var(--red); }

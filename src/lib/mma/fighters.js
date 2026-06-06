@@ -19,8 +19,24 @@ import {
 } from './constants.js';
 
 import { shuffle, rng, randInt } from './utils.js';
-import { pickEthnicGroup, pickFighterName, pickFightStyleForEthnicity, pickNationality, STYLE_ID_TO_PROFILE } from './names.js';
-import { isoToFlag, countryName } from './countries.js';
+import { pickEthnicGroup, pickFighterName, pickFightStyleForEthnicity, pickNationality, STYLE_ID_TO_PROFILE, surnameLookOverride } from './names.js';
+import { isoToFlag, countryName, COUNTRY_BY_NAME } from './countries.js';
+import { REGIONS } from './regions.js';
+import { ethnicAvatar } from '../avatar/ethnicLooks.js';
+
+// Snapshot a fighter's appearance once, at creation. Origin priority:
+// distinctive surname → generated ethnicity → dominant ethnicity of their region.
+function dominantEthnicity(nationality) {
+  const dist = REGIONS[COUNTRY_BY_NAME[nationality]?.regionId]?.ethnicDistribution;
+  if (!dist) return 'vintage';
+  let best = 'vintage', bw = -1;
+  for (const [k, w] of Object.entries(dist)) { if (k !== '*' && w > bw) { bw = w; best = k; } }
+  return best;
+}
+function makeLook(name, ethnicity, nationality, fid) {
+  const origin = surnameLookOverride(name) || ethnicity || dominantEthnicity(nationality);
+  return ethnicAvatar(origin, fid);
+}
 
 /* ── The registry ─────────────────────────────────────── */
 export let FIGHTERS = new Map();
@@ -343,6 +359,8 @@ export function divisionSlotToOpponent(fidOrObj, slot, cs) {
     style:        f.style || '',
     flag:         f.flag || '',
     nationality:  f.nationality || '',
+    ethnicity:    f.ethnicity || null,
+    look:         f.look || null,
     signatureMoves: f.signatureMoves,
     divisionSlot: slot,
     classLabel:   clf.label,
@@ -369,7 +387,7 @@ export function generateProcedural({ ethnicDist = null, usedFirstNames, usedLast
   } while (nameTaken(name) && outer < 40);
   const nat   = pickNationality(id);
   const style = STYLE_ID_TO_PROFILE[pickFightStyleForEthnicity(id)] || rng(ALL_PROFILE_STYLES);
-  return { fn, ln, nick, name, style, flag: nat.flag, nationality: nat.name };
+  return { fn, ln, nick, name, style, flag: nat.flag, nationality: nat.name, ethnicity: id };
 }
 
 /* ── Division builder ────────────────────────────────── */
@@ -397,7 +415,7 @@ export function buildDivision(phaseDef, fighterName, ethnicDist = null) {
       usedFirstNames.add(rf.fn);
       usedLastNames.add(rf.ln);
       usedNicks.add(rf.nick);
-      return { name: rosterName, rosterId: rf.id, style: rf.style, flag: isoToFlag(rf.nat), nationality: countryName(rf.nat) };
+      return { name: rosterName, rosterId: rf.id, style: rf.style, flag: isoToFlag(rf.nat), nationality: countryName(rf.nat), ethnicity: null };
     }
     // Procedural fallback when roster is exhausted — unique within the division
     // (by name part) and globally (full name not already in the registry).
@@ -405,7 +423,7 @@ export function buildDivision(phaseDef, fighterName, ethnicDist = null) {
     const gen = generateProcedural({ ethnicDist, usedFirstNames, usedLastNames, usedNicks });
     if (gen.nick) usedNicks.add(gen.nick);
     usedFirstNames.add(gen.fn); usedLastNames.add(gen.ln);
-    return { name: gen.name, rosterId: null, style: gen.style, flag: gen.flag, nationality: gen.nationality };
+    return { name: gen.name, rosterId: null, style: gen.style, flag: gen.flag, nationality: gen.nationality, ethnicity: gen.ethnicity };
   }
 
   // Derive phase number from phaseDef.name (caller passes PHASES[n])
@@ -422,7 +440,7 @@ export function buildDivision(phaseDef, fighterName, ethnicDist = null) {
     if (i === 0) {
       slots.push('player');
     } else {
-      const { name, rosterId, style, flag, nationality } = nextRosterOrProcedural();
+      const { name, rosterId, style, flag, nationality, ethnicity } = nextRosterOrProcedural();
       let w, l, d = 0;
       const rank = i;
 
@@ -472,13 +490,15 @@ export function buildDivision(phaseDef, fighterName, ethnicDist = null) {
 
       const rec = d ? `${w}-${l}-${d}` : `${w}-${l}`;
       const totalFights = w + l + d;
+      const fid = makeFid();
       const fighter = {
-        fid:            makeFid(),
+        fid,
         name, record:  rec,
         wins: w, losses: l, draws: d,
         isPlayer:       false,
         rosterId,       style,
-        flag, nationality,
+        flag, nationality, ethnicity,
+        look:           makeLook(name, ethnicity, nationality, fid), // appearance snapshot
         signatureMoves: makeSignatureMoves(),
         isRising:       risingSlots.has(i),
         prevSlot:       i,

@@ -78,6 +78,58 @@ export function divisionEthnicDist(cs) {
 export function getPlayerSlot(cs) { return cs.division ? cs.division.playerSlot : 0; }
 export function isPhaseChampion(cs) { return getPlayerSlot(cs) === CHAMP_SLOT; }
 
+// ── Avatar: pants style + belt colour for the current division ──────────
+// Each regional promotion (phase 1) carries its own belt colour.
+const REGION_BELT = {
+  southeast_usa: '#8a5a2a',  // saddle brown
+  texas:         '#c0392b',  // Lone Star crimson
+  california:    '#e67e22',  // Pacific orange
+  new_york:      '#1565c0',  // Empire royal blue
+  midwest_usa:   '#2e7d32',  // Heartland forest green
+  florida:       '#f9a825',  // Sunshine gold
+  mexico:        '#00695c',  // Aztec dark teal
+  brazil:        '#0288d1',  // Selecao sky blue
+  uk_ireland:    '#7c4dff',  // Celtic violet
+  eastern_europe:'#546e7a',  // Iron Curtain steel grey
+  japan:         '#b71c1c',  // Rising Sun dark crimson
+  korea:         '#6a1b9a',  // Seoul imperial purple
+  west_africa:   '#f57f17',  // Lagos amber
+};
+// Pants pattern that matches the org the player currently competes in.
+export function divisionPants(cs) {
+  if (!cs) return 'gfl';
+  if (cs.phase === 1) return 'regional';
+  if (cs.phase === 2) return /king/i.test(cs.phase2Name || '') ? 'kfc' : 'apex';
+  return 'gfl';
+}
+// Champion pants: black with gold trim.
+export const CHAMP_PANTS = { main: '#181820', trim: '#d8b23a' };
+
+// Glove colours: gold in title bouts, otherwise red for the higher-ranked
+// fighter and blue for the lower-ranked one (higher slot index = higher rank).
+export const GLOVE_GOLD = '#d8b23a', GLOVE_RED = '#8f1f1f', GLOVE_BLUE = '#1f3f8f';
+export function gloveColorFor(mySlot, oppSlot, isTitleFight, redOnTie = false) {
+  if (isTitleFight) return GLOVE_GOLD;
+  if (mySlot === oppSlot) return redOnTie ? GLOVE_RED : GLOVE_BLUE;
+  return mySlot > oppSlot ? GLOVE_RED : GLOVE_BLUE;
+}
+
+// Belt design type for the current division (matches the Character Creator belts).
+export function divisionBeltType(cs) {
+  if (!cs) return 'gfl';
+  if (cs.phase === 1) return 'regional';
+  if (cs.phase === 2) return /king/i.test(cs.phase2Name || '') ? 'kfc' : 'apex';
+  return 'gfl';
+}
+
+// Belt colour of the current division's title.
+export function divisionBeltColor(cs) {
+  if (!cs) return '#d8b23a';
+  if (cs.phase === 1) return REGION_BELT[cs.regionId] || '#b5773a';
+  if (cs.phase === 2) return /king/i.test(cs.phase2Name || '') ? '#b41f2f' : '#1f8a86';
+  return '#d8b23a'; // GFL gold
+}
+
 /* ── Per-organisation title tracking ─────────────────── */
 // Each promotion (phase) has its own belt, tracked separately:
 //   { reigns, defenseStreak, bestDefenseStreak, held }
@@ -943,6 +995,17 @@ export function initState(state, activeModId) {
     playerNat:          '',
     playerFlag:         '',
     playerNationality:  '',
+    // ── Fighter avatar (set in the Character Creator) ─────
+    // shortsBase/Trim are the ACTIVE pants colours; customBase/Trim hold the
+    // creator's "Custom" preset. pantsChoice selects which preset is active.
+    avatar: {
+      skinIdx: 0, hairStyle: 'short', hairColorIdx: 0,
+      beardStyle: 'none', beardColorIdx: 0, org: 'gfl',
+      shortsBase: '#181820', shortsTrim: '#e8e8ec',
+      customBase: '#181820', customTrim: '#e8e8ec',
+      pantsChoice: 'custom',
+    },
+    avatarEditFight: -1,   // fightIndex the avatar was last edited (one edit per round)
     gflEventNum:       randInt(1, 300), // GFL event counter, advances every fight
     titles:             { 1: blankTitle(), 2: blankTitle(), 3: blankTitle() },
     calloutRecord:      {},

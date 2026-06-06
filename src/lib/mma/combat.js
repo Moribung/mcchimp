@@ -405,7 +405,7 @@ export function resolveResult(state, cs, q, selectedSet, pctUsed, activeLength) 
       } else if (phase === 2) {
         eventName = cs.phase2Name || 'Apex Combat';
       } else {
-        eventName = 'Regional FC';
+        eventName = cs.phase1OrgName || 'Regional FC';
       }
     }
 
@@ -568,12 +568,8 @@ export function setupNextFight(state, cs, pinnedOpponent) {
     _pinnedOppSlot = pinnedOpponent.divisionSlot;
   }
 
-  // Run NPC round (skip on first fight in a fresh division)
-  if (cs.freshDivision) {
-    cs.freshDivision = false;
-  } else {
-    advanceDivision(state, cs);
-  }
+  cs.freshDivision = false;
+  advanceDivision(state, cs);
 
   // Restore the called-out opponent to their pinned slot.
   // The NPC round can only move the player UP (retirements / promotions only

@@ -8,6 +8,7 @@
     loadAllSaves, deleteSave as deleteSaveRow, toggleSaveStar, getUserLimits,
   } from '$lib/saves.js';
   import { PHASES, CHAMP_SLOT, RANKED_START } from '$lib/mma/constants.js';
+  import FighterAvatar from '$lib/avatar/FighterAvatar.svelte';
 
   const { onloadcareer, onnewcareer, onback } = $props();
 
@@ -53,6 +54,7 @@
   function getPhaseLabel(save) {
     const career = save.save_data?.career;
     const phase  = career?.phase ?? 1;
+    if (phase === 1 && career?.phase1OrgName) return career.phase1OrgName;
     if (phase === 2 && career?.phase2Name) return career.phase2Name;
     return PHASES[phase]?.promo ?? 'Regional FC';
   }
@@ -138,6 +140,10 @@
               title={save.starred ? 'Unstar' : 'Star'}
               onclick={() => onStar(save)}
             >★</button>
+
+            <div class="sc-avatar">
+              <FighterAvatar avatar={save.save_data?.career?.avatar} size={48} />
+            </div>
 
             <div class="sc-info">
               <div class="sc-name">{save.fighter_name || save.save_data?.career?.fighterName || '—'}</div>
@@ -232,6 +238,8 @@
   }
   .sc-star:hover { color: var(--accent); }
   .sc-star.starred { color: var(--accent); }
+
+  .sc-avatar { flex-shrink: 0; }
 
   .sc-info { flex: 1; min-width: 0; }
   .sc-name {

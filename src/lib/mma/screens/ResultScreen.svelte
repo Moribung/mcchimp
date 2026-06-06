@@ -70,6 +70,7 @@
     assignDivisionQuestions(gs, newDiv, cs.phase);
     cs.pendingEvent   = null;
     cs.freshDivision  = true;
+    cs.divisionNews   = [];
     const firstFid    = newDiv.slots[1];
     gs.currentOpponent = (firstFid && firstFid !== 'player')
       ? divisionSlotToOpponent(firstFid, 1, cs) : null;
@@ -99,6 +100,7 @@
     assignDivisionQuestions(gs, cs.division, cs.phase);
     cs.pendingEvent  = null;
     cs.freshDivision = true;
+    cs.divisionNews  = [];
     const firstFid   = cs.division.slots[1];
     gs.currentOpponent = (firstFid && firstFid !== 'player')
       ? divisionSlotToOpponent(firstFid, 1, cs) : null;
