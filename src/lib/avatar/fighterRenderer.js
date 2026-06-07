@@ -142,7 +142,7 @@ function drawBase(g, cfg) {
   if (hs === 'buzz')        r(13, 13, 6, 1, K_HAIR);
   else if (hs === 'short') { r(13, 12, 6, 2, K_HAIR); r(13, 14, 1, 1, K_HAIR); r(18, 14, 1, 1, K_HAIR); }
   else if (hs === 'mohawk') r(15, 9, 2, 5, K_HAIR);
-  else if (hs === 'afro')  { r(12, 10, 8, 4, K_HAIR); r(13, 9, 6, 1, K_HAIR); }
+  else if (hs === 'afro')  { r(12, 10, 8, 4, K_HAIR); r(13, 9, 6, 1, K_HAIR); r(12, 14, 2, 1, K_HAIR); r(18, 14, 2, 1, K_HAIR); }
   else if (hs === 'long')  { r(13, 12, 6, 2, K_HAIR); r(13, 14, 1, 6, K_HAIR); r(18, 14, 1, 6, K_HAIR); }
   // bald → no hair
 }

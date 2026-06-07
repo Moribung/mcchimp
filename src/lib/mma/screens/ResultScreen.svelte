@@ -3,6 +3,7 @@
 <script>
 
   import { state as gs }          from '$lib/mma/state.svelte.js';
+  import ArenaScene               from '$lib/mma/ArenaScene.svelte';
   import { buildDivision, divisionSlotToOpponent } from '$lib/mma/fighters.js';
   import { PHASES }               from '$lib/mma/constants.js';
   import { getPhaseDef }          from '$lib/mma/career.js';
@@ -23,6 +24,16 @@
     cs ? getPhaseDef({ ...cs, phase }).promo : (PHASES[phase]?.promo ?? '');
 
   const labelClass = $derived(result ? result.resultClass : '');
+
+  // Arena reveal: win/loss/draw + whether the bout ended in a finish (vs decision).
+  const arenaResult = $derived.by(() => {
+    if (!result) return null;
+    const outcome = result.resultClass === 'win'  ? 'win'
+                  : result.resultClass === 'draw' ? 'draw'
+                  : 'loss';
+    const finish = !/Decision|Draw/i.test(result.rolled?.method || '');
+    return { outcome, finish };
+  });
 
   // ── Next Fight ────────────────────────────────────────
   function onNextFight() {
@@ -133,6 +144,18 @@
 <svelte:window onkeydown={onKeydown} />
 
 {#if result}
+  <!-- Arena visual -->
+  {#if !gs.sparring && gs.arenaScene}
+    <ArenaScene
+      background={gs.arenaScene.background}
+      enclosure={gs.arenaScene.enclosure}
+      mat={gs.arenaScene.mat}
+      player={gs.arenaScene.player}
+      opp={gs.arenaScene.opp}
+      result={arenaResult}
+    />
+  {/if}
+
   <!-- Result header -->
   <div class="result-icon">{result.rolled.icon}</div>
   <div class="result-label {result.resultClass}">{result.rolled.outcome}</div>

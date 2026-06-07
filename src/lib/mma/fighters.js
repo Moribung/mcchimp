@@ -103,6 +103,14 @@ export function recLoss(fid) {
   f.record = buildRec(f.wins || 0, f.losses, f.draws || 0);
 }
 
+// Record an NPC winning the championship of their current division. Counts
+// reigns won while in this division; reset to 0 whenever a fighter changes
+// divisions (the "former champion" tag is division-scoped).
+export function recTitleWin(fid) {
+  const f = FIGHTERS.get(fid); if (!f) return;
+  f.divTitleWins = (f.divTitleWins || 0) + 1;
+}
+
 export function recDraw(fid) {
   const f = FIGHTERS.get(fid); if (!f) return;
   f.draws = (f.draws || 0) + 1;
@@ -175,6 +183,8 @@ function nameTaken(name) {
 export function classifyFighter(slot, divisionSlot, phase, isChamp) {
   if (slot.isPlayer) return { label: 'You', emoji: '🥊' };
   if (isChamp)       return { label: 'Champion', emoji: '🏆' };
+  // Multi-time champion of this division who's since lost the belt.
+  if ((slot.divTitleWins || 0) > 1) return { label: 'Former Champion', emoji: '👑' };
 
   const w = slot.wins   != null ? slot.wins   : parseInt((slot.record || '0').split('-')[0]) || 0;
   const l = slot.losses != null ? slot.losses : parseInt((slot.record || '0').split('-')[1]) || 0;

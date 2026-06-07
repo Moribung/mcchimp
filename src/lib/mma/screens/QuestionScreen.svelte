@@ -6,8 +6,12 @@
   import { resolveResult } from '$lib/mma/combat.js';
   import { scoreQuestion } from '$lib/mma/questions.js';
   import { DIFF_LABELS, DIFF_COLORS } from '$lib/mma/constants.js';
+  import ArenaScene from '$lib/mma/ArenaScene.svelte';
+  import { pickArenaScene } from '$lib/mma/arenaScene.js';
 
   const { onsave } = $props();
+
+  // ── Arena scene (values stored in gs, shared with ResultScreen) ─────────
 
   const q        = $derived(gs.currentQuestion);
   const qtype    = $derived(q?.type || 'multi_select');
@@ -187,6 +191,7 @@
 
   onMount(() => {
     revealed = false;
+    gs.arenaScene = pickArenaScene(gs);
     gs.timerRunning = true;
     startTimer();
   });
@@ -221,6 +226,20 @@
 <svelte:window onkeydown={onKeydown} />
 
 {#if q}
+  <!-- Arena visual -->
+  {#if !gs.sparring && gs.career}
+    <ArenaScene
+      background={gs.arenaScene?.background ?? 'bg_empty'}
+      enclosure={gs.arenaScene?.enclosure ?? 'none'}
+      mat={gs.arenaScene?.mat ?? 'none'}
+      player={gs.arenaScene?.player}
+      opp={gs.arenaScene?.opp}
+      showRef={true}
+      animate={true}
+      duration={(gs.effectiveTimer || 45) * 1000}
+    />
+  {/if}
+
   <!-- Header -->
   <div class="question-header">
     <p class="question-meta">

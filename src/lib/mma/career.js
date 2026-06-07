@@ -14,7 +14,7 @@ import {
 
 import {
   FIGHTERS, makeFid, buildRec, resetFighters, makeSignatureMoves,
-  gf, recWin, recLoss, recDraw,
+  gf, recWin, recLoss, recDraw, recTitleWin,
   swapSlots, migrateDivSlots, buildDivision, divisionSlotToOpponent, activeNameSet,
   generateProcedural,
 } from './fighters.js';
@@ -480,7 +480,7 @@ export function simulateNPCBouts(state, div, newsLog = null) {
         slots.splice(newSlot, 0, displaced);
         if (div.playerSlot >= newSlot && div.playerSlot < challengerIdx) div.playerSlot++;
       } else {
-        recLoss(champFid); recWin(challFid);
+        recLoss(champFid); recWin(challFid); recTitleWin(challFid);
         swapSlots(div, CHAMP_SLOT, challengerIdx);
         if (div.playerSlot === challengerIdx)  div.playerSlot = CHAMP_SLOT;
         else if (div.playerSlot === CHAMP_SLOT) div.playerSlot = challengerIdx;
@@ -545,8 +545,8 @@ export function interDivisionExchanges(state, cs, newsLog = null) {
         const displaced  = toDiv.slots[landSlot];
         const displacedF = displaced ? gf(displaced) : null;
 
-        champF.prevSlot = null; champF.questionId = null; champF.isRising = false; champF.isNew = true; champF.divChangeCooldown = 3;
-        if (displacedF) { displacedF.prevSlot = null; displacedF.questionId = null; displacedF.isNew = true; displacedF.divChangeCooldown = 3; }
+        champF.prevSlot = null; champF.questionId = null; champF.isRising = false; champF.isNew = true; champF.divChangeCooldown = 3; champF.divTitleWins = 0;
+        if (displacedF) { displacedF.prevSlot = null; displacedF.questionId = null; displacedF.isNew = true; displacedF.divChangeCooldown = 3; displacedF.divTitleWins = 0; }
         toDiv.slots[landSlot] = champFid;
         if (newsLog && (fromPhase === cs.phase || toPhase === cs.phase)) {
           newsLog.push({ priority: 1, type: 'championship', text: `${lastName(champF.name)} moves up to ${PHASES[toPhase].promo}` });
@@ -570,7 +570,7 @@ export function interDivisionExchanges(state, cs, newsLog = null) {
           const winner = aWins ? a : b;
           const loser  = aWins ? b : a;
 
-          recWin(winner.fid); recLoss(loser.fid);
+          recWin(winner.fid); recLoss(loser.fid); recTitleWin(winner.fid);
 
           // Winner becomes champion; shift slots below winner.slot up to close the gap,
           // with the displaced fighter from the next division filling the bottom slot.
@@ -602,7 +602,7 @@ export function interDivisionExchanges(state, cs, newsLog = null) {
         } else if (contenders.length === 1) {
           // Only one available contender — they claim the vacant title uncontested
           const [a] = contenders;
-          recWin(a.fid);
+          recWin(a.fid); recTitleWin(a.fid);
           fromDiv.slots[CHAMP_SLOT] = a.fid;
           for (let s = a.slot; s > 1; s--) fromDiv.slots[s] = fromDiv.slots[s - 1];
           fromDiv.slots[1] = displaced || null;
@@ -640,8 +640,8 @@ export function interDivisionExchanges(state, cs, newsLog = null) {
       const demFid   = toDiv.slots[toSlot];
       const promF    = gf(promFid);
       const demF     = gf(demFid);
-      if (promF) { promF.prevSlot = null; promF.questionId = null; promF.isRising = false; promF.isNew = true; promF.divChangeCooldown = 3; }
-      if (demF)  { demF.prevSlot  = null; demF.questionId  = null; demF.isNew = true; demF.divChangeCooldown = 3; }
+      if (promF) { promF.prevSlot = null; promF.questionId = null; promF.isRising = false; promF.isNew = true; promF.divChangeCooldown = 3; promF.divTitleWins = 0; }
+      if (demF)  { demF.prevSlot  = null; demF.questionId  = null; demF.isNew = true; demF.divChangeCooldown = 3; demF.divTitleWins = 0; }
 
       toDiv.slots[toSlot] = promFid;
       for (let s = fromSlot; s > 1; s--) fromDiv.slots[s] = fromDiv.slots[s - 1];
@@ -696,12 +696,77 @@ export function advanceDivision(state, cs) {
   }
 }
 
+/* ── Conscription ────────────────────────────────────── */
+// Generate a replacement NPC for `phase`: drawn from the cut pool (40% when one
+// fits) or freshly generated from the phase's ethnic spread. Returns the new fid.
+function makeConscript(state, phase) {
+  // Names currently visible in the rankings — keep new fighters unique against them.
+  const usedNames = activeNameSet(state.career.divisions, state.career.fighterName);
+  if (!state.career.cutPool) state.career.cutPool = [];
+  const pool = state.career.cutPool;
+
+  const eligible = pool.filter(cf => {
+    const ff = gf(cf);
+    return ff && (ff.maxPhase || 1) >= phase && !usedNames.has(ff.name);
+  });
+  if (eligible.length && Math.random() < 0.40) {
+    const drawn = eligible[Math.floor(Math.random() * eligible.length)];
+    pool.splice(pool.indexOf(drawn), 1);
+    const df = gf(drawn);
+    if (df) { df.isNew = true; df.prevSlot = null; df.questionId = null; }
+    return drawn;
+  }
+
+  // Replacement reflects the current phase's ethnic spread (region / tier).
+  const ethnicDist = divisionEthnicDist(state.career);
+  let gen, tries = 0;
+  do {
+    gen = generateProcedural({ ethnicDist });
+    tries++;
+  } while (usedNames.has(gen.name) && tries < 60);
+  const isRising = Math.random() < 0.35;
+  let w, l;
+  if (isRising) { w = randInt(4, 8); l = Math.random() < 0.2 ? 1 : 0; }
+  else {
+    const roll = Math.random();
+    if (roll < 0.20)      { w = 0; l = randInt(1, 4); }
+    else if (roll < 0.55) { w = randInt(1, 3); l = randInt(3, 7); }
+    else                  { w = randInt(1, 4); l = randInt(2, 5); }
+  }
+  const nf = {
+    fid: makeFid(), name: gen.name,
+    wins: w, losses: l, draws: 0,
+    record: buildRec(w, l, 0),
+    style: gen.style,
+    flag: gen.flag, nationality: gen.nationality,
+    signatureMoves: makeSignatureMoves(),
+    rosterId: null, isPlayer: false, isRising,
+    questionId: null, isNew: true, prevSlot: null, maxPhase: phase,
+    npcDurability: Math.max(20, Math.round(100 - (w + l) * 1.0)),
+  };
+  FIGHTERS.set(nf.fid, nf);
+  return nf.fid;
+}
+
 /* ── Bottom slot refresh ─────────────────────────────── */
 export function maybeRefreshBottomSlots(state, div, phase, newsLog = null) {
   if (!div || !div.slots) return;
   migrateDivSlots(div);
   const { slots, playerSlot } = div;
 
+  // Fill any empty slots left behind by retirements with fresh conscripts, so the
+  // division stays full as fighters retire.
+  for (let i = 1; i < CHAMP_SLOT; i++) {
+    if (i === playerSlot || slots[i]) continue;
+    const newFid = makeConscript(state, phase);
+    slots[i] = newFid;
+    if (newsLog) {
+      const nf = gf(newFid);
+      if (nf?.isRising) newsLog.push({ priority: 3, type: 'prospect', text: `${lastName(nf.name)} enters — rising prospect` });
+    }
+  }
+
+  // Cut chronically-losing fighters from the bottom three slots and replace them.
   for (let i = 1; i <= 3; i++) {
     if (i === playerSlot) continue;
     const fid = slots[i];
@@ -720,7 +785,7 @@ export function maybeRefreshBottomSlots(state, div, phase, newsLog = null) {
     const cutChance         = Math.min(0.70, 0.25 + ls * 0.10);
     if (total < 8 || lossRate < lossRateThreshold || Math.random() >= cutChance) continue;
 
-    // Cut this fighter
+    // Cut this fighter, then bring in a replacement.
     f.maxPhase = phase;
     if (!state.career.cutPool) state.career.cutPool = [];
     state.career.cutPool.push(fid);
@@ -728,53 +793,7 @@ export function maybeRefreshBottomSlots(state, div, phase, newsLog = null) {
       state.career.cutPool.splice(Math.floor(Math.random() * state.career.cutPool.length), 1);
     }
 
-    // Names currently visible in the rankings — keep new fighters unique against them.
-    const usedNames = activeNameSet(state.career.divisions, state.career.fighterName);
-
-    let newFid = null;
-    const eligible = state.career.cutPool.filter(cf => {
-      if (cf === fid) return false;
-      const ff = gf(cf);
-      return ff && (ff.maxPhase || 1) >= phase && !usedNames.has(ff.name);
-    });
-    if (eligible.length && Math.random() < 0.40) {
-      const drawn = eligible[Math.floor(Math.random() * eligible.length)];
-      state.career.cutPool.splice(state.career.cutPool.indexOf(drawn), 1);
-      const df = gf(drawn);
-      if (df) { df.isNew = true; df.prevSlot = null; df.questionId = null; }
-      newFid = drawn;
-    }
-    if (!newFid) {
-      // Replacement reflects the current phase's ethnic spread (region / tier).
-      const ethnicDist = divisionEthnicDist(state.career);
-      let gen, tries = 0;
-      do {
-        gen = generateProcedural({ ethnicDist });
-        tries++;
-      } while (usedNames.has(gen.name) && tries < 60);
-      const isRising = Math.random() < 0.35;
-      let w, l;
-      if (isRising) { w = randInt(4, 8); l = Math.random() < 0.2 ? 1 : 0; }
-      else {
-        const roll = Math.random();
-        if (roll < 0.20)      { w = 0; l = randInt(1, 4); }
-        else if (roll < 0.55) { w = randInt(1, 3); l = randInt(3, 7); }
-        else                  { w = randInt(1, 4); l = randInt(2, 5); }
-      }
-      const nf = {
-        fid: makeFid(), name: gen.name,
-        wins: w, losses: l, draws: 0,
-        record: buildRec(w, l, 0),
-        style: gen.style,
-        flag: gen.flag, nationality: gen.nationality,
-        signatureMoves: makeSignatureMoves(),
-        rosterId: null, isPlayer: false, isRising,
-        questionId: null, isNew: true, prevSlot: null, maxPhase: phase,
-        npcDurability: Math.max(20, Math.round(100 - (w + l) * 1.0)),
-      };
-      FIGHTERS.set(nf.fid, nf);
-      newFid = nf.fid;
-    }
+    const newFid = makeConscript(state, phase);
     if (newsLog) {
       const nf = gf(newFid);
       if (nf?.isRising) {

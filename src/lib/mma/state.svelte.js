@@ -80,6 +80,9 @@ export const state = $state({
   retiredForcefully:  false,
   _calloutOpponent:   null,     // set when callout is accepted, consumed by acceptCalloutFight
 
+  // ── Arena scene (set once per fight, shared by fight + result screens) ──
+  arenaScene:     null,   // { background, enclosure, mat }
+
   // ── Save slot ─────────────────────────────────────────
   saveId:         null,         // UUID of the current active save row in career_saves
   _newHistoryId:  null,         // UUID of a freshly archived career — highlights it in past_careers screen

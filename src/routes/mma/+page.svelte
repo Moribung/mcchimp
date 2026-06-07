@@ -127,7 +127,27 @@
   })());
 
   // ── Sidebar: ranking-row hover popup ──────────────────
-  let hoverPop = $state(null);   // { x, y, name, record, rate, rateColor, clfEmoji, clfLabel, style, rising }
+  let hoverPop = $state(null);   // { x, y, slotIdx, name, record, rate, rateColor, clfEmoji, clfLabel, style, rising }
+
+  // Touch devices can't hover, so the popup is opened by tapping a row instead
+  // (with a "Call out" button inside it when a callout is available).
+  let isTouch = $state(false);
+  onMount(() => { isTouch = window.matchMedia?.('(hover: none)').matches ?? false; });
+
+  // Row interaction: hover opens the popup on pointer devices; on touch a tap
+  // toggles it. The bare row-tap no longer triggers a callout on touch — that's
+  // the popup's button — so info is always reachable without a mouse.
+  function onRowEnter(e, row) { if (!isTouch) showRowPop(e, row); }
+  function onRowLeave()       { if (!isTouch) hoverPop = null; }
+  function onRowClick(e, row) {
+    if (row.isPlayer) return;
+    if (isTouch) {
+      if (hoverPop && hoverPop.slotIdx === row.i) hoverPop = null;
+      else showRowPop(e, row);
+    } else if (canCallout) {
+      openCallout(row.i);
+    }
+  }
 
   function showRowPop(e, row) {
     if (row.isPlayer || !gs.career) { hoverPop = null; return; }
@@ -158,6 +178,7 @@
       // Anchor to the LEFT of the row (sidebar sits on the right edge of the screen).
       x: rect.left,
       y: rect.top + rect.height / 2,
+      slotIdx: row.i,
       name: f.name,
       record: f.record,
       rate, rateColor, total,
@@ -791,13 +812,13 @@
                     class:rt-player={row.isPlayer}
                     class:rt-champ={row.isChamp}
                     class:rt-next={row.isNext}
-                    class:rt-clickable={!row.isPlayer && canCallout}
-                    onclick={() => { if (!row.isPlayer && canCallout) openCallout(row.i); }}
-                    role={!row.isPlayer && canCallout ? 'button' : undefined}
-                    tabindex={!row.isPlayer && canCallout ? 0 : undefined}
+                    class:rt-clickable={!row.isPlayer && (canCallout || isTouch)}
+                    onclick={(e) => onRowClick(e, row)}
+                    role={!row.isPlayer && (canCallout || isTouch) ? 'button' : undefined}
+                    tabindex={!row.isPlayer && (canCallout || isTouch) ? 0 : undefined}
                     onkeydown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && !row.isPlayer && canCallout) openCallout(row.i); }}
-                    onmouseenter={(e) => showRowPop(e, row)}
-                    onmouseleave={() => (hoverPop = null)}
+                    onmouseenter={(e) => onRowEnter(e, row)}
+                    onmouseleave={onRowLeave}
                   >
                     <td class="rt-rank">{row.rankNum}</td>
                     <td class="rt-name">
@@ -829,11 +850,15 @@
       </aside>
     {/if}
 
-    <!-- Ranking-row hover popup (fixed, follows the hovered row) -->
+    <!-- Ranking-row popup: hover-anchored on pointer devices, a tap-driven
+         bottom sheet on touch (with a Call out button when one is available). -->
     {#if hoverPop}
+      {#if isTouch}
+        <div class="rtp-backdrop" onclick={() => (hoverPop = null)}></div>
+      {/if}
       <div
-        class="rt-popup"
-        style="left: {hoverPop.x}px; top: {hoverPop.y}px;"
+        class="rt-popup {isTouch ? 'rtp-sheet' : ''}"
+        style={isTouch ? '' : `left: ${hoverPop.x}px; top: ${hoverPop.y}px;`}
       >
         <div class="rtp-body">
           <div class="rtp-avatar">
@@ -855,6 +880,11 @@
             {/if}
           </div>
         </div>
+        {#if isTouch && canCallout}
+          <button class="rtp-callout" onclick={() => { openCallout(hoverPop.slotIdx); hoverPop = null; }}>
+            📢 Call out {hoverPop.name}
+          </button>
+        {/if}
       </div>
     {/if}
 
@@ -1163,6 +1193,33 @@
   .rtp-style { color: var(--text-muted); font-style: italic; font-weight: 600; }
   .rtp-rising{ font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--green); margin-top: 3px; }
   .rtp-vs    { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); margin-top: 3px; }
+
+  /* Touch: tap-driven bottom sheet instead of the hover-anchored popup. */
+  .rtp-backdrop { position: fixed; inset: 0; z-index: 199; background: rgba(0,0,0,0.5); }
+  .rt-popup.rtp-sheet {
+    left: 0; right: 0; bottom: 0; top: auto;
+    transform: none;
+    width: 100%;
+    max-width: none;
+    border-radius: var(--radius) var(--radius) 0 0;
+    border-left: none; border-right: none; border-bottom: none;
+    padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
+    pointer-events: auto;
+  }
+  .rtp-callout {
+    margin-top: 14px;
+    width: 100%;
+    padding: 12px;
+    background: var(--accent);
+    color: #1A1A1A;
+    border: none;
+    border-radius: var(--radius);
+    font-family: var(--font-display);
+    font-size: 15px;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+  }
+  .rtp-callout:active { filter: brightness(0.92); }
 
   /* Saving overlay */
   .saving-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.82); display: flex; align-items: center; justify-content: center; z-index: 10000; }
