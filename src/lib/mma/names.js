@@ -83,7 +83,7 @@ export const ETHNIC_GROUPS = {
   korean: {
     firstNames:['Doo','Chan','Jun','Yong','Hyung','Sung','Jin','Hwan','Seung','Min','Jae','Tae','Dong','Kang','Soo','Woo','Kwang','Byung','Chul','Hee','Sang','Myung','Young'],
     lastNames:['Kim','Lee','Park','Choi','Jung','Kang','Cho','Yoon','Jang','Im','Han','Oh','Seo','Shin','Kwon','Hwang','Ahn','Song','Hong','Yoo'],
-    nicknames:['The Korean Zombie','The Assassin','The Lion','The Dragon','Iron Fist','The Warrior','Thunderfoot','Tiger','The Ironman','The Destroyer','Comet','The Ghost','Black Belt','Stone Hands'],
+    nicknames:['The Zombie','The Assassin','The Lion','The Dragon','Iron Fist','The Warrior','Thunderfoot','Tiger','The Ironman','The Destroyer','Comet','The Ghost','Black Belt','Stone Hands'],
     styleWeights:[3,1,2,5,4,2,2,3],
     firstMix:{korean:92,'*':8}, lastMix:{korean:92,'*':8}, nickMix:{korean:58,american:16,'*':26},
     flags:{ KR:100 },

@@ -157,8 +157,7 @@
   {/if}
 
   <!-- Result header -->
-  <div class="result-icon">{result.rolled.icon}</div>
-  <div class="result-label {result.resultClass}">{result.rolled.outcome}</div>
+  <div class="result-label {result.resultClass}"><span class="result-icon">{result.rolled.icon}</span>{result.rolled.outcome}</div>
   {#if result.rolled.method}
     <div class="result-method">{result.rolled.method}</div>
   {/if}
@@ -239,7 +238,7 @@
 {/if}
 
 <style>
-  .result-icon  { font-size: 52px; line-height: 1; margin-bottom: 12px; }
+  .result-icon  { margin-right: 0.25em; }
   .result-label { font-family: var(--font-display); font-size: 48px; letter-spacing: 0.04em; line-height: 1; margin-bottom: 6px; }
   .result-label.win    { color: var(--green); }
   .result-label.draw   { color: var(--amber); }

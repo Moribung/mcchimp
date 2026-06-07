@@ -321,15 +321,20 @@
     border: 1px solid rgba(255,255,255,0.08);
     border-radius: 8px;
     overflow: hidden;
-    margin-bottom: 20px;
-    width: 66.67%;
-    margin-left: auto;
-    margin-right: auto;
+    margin: 0 auto 20px;
+    /* Hold a fixed display width; only scale down when the container is
+       narrower than this. On mobile it spans the full width (see below). */
+    width: 100%;
+    max-width: 576px;
   }
   .arena-canvas {
     width: 100%;
     height: auto;
     image-rendering: pixelated;
     display: block;
+  }
+
+  @media (max-width: 768px) {
+    .arena-wrap { max-width: none; }
   }
 </style>

@@ -129,19 +129,29 @@
   // ── Sidebar: ranking-row hover popup ──────────────────
   let hoverPop = $state(null);   // { x, y, slotIdx, name, record, rate, rateColor, clfEmoji, clfLabel, style, rising }
 
-  // Touch devices can't hover, so the popup is opened by tapping a row instead
-  // (with a "Call out" button inside it when a callout is available).
-  let isTouch = $state(false);
-  onMount(() => { isTouch = window.matchMedia?.('(hover: none)').matches ?? false; });
+  // Hover isn't available on touch devices, and the left-anchored popup has no
+  // room in the single-column layout (≤768px). In both cases the popup becomes a
+  // tap-driven bottom sheet (with a "Call out" button when a callout is available).
+  let isTouch  = $state(false);
+  let isNarrow = $state(false);
+  const useSheet = $derived(isTouch || isNarrow);
+  onMount(() => {
+    isTouch = window.matchMedia?.('(hover: none)').matches ?? false;
+    const mq = window.matchMedia('(max-width: 768px)');
+    const update = () => (isNarrow = mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  });
 
-  // Row interaction: hover opens the popup on pointer devices; on touch a tap
-  // toggles it. The bare row-tap no longer triggers a callout on touch — that's
-  // the popup's button — so info is always reachable without a mouse.
-  function onRowEnter(e, row) { if (!isTouch) showRowPop(e, row); }
-  function onRowLeave()       { if (!isTouch) hoverPop = null; }
+  // Row interaction: hover opens the popup on wide pointer layouts; in sheet mode
+  // a tap toggles it. The bare row-tap no longer triggers a callout in sheet mode
+  // — that's the popup's button — so info is always reachable without a mouse.
+  function onRowEnter(e, row) { if (!useSheet) showRowPop(e, row); }
+  function onRowLeave()       { if (!useSheet) hoverPop = null; }
   function onRowClick(e, row) {
     if (row.isPlayer) return;
-    if (isTouch) {
+    if (useSheet) {
       if (hoverPop && hoverPop.slotIdx === row.i) hoverPop = null;
       else showRowPop(e, row);
     } else if (canCallout) {
@@ -812,10 +822,10 @@
                     class:rt-player={row.isPlayer}
                     class:rt-champ={row.isChamp}
                     class:rt-next={row.isNext}
-                    class:rt-clickable={!row.isPlayer && (canCallout || isTouch)}
+                    class:rt-clickable={!row.isPlayer && (canCallout || useSheet)}
                     onclick={(e) => onRowClick(e, row)}
-                    role={!row.isPlayer && (canCallout || isTouch) ? 'button' : undefined}
-                    tabindex={!row.isPlayer && (canCallout || isTouch) ? 0 : undefined}
+                    role={!row.isPlayer && (canCallout || useSheet) ? 'button' : undefined}
+                    tabindex={!row.isPlayer && (canCallout || useSheet) ? 0 : undefined}
                     onkeydown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && !row.isPlayer && canCallout) openCallout(row.i); }}
                     onmouseenter={(e) => onRowEnter(e, row)}
                     onmouseleave={onRowLeave}
@@ -853,12 +863,12 @@
     <!-- Ranking-row popup: hover-anchored on pointer devices, a tap-driven
          bottom sheet on touch (with a Call out button when one is available). -->
     {#if hoverPop}
-      {#if isTouch}
+      {#if useSheet}
         <div class="rtp-backdrop" onclick={() => (hoverPop = null)}></div>
       {/if}
       <div
-        class="rt-popup {isTouch ? 'rtp-sheet' : ''}"
-        style={isTouch ? '' : `left: ${hoverPop.x}px; top: ${hoverPop.y}px;`}
+        class="rt-popup {useSheet ? 'rtp-sheet' : ''}"
+        style={useSheet ? '' : `left: ${hoverPop.x}px; top: ${hoverPop.y}px;`}
       >
         <div class="rtp-body">
           <div class="rtp-avatar">
@@ -880,7 +890,7 @@
             {/if}
           </div>
         </div>
-        {#if isTouch && canCallout}
+        {#if useSheet && canCallout}
           <button class="rtp-callout" onclick={() => { openCallout(hoverPop.slotIdx); hoverPop = null; }}>
             📢 Call out {hoverPop.name}
           </button>
@@ -1194,16 +1204,14 @@
   .rtp-rising{ font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--green); margin-top: 3px; }
   .rtp-vs    { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); margin-top: 3px; }
 
-  /* Touch: tap-driven bottom sheet instead of the hover-anchored popup. */
+  /* Touch / single-column layout: tap-driven centred modal replaces the hover popup. */
   .rtp-backdrop { position: fixed; inset: 0; z-index: 199; background: rgba(0,0,0,0.5); }
   .rt-popup.rtp-sheet {
-    left: 0; right: 0; bottom: 0; top: auto;
-    transform: none;
-    width: 100%;
-    max-width: none;
-    border-radius: var(--radius) var(--radius) 0 0;
-    border-left: none; border-right: none; border-bottom: none;
-    padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
+    left: 50%; top: 50%; right: auto; bottom: auto;
+    transform: translate(-50%, -50%);
+    width: calc(100% - 32px);
+    max-width: 320px;
+    padding: 16px;
     pointer-events: auto;
   }
   .rtp-callout {
