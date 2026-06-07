@@ -3,8 +3,8 @@
  * Server-only (uses the Anthropic SDK + API key). Output is validated against the
  * v2 schema by validateQuestionSet before anything is persisted.
  */
-import Anthropic from '@anthropic-ai/sdk';
-
+// Called via raw fetch (not the Anthropic SDK) so the Cloudflare Workers bundle
+// has no Node dependencies (the SDK imports node:fs/promises, which Workers lack).
 export const MODEL = 'claude-sonnet-4-6';
 
 const TYPE_ENUM = ['multi_select', 'multiple_choice', 'true_false', 'typed', 'fill_gap'];
@@ -148,28 +148,65 @@ function parseJsonObject(text) {
 }
 
 /**
- * Call Claude and return { data, usage }. Streamed (output can be large).
- * The exact JSON shape is specified in the system prompt; validateQuestionSet
- * is the backstop. Throws on API/parse failure.
+ * Call Claude via the Messages API (streamed SSE, aggregated server-side) and
+ * return { data, usage }. The exact JSON shape is specified in the system prompt;
+ * validateQuestionSet is the backstop. Throws on API/parse failure.
  */
 export async function generateQuestionSet({ apiKey, maxTokens, content }) {
-  const client = new Anthropic({ apiKey });
-
-  const stream = client.messages.stream({
-    model: MODEL,
-    max_tokens: maxTokens,
-    thinking: { type: 'disabled' },
-    system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
-    messages: [{ role: 'user', content }]
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify({
+      model: MODEL,
+      max_tokens: maxTokens,
+      thinking: { type: 'disabled' },
+      system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
+      messages: [{ role: 'user', content }],
+      stream: true
+    })
   });
 
-  const message = await stream.finalMessage();
-  const text = message.content
-    .filter((b) => b.type === 'text')
-    .map((b) => b.text)
-    .join('');
+  if (!res.ok || !res.body) {
+    const errText = await res.text().catch(() => '');
+    throw new Error(`Anthropic API ${res.status}: ${errText.slice(0, 300)}`);
+  }
+
+  // Parse the SSE stream: accumulate text deltas + token usage.
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '', text = '';
+  const usage = { input_tokens: null, output_tokens: null };
+
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    let nl;
+    while ((nl = buffer.indexOf('\n')) >= 0) {
+      const line = buffer.slice(0, nl).trim();
+      buffer = buffer.slice(nl + 1);
+      if (!line.startsWith('data:')) continue;
+      const payload = line.slice(5).trim();
+      if (!payload || payload === '[DONE]') continue;
+      let evt;
+      try { evt = JSON.parse(payload); } catch { continue; }
+      if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
+        text += evt.delta.text;
+      } else if (evt.type === 'message_start' && evt.message?.usage) {
+        usage.input_tokens = evt.message.usage.input_tokens ?? usage.input_tokens;
+      } else if (evt.type === 'message_delta' && evt.usage) {
+        usage.output_tokens = evt.usage.output_tokens ?? usage.output_tokens;
+      } else if (evt.type === 'error') {
+        throw new Error(`Anthropic stream error: ${evt.error?.message || 'unknown'}`);
+      }
+    }
+  }
 
   const data = parseJsonObject(text);
   if (!data) throw new Error('Model returned malformed JSON.');
-  return { data, usage: message.usage };
+  return { data, usage };
 }
