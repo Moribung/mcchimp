@@ -1,0 +1,8 @@
+{
+  "name": "mcchimp",
+  "compatibility_date": "2024-11-01",
+  // Required so the Anthropic SDK (which imports node:fs/promises) loads on the
+  // Cloudflare Workers runtime. Without this, deploy fails with
+  // "No such module node:fs/promises".
+  "compatibility_flags": ["nodejs_compat"]
+}
