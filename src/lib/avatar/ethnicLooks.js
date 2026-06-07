@@ -18,7 +18,7 @@ export const ETHNIC_LOOKS = {
   eastern_european: { skin: S(60, 30, 8, 2),   hairColor: H(35, 45, 12, 0, 8),  hairStyle: HAIR(20, 35, 35, 5, 0, 5),   beard: BEARD(45, 25, 30) },
   west_african:     { skin: S(0, 5, 35, 60),   hairColor: H(90, 2, 0, 0, 8),    hairStyle: HAIR(25, 40, 25, 2, 8, 0),   beard: BEARD(35, 25, 40) },
   japanese:         { skin: S(35, 50, 13, 2),  hairColor: H(92, 2, 0, 0, 6),    hairStyle: HAIR(10, 30, 45, 5, 0, 10),  beard: BEARD(65, 20, 15) },
-  korean:           { skin: S(35, 50, 13, 2),  hairColor: H(92, 2, 0, 0, 6),    hairStyle: HAIR(8, 25, 50, 5, 0, 12),   beard: BEARD(70, 18, 12) },
+  korean:           { skin: S(46, 50, 3, 1),  hairColor: H(92, 2, 0, 0, 6),    hairStyle: HAIR(8, 25, 50, 5, 0, 12),   beard: BEARD(70, 18, 12) },
   vintage:          { skin: S(45, 35, 15, 5),  hairColor: H(35, 35, 10, 0, 20), hairStyle: HAIR(20, 25, 45, 0, 0, 10),  beard: BEARD(40, 25, 35) },
 };
 

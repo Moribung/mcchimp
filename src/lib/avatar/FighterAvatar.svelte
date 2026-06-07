@@ -38,7 +38,7 @@
       },
       palette,
     );
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { colorSpace: 'srgb' });
     ctx.imageSmoothingEnabled = false;
     ctx.clearRect(0, 0, 32, 32);
     // crop the 32×48 sprite to the figure (head-to-feet ≈ y9..41)

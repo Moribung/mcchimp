@@ -173,14 +173,20 @@ function recolor(imgData, palette) {
 }
 
 // Base-sprite cache keyed by silhouette-affecting config (not colors).
+// Force sRGB so getImageData returns exact drawn values on wide-gamut displays
+// (iOS Safari uses Display P3 by default, which breaks the exact-match recolor).
+const SRGB = { colorSpace: 'srgb' };
+
+// Clear any stale cache entries that were drawn without the sRGB flag.
 const baseCache = new Map();
+export function clearBaseCache() { baseCache.clear(); }
 function getBase(cfg) {
   const key = `${cfg.pose}|${cfg.hair}|${cfg.beard}|${cfg.org}|${cfg.belt}`;
   let c = baseCache.get(key);
   if (!c) {
     c = document.createElement('canvas');
     c.width = FIGHTER_W; c.height = FIGHTER_H;
-    drawBase(c.getContext('2d'), cfg);
+    drawBase(c.getContext('2d', SRGB), cfg);
     baseCache.set(key, c);
   }
   return c;
@@ -195,7 +201,7 @@ export function renderFighter(cfg, palette) {
   const base = getBase(cfg);
   const out = document.createElement('canvas');
   out.width = FIGHTER_W; out.height = FIGHTER_H;
-  const ctx = out.getContext('2d');
+  const ctx = out.getContext('2d', SRGB);
   ctx.drawImage(base, 0, 0);
   const id = ctx.getImageData(0, 0, FIGHTER_W, FIGHTER_H);
   recolor(id, palette);
