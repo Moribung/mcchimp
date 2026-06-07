@@ -1,6 +1,6 @@
 import subprocess, sys, os
 
-scripts = ['gen_backgrounds.py', 'gen_octagons.py', 'gen_arena.py', 'gen_fighters.py', 'gen_referee.py', 'gen_hair.py']
+scripts = ['gen_backgrounds.py', 'gen_octagons.py', 'gen_arena.py', 'gen_fighters.py', 'gen_referee.py']
 d = os.path.dirname(__file__)
 
 for s in scripts:
