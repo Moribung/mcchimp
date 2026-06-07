@@ -76,6 +76,7 @@
         supabase.from('user_question_sets')
           .select('id, name, description, question_count, data, starred')
           .eq('user_id', sess.user.id)
+          .eq('staged', false)
           .order('created_at', { ascending: false }),
         loadGroups(sess.user.id),
       ]);

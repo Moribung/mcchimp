@@ -29,6 +29,8 @@
 		"vite": "^8.0.7"
 	},
 	"dependencies": {
-		"@supabase/supabase-js": "^2.106.1"
+		"@anthropic-ai/sdk": "^0.102.0",
+		"@supabase/supabase-js": "^2.106.1",
+		"mammoth": "^1.12.0"
 	}
 }

@@ -7,6 +7,7 @@
 
   let mobileNavOpen = $state(false);
   let displayName   = $state('');
+  let tier          = $state(null);
 
   function toggleMobileNav() {
     mobileNavOpen = !mobileNavOpen;
@@ -16,14 +17,15 @@
     if ($session) {
       supabase
         .from('profiles')
-        .select('display_name')
+        .select('display_name, tier')
         .eq('id', $session.user.id)
         .single()
         .then(({ data }) => {
-          if (data) displayName = data.display_name;
+          if (data) { displayName = data.display_name; tier = data.tier ?? null; }
         });
     } else {
       displayName = '';
+      tier = null;
     }
   });
 
@@ -62,8 +64,11 @@
       <a class="nav-link-q" href="/questions">Questions&#8202;<span class="chevron">&#9662;</span></a>
       <div class="dropdown">
         <a href="/questions/sets"><span class="dd-label">Question Sets</span></a>
-        <a href="/questions/guide"><span class="dd-label">AI Guide</span></a>
-        <a href="/questions/generator"><span class="dd-label">Generator</span></a>
+        <a href="/questions/guide"><span class="dd-label">AI Do-It-Yourself Guide</span></a>
+        {#if tier === 'dev'}
+          <a href="/questions/create"><span class="dd-label">AI Question Generator</span></a>
+        {/if}
+        <a href="/questions/generator"><span class="dd-label">Manual Question Generator</span></a>
         {#if $session}
           <a href="/questions/library"><span class="dd-label">My Library</span></a>
         {/if}
@@ -102,8 +107,11 @@
   <a href="/football" onclick={toggleMobileNav} style="font-size:20px;color:var(--muted);padding:3px 0;padding-left:12px;">Football Game</a>
   <a href="/questions" onclick={toggleMobileNav}>Questions</a>
   <a href="/questions/sets"      onclick={toggleMobileNav} style="font-size:20px;color:var(--muted);padding:3px 0;padding-left:12px;">Question Sets</a>
-  <a href="/questions/guide"     onclick={toggleMobileNav} style="font-size:20px;color:var(--muted);padding:3px 0;padding-left:12px;">AI Guide</a>
-  <a href="/questions/generator" onclick={toggleMobileNav} style="font-size:20px;color:var(--muted);padding:3px 0;padding-left:12px;">Generator</a>
+  <a href="/questions/guide"     onclick={toggleMobileNav} style="font-size:20px;color:var(--muted);padding:3px 0;padding-left:12px;">AI Do-It-Yourself Guide</a>
+  {#if tier === 'dev'}
+    <a href="/questions/create"  onclick={toggleMobileNav} style="font-size:20px;color:var(--muted);padding:3px 0;padding-left:12px;">AI Question Generator</a>
+  {/if}
+  <a href="/questions/generator" onclick={toggleMobileNav} style="font-size:20px;color:var(--muted);padding:3px 0;padding-left:12px;">Manual Question Generator</a>
   {#if $session}
     <a href="/questions/library" onclick={toggleMobileNav} style="font-size:20px;color:var(--muted);padding:3px 0;padding-left:12px;">My Library</a>
   {/if}
@@ -129,6 +137,8 @@
     <a href="/about">About Us</a>
     <a href="/about#contact">Contact</a>
     <a href="/privacy">Privacy Policy</a>
+    <a href="/terms">Terms of Service</a>
+    <a href="/impressum">Impressum</a>
   </div>
   <div class="footer-copy">© 2026 McChimp</div>
 </footer>

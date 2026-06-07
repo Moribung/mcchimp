@@ -27,6 +27,8 @@
   let deleteConfirm = $state('');
   let deleting = $state(false);
 
+  const TIER_LABELS = { regular: 'Free', pro: 'Pro', dev: 'Developer', admin: 'Admin' };
+
   onMount(async () => {
     if (!$session) {
       goto('/auth/login');
@@ -260,6 +262,18 @@
         {/if}
       </div>
 
+      <!-- MEMBERSHIP -->
+      <div class="section">
+        <div class="section-label">Membership</div>
+        <div class="field-row">
+          <div class="field-info">
+            <div class="field-name">Plan</div>
+            <div class="field-desc">Your current account tier.</div>
+          </div>
+          <span class="tier-badge tier-{profile?.tier || 'regular'}">{TIER_LABELS[profile?.tier] || (profile?.tier ?? 'Free')}</span>
+        </div>
+      </div>
+
       <!-- DATA -->
       <div class="section">
         <div class="section-label">Your Data</div>
@@ -406,6 +420,17 @@
   input[type="password"]:focus { border-color: rgba(232,193,74,0.5); }
 
   .btn-group { display: flex; gap: 8px; flex-shrink: 0; }
+
+  .tier-badge {
+    display: inline-flex; align-items: center; flex-shrink: 0;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+    padding: 6px 14px; border-radius: 3px; border: 1px solid;
+  }
+  .tier-regular { color: var(--muted); border-color: rgba(255,255,255,0.15); background: rgba(255,255,255,0.04); }
+  .tier-pro { color: var(--gold); border-color: rgba(232,193,74,0.4); background: rgba(232,193,74,0.1); }
+  .tier-dev { color: #6B9FE4; border-color: rgba(42,94,173,0.45); background: rgba(42,94,173,0.12); }
+  .tier-admin { color: #C07AEA; border-color: rgba(180,74,232,0.45); background: rgba(180,74,232,0.12); }
 
   .btn-primary {
     font-family: 'Barlow Condensed', sans-serif;

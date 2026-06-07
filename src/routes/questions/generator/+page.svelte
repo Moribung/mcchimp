@@ -10,7 +10,8 @@
     if (stored) {
       sessionStorage.removeItem('mcchimp_gen_load');
       try {
-        const { libraryId: id, data } = JSON.parse(stored);
+        const { libraryId: id, data, staged } = JSON.parse(stored);
+        fromStaged = !!staged;
         if (data.name) genName = data.name;
         if (data.description) genDesc = data.description;
         const firstQ = Object.values(data.tiers || {}).flat()[0];
@@ -51,6 +52,7 @@
 
   // ── LIBRARY / STATUS STATE ──
   let libraryId = $state(null);       // set if loaded from library
+  let fromStaged = $state(false);     // loaded from an AI draft (staged) — save promotes it
   let saveStatus = $state('unsaved'); // 'unsaved' | 'saved' | 'downloaded'
   let saving = $state(false);
   let saveError = $state('');
@@ -378,25 +380,39 @@
     const count = Object.values(out.tiers || {}).flat().length;
 
     if (libraryId) {
+      // Promoting an AI draft to the library must respect the set limit first.
+      if (fromStaged) {
+        const { data: prof } = await supabase.from('profiles').select('set_limit').eq('id', $session.user.id).single();
+        const lim = prof?.set_limit ?? 3;
+        const { count: nonStaged } = await supabase.from('user_question_sets')
+          .select('id', { count: 'exact', head: true }).eq('user_id', $session.user.id).eq('staged', false);
+        if ((nonStaged ?? 0) >= lim) {
+          saving = false;
+          saveError = `You've reached your limit of ${lim} sets. Upgrade to Pro for more.`;
+          return;
+        }
+      }
       // Update existing
+      const update = {
+        name: out.name,
+        description: out.description || null,
+        data: out,
+        question_count: count,
+        updated_at: new Date().toISOString()
+      };
+      if (fromStaged) update.staged = false; // promote draft → library
       const { error } = await supabase
         .from('user_question_sets')
-        .update({
-          name: out.name,
-          description: out.description || null,
-          data: out,
-          question_count: count,
-          updated_at: new Date().toISOString()
-        })
+        .update(update)
         .eq('id', libraryId)
         .eq('user_id', $session.user.id);
       saving = false;
       if (error) { saveError = error.message; }
-      else { saveStatus = 'saved'; saveSuccess = 'Saved to library.'; setTimeout(() => saveSuccess = '', 3000); }
+      else { saveStatus = 'saved'; saveSuccess = 'Saved to library.'; fromStaged = false; setTimeout(() => saveSuccess = '', 3000); }
     } else {
       // Check limit
       const { data: profile } = await supabase.from('profiles').select('tier, set_limit').eq('id', $session.user.id).single();
-      const { count: existing } = await supabase.from('user_question_sets').select('id', { count: 'exact', head: true }).eq('user_id', $session.user.id);
+      const { count: existing } = await supabase.from('user_question_sets').select('id', { count: 'exact', head: true }).eq('user_id', $session.user.id).eq('staged', false);
       const limit = profile?.set_limit ?? 3;
       if (existing >= limit) {
         saving = false;
@@ -524,7 +540,7 @@
       <button class="gen-action-btn gen-dl-btn" onclick={genDownload}>&#11015; Download JSON</button>
       {#if $session}
         <button class="gen-action-btn gen-save-btn" onclick={genSaveToLibrary} disabled={saving}>
-          {saving ? 'Saving…' : libraryId ? '↑ Update Library' : '↑ Save to Library'}
+          {saving ? 'Saving…' : (libraryId && !fromStaged) ? '↑ Update Library' : '↑ Save to Library'}
         </button>
       {/if}
       <button class="gen-action-btn gen-clear-btn" onclick={genClear}>New Set</button>

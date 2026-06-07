@@ -4,7 +4,7 @@ export default {
   kit: {
     adapter: adapter({
       platformProxy: {
-        enabled: false
+        enabled: true
       },
       routes: {
         include: ['/*'],

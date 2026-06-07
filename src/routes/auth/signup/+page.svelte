@@ -5,10 +5,15 @@
   let email = $state('');
   let password = $state('');
   let displayName = $state('');
+  let agreed = $state(false);
   let error = $state('');
   let loading = $state(false);
 
+  const agreeError = 'Please confirm you are 16 or older and agree to the Terms of Service and Privacy Policy.';
+
   async function signInWithGoogle() {
+    error = '';
+    if (!agreed) { error = agreeError; return; }
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: 'https://mcchimp.com/auth/callback' }
@@ -19,6 +24,7 @@
     error = '';
     if (!email || !password || !displayName) { error = 'Please fill in all fields.'; return; }
     if (password.length < 8) { error = 'Password must be at least 8 characters.'; return; }
+    if (!agreed) { error = agreeError; return; }
     loading = true;
 
     const { error: authError } = await supabase.auth.signUp({
@@ -88,11 +94,12 @@
         />
       </div>
 
-      <p class="terms-note">
-        By signing up you agree to our <a href="/privacy">Privacy Policy</a>. We don't sell your data or send marketing emails.
-      </p>
+      <label class="terms-check">
+        <input type="checkbox" bind:checked={agreed} />
+        <span>I am 16 or older and agree to the <a href="/terms">Terms of Service</a> and <a href="/privacy">Privacy Policy</a>.</span>
+      </label>
 
-      <button class="btn-submit" onclick={handleSubmit} disabled={loading}>
+      <button class="btn-submit" onclick={handleSubmit} disabled={loading || !agreed}>
         {loading ? 'Creating account…' : 'Create Account'}
       </button>
     </div>
@@ -182,14 +189,26 @@
   }
   input:focus { border-color: rgba(232,193,74,0.5); }
   input::placeholder { color: var(--muted); opacity: .5; }
-  .terms-note {
+  .terms-check {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
     font-size: 12px;
     color: var(--muted);
     line-height: 1.5;
     margin-top: -4px;
+    cursor: pointer;
   }
-  .terms-note a { color: var(--muted); text-decoration: underline; }
-  .terms-note a:hover { color: var(--white); }
+  .terms-check input {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    margin-top: 1px;
+    accent-color: var(--gold);
+    cursor: pointer;
+  }
+  .terms-check a { color: var(--muted); text-decoration: underline; }
+  .terms-check a:hover { color: var(--white); }
   .btn-submit {
     font-family: 'Barlow Condensed', sans-serif;
     font-size: 14px;

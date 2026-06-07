@@ -38,8 +38,8 @@
   let setFilters = $state(new Set(['all']));
   const showAll  = $derived(setFilters.has('all') || setFilters.size === 0);
 
-  const TIER_LIMITS  = { regular: 3, pro: 20, dev: 9999 };
-  const GROUP_LIMITS = { regular: 3, pro: 20, dev: 9999 };
+  const TIER_LIMITS  = { regular: 3, pro: 20, dev: 9999, admin: 20 };
+  const GROUP_LIMITS = { regular: 3, pro: 20, dev: 9999, admin: 20 };
 
   onMount(async () => {
     if (!$session) { goto('/auth/login'); return; }
@@ -50,7 +50,7 @@
     loading = true;
     const [profileRes, setsRes, learnRes, groupRes] = await Promise.all([
       supabase.from('profiles').select('*').eq('id', $session.user.id).single(),
-      supabase.from('user_question_sets').select('*').eq('user_id', $session.user.id).order('updated_at', { ascending: false }),
+      supabase.from('user_question_sets').select('*').eq('user_id', $session.user.id).eq('staged', false).order('updated_at', { ascending: false }),
       loadLearningSets($session.user.id),
       loadGroups($session.user.id),
     ]);

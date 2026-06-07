@@ -91,8 +91,8 @@
       <h3>Technical data (automatically collected)</h3>
       <ul>
         <li><strong>Server and error logs</strong> — IP address, browser type, pages visited, error events. Used for security and debugging. PII stripped before storage; deleted after 90 days.</li>
-        <li><strong>Analytics data</strong> — only collected with your consent via our cookie banner</li>
       </ul>
+      <p>We do not run any analytics or tracking software. The technical data above is limited to the server and error logs needed to keep the service secure and working.</p>
       <h3>AI-generated content (optional feature)</h3>
       <ul>
         <li>Text you paste or upload to generate quiz questions</li>
@@ -104,7 +104,7 @@
       <div class="section-header"><span class="section-num">03</span><h2 class="section-title">How We Use Your Data</h2></div>
       <ul>
         <li><strong>Provide the service:</strong> Authenticate your account, save game progress, and store question banks</li>
-        <li><strong>Improve the platform:</strong> Understand how features are used to fix bugs and prioritise development (only with analytics consent)</li>
+        <li><strong>Improve the platform:</strong> Use anonymised server and error logs to fix bugs and prioritise development</li>
         <li><strong>Communicate with you:</strong> Send account-related emails (password reset, security notices) — never marketing without separate opt-in</li>
         <li><strong>Ensure security:</strong> Detect abuse, prevent fraud, enforce our terms of service</li>
         <li><strong>AI question generation:</strong> Pass your submitted text to our AI provider solely to return generated questions to you</li>
@@ -122,7 +122,6 @@
           <tr><td><strong>Display name</strong></td><td><span class="basis-tag tag-contract">Contract</span></td><td>Required to identify you within the platform</td></tr>
           <tr><td><strong>Game progress &amp; records</strong></td><td><span class="basis-tag tag-contract">Contract</span></td><td>Core product feature — saving progress is the service</td></tr>
           <tr><td><strong>Question bank uploads</strong></td><td><span class="basis-tag tag-contract">Contract</span></td><td>Storing content you explicitly created</td></tr>
-          <tr><td><strong>Analytics &amp; usage data</strong></td><td><span class="basis-tag tag-consent">Consent</span></td><td>Only processed after you opt in via our cookie banner</td></tr>
           <tr><td><strong>AI input content</strong></td><td><span class="basis-tag tag-consent">Consent</span></td><td>You submit content voluntarily to use the AI feature</td></tr>
           <tr><td><strong>Server &amp; error logs</strong></td><td><span class="basis-tag tag-legit">Legitimate interest</span></td><td>Security monitoring and bug detection. PII stripped before storage; logs deleted after 90 days.</td></tr>
         </tbody>
@@ -137,7 +136,6 @@
           <tr><td><strong>Account data (email, display name)</strong></td><td>Until you delete your account</td></tr>
           <tr><td><strong>Game states &amp; progress</strong></td><td>Until you delete your account</td></tr>
           <tr><td><strong>Question banks</strong></td><td>Until you delete them or your account</td></tr>
-          <tr><td><strong>Analytics data</strong></td><td>Maximum 13 months, then automatically purged</td></tr>
           <tr><td><strong>Server &amp; error logs</strong></td><td>Maximum 90 days, then automatically deleted</td></tr>
           <tr><td><strong>AI input (submitted text)</strong></td><td>Not stored — processed in-session only</td></tr>
         </tbody>
@@ -165,22 +163,23 @@
         <li>Content is not used to train Anthropic's models under our API agreement</li>
         <li>Privacy policy: <a href="https://www.anthropic.com/legal/privacy" target="_blank" rel="noopener">anthropic.com/legal/privacy</a></li>
       </ul>
+      <h3>Google (sign-in — optional)</h3>
+      <ul>
+        <li>If you choose to sign in with Google, Google authenticates you and shares your email address and basic profile details with us to create or access your account</li>
+        <li>We only receive this data when you actively choose "Continue with Google" — email/password sign-up does not involve Google</li>
+        <li>Privacy policy: <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">policies.google.com/privacy</a></li>
+      </ul>
       <div class="callout warn"><p>We may disclose personal data to law enforcement or regulatory authorities where legally required. We will notify you of such requests unless prohibited by law.</p></div>
     </section>
 
     <section class="section" id="cookies">
       <div class="section-header"><span class="section-num">07</span><h2 class="section-title">Cookies</h2></div>
-      <p>We use two categories of cookies:</p>
+      <p>We use only strictly necessary cookies — the kind that don't require consent under the ePrivacy Directive and GDPR. Because we set no analytics, advertising, or tracking cookies, we do not display a cookie consent banner.</p>
       <h3>Strictly necessary (no consent required)</h3>
       <ul>
         <li><strong>sb-auth-token</strong> — Supabase session cookie; keeps you logged in. Duration: session / up to 7 days.</li>
       </ul>
-      <h3>Analytics (opt-in only)</h3>
-      <ul>
-        <li>Only set after you click "Accept" on our cookie banner. Withdraw consent at any time from the footer.</li>
-        <li>Analytics data is anonymised and never combined with your account identity.</li>
-      </ul>
-      <p>We do not use advertising, tracking, or third-party marketing cookies.</p>
+      <p>We do not run any analytics, and we do not use advertising, tracking, or third-party marketing cookies of any kind.</p>
     </section>
 
     <section class="section" id="your-rights">

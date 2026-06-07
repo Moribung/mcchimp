@@ -1,15 +1,33 @@
 <script>
   import { page } from '$app/stores';
   import { session } from '$lib/stores/session';
+  import { supabase } from '$lib/supabase';
+  import { hasAiAccess } from '$lib/ai/access';
 
   let { children } = $props();
 
-  const tabs = [
+  // Tier is loaded reactively — the session store populates asynchronously on load.
+  let tier = $state(null);
+  $effect(() => {
+    const s = $session;
+    if (!s) { tier = null; return; }
+    supabase.from('profiles').select('tier').eq('id', s.user.id).single()
+      .then(({ data }) => { tier = data?.tier ?? null; });
+  });
+
+  const baseTabs = [
     { href: '/questions', label: 'Overview', exact: true },
     { href: '/questions/sets', label: 'Question Sets' },
-    { href: '/questions/guide', label: 'AI Guide' },
-    { href: '/questions/generator', label: 'Generator' },
+    { href: '/questions/guide', label: 'AI Do-It-Yourself Guide' },
+    { href: '/questions/generator', label: 'Manual Question Generator' },
   ];
+
+  // "AI Question Generator" sits between "AI Guide" and the manual generator, for tiers with access.
+  const tabs = $derived(
+    hasAiAccess(tier)
+      ? [...baseTabs.slice(0, 3), { href: '/questions/create', label: 'AI Question Generator' }, ...baseTabs.slice(3)]
+      : baseTabs
+  );
 
   function isActive(tab) {
     if (tab.exact) return $page.url.pathname === tab.href;
