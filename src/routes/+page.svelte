@@ -29,6 +29,7 @@
   <div class="hero-actions fade-up delay-3">
     <a href="/mma" class="btn-primary">Play MMA</a>
     <a href="/football" class="btn-primary" style="background:var(--blue)">Play Football</a>
+    <a href="/golf" class="btn-primary" style="background:var(--green)">Play Golf</a>
     <a href="/how" class="btn-ghost">How It Works</a>
   </div>
 </section>
@@ -88,6 +89,15 @@
       <p class="card-desc">Guide a club from the lower divisions to the top of the table. Tactics set the match tempo — play attacking and face more questions per match, or sit back for fewer. Your answers decide the score.</p>
       <div class="card-arrow">Play Now</div>
       <div class="card-accent accent-green"></div>
+    </a>
+
+    <a href="/golf" class="game-card">
+      <div class="card-num">03</div>
+      <div class="card-tag tag-live">● Live Now</div>
+      <div class="card-title">Quiz<br>Golf</div>
+      <p class="card-desc">Answer blind, then aim and swing. Right answers fly at the pin — wrong answers hook into trees, bunkers and water. Bad lies bring harder questions. Fewest strokes wins.</p>
+      <div class="card-arrow">Play Now</div>
+      <div class="card-accent accent-blue"></div>
     </a>
 
   </div>
@@ -414,6 +424,7 @@
   }
   .accent-gold  { background: var(--gold); }
   .accent-green { background: var(--green); }
+  .accent-blue { background: #5bb8f5; }
 
   /* HOW IT WORKS */
   .how-grid {

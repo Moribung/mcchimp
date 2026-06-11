@@ -1,13 +1,13 @@
 <svelte:head>
   <title>Games — McChimp</title>
-  <meta name="description" content="Sports career simulators powered by knowledge. MMA career builder and football manager — your answers decide every result." />
+  <meta name="description" content="Sports career simulators powered by knowledge. MMA career builder, football manager and quiz golf — your answers decide every result." />
 </svelte:head>
 
 <!-- PAGE HERO -->
 <div class="page-hero">
   <div class="page-hero-tag">The Platform</div>
   <h1>All<br><em>Games</em></h1>
-  <p>Sports career simulators where knowledge is the mechanic, not a stat. The same engine powers both games — swap in any question set and the career logic runs unchanged.</p>
+  <p>Sports career simulators where knowledge is the mechanic, not a stat. The same engine powers every game — swap in any question set and the career logic runs unchanged.</p>
 </div>
 
 <!-- GAMES GRID -->
@@ -43,6 +43,20 @@
       <div class="card-accent accent-green"></div>
     </a>
 
+    <a href="/golf" class="game-card">
+      <div class="card-num">03</div>
+      <div class="card-tag tag-live">● Live Now</div>
+      <div class="card-title">Quiz<br>Golf</div>
+      <p class="card-desc">Answer a question, lock it in blind, then aim and swing. Right answers fly true — wrong answers hook into the trees. Bunkers and long putts bring harder questions. Hole out in as few strokes as you can.</p>
+      <div class="card-meta">
+        <span class="meta-pill">9 &amp; 18 Holes</span>
+        <span class="meta-pill">Adaptive Difficulty</span>
+        <span class="meta-pill">Cloud Saves</span>
+      </div>
+      <div class="card-arrow">Play Now →</div>
+      <div class="card-accent accent-blue"></div>
+    </a>
+
   </div>
 </section>
 
@@ -52,7 +66,7 @@
   <div class="games-grid">
 
     <div class="game-card game-card--soon">
-      <div class="card-num">03</div>
+      <div class="card-num">04</div>
       <div class="card-tag tag-soon">● In Development</div>
       <div class="card-title">More<br>Sports</div>
       <p class="card-desc">More sports, more careers, more questions. The platform is built to grow — new games drop as the question sets are ready.</p>
@@ -61,7 +75,7 @@
     </div>
 
     <div class="game-card game-card--soon">
-      <div class="card-num">04</div>
+      <div class="card-num">05</div>
       <div class="card-tag tag-soon">● Planned</div>
       <div class="card-title">Community<br>Sets</div>
       <p class="card-desc">Upload your own question sets and challenge others. Build sets around any sport, any era, any niche — the engine handles the rest.</p>
@@ -299,6 +313,7 @@
   }
   .accent-gold { background: var(--gold); }
   .accent-green { background: var(--green); }
+  .accent-blue { background: #5bb8f5; }
 
   .demo-section { border-top: 1px solid rgba(255,255,255,0.06); padding-top: 80px; }
   .demo-intro {

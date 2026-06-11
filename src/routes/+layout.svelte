@@ -33,7 +33,8 @@
   // The /mma route manages its own layout — hide the global header there.
   $effect(() => {
     const isGamePage = $page.url.pathname.startsWith('/mma') ||
-                       $page.url.pathname.startsWith('/football');
+                       $page.url.pathname.startsWith('/football') ||
+                       $page.url.pathname.startsWith('/golf');
     if (typeof document !== 'undefined') {
       document.body.classList.toggle('game-page', isGamePage);
     }
@@ -58,6 +59,7 @@
       <div class="dropdown">
         <a href="/mma"><span class="dd-label">MMA Game</span></a>
         <a href="/football"><span class="dd-label">Football Game</span></a>
+        <a href="/golf"><span class="dd-label">Golf Game</span></a>
       </div>
     </div>
     <div class="nav-item">
@@ -105,6 +107,7 @@
   <a href="/games" onclick={toggleMobileNav}>Games</a>
   <a href="/mma"      onclick={toggleMobileNav} style="font-size:20px;color:var(--muted);padding:3px 0;padding-left:12px;">MMA Game</a>
   <a href="/football" onclick={toggleMobileNav} style="font-size:20px;color:var(--muted);padding:3px 0;padding-left:12px;">Football Game</a>
+  <a href="/golf" onclick={toggleMobileNav} style="font-size:20px;color:var(--muted);padding:3px 0;padding-left:12px;">Golf Game</a>
   <a href="/questions" onclick={toggleMobileNav}>Questions</a>
   <a href="/questions/sets"      onclick={toggleMobileNav} style="font-size:20px;color:var(--muted);padding:3px 0;padding-left:12px;">Question Sets</a>
   <a href="/questions/guide"     onclick={toggleMobileNav} style="font-size:20px;color:var(--muted);padding:3px 0;padding-left:12px;">AI Do-It-Yourself Guide</a>

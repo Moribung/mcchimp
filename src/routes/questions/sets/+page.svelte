@@ -1,19 +1,67 @@
 <script>
   import { onMount } from 'svelte';
-  import { fetchAllSets } from '$lib/questions';
+  import { fetchIndex, fetchPublicCatalog, fetchSet } from '$lib/questions';
+  import { session } from '$lib/stores/session';
+  import { loadLearningSets, addLearningSet, removeLearningSet } from '$lib/progress.js';
 
   let sets = $state([]);
   let setsStatus = $state('loading');
   let previewOpen = $state({});
 
+  // ── Learning list state ───────────────────────────────
+  let learningIds = $state(new Set());   // set_ids already in the user's learning list
+  let learnBusy   = $state(null);        // filename currently being toggled
+  let learnError  = $state('');
+
   onMount(async () => {
     try {
-      sets = await fetchAllSets();
+      // Union of the library index and the public catalog — every static set is browsable
+      const [idx, pub] = await Promise.all([
+        fetchIndex().catch(() => []),
+        fetchPublicCatalog(),
+      ]);
+      const filenames = [...new Set([...idx, ...pub])];
+      sets = await Promise.all(filenames.map(async filename => {
+        try { return { filename, data: await fetchSet(filename) }; }
+        catch { return { filename, data: null }; }
+      }));
       setsStatus = 'done';
     } catch(e) {
       setsStatus = 'error';
     }
+
+    if ($session) {
+      try {
+        const ls = await loadLearningSets($session.user.id);
+        learningIds = new Set(ls.map(r => r.set_id));
+      } catch { /* learning state stays empty */ }
+    }
   });
+
+  function countQs(data) {
+    const t = data?.tiers || {};
+    return Object.values(t).reduce((n, qs) => n + (qs || []).length, 0);
+  }
+
+  async function toggleLearn(filename, data) {
+    if (!$session || learnBusy) return;
+    learnBusy = filename;
+    learnError = '';
+    try {
+      if (learningIds.has(filename)) {
+        await removeLearningSet($session.user.id, filename);
+        learningIds.delete(filename);
+      } else {
+        await addLearningSet($session.user.id, filename, 'public', data.name || filename, countQs(data));
+        learningIds.add(filename);
+      }
+      learningIds = new Set(learningIds);
+    } catch (e) {
+      learnError = 'Could not update learning list: ' + (e?.message || 'unknown error');
+    } finally {
+      learnBusy = null;
+    }
+  }
 
   function togglePreview(filename) {
     previewOpen[filename] = !previewOpen[filename];
@@ -47,6 +95,7 @@
   {:else if setsStatus === 'error'}
     <p class="sets-error">Could not load question sets. Make sure index.json exists in /questions/.</p>
   {:else}
+    {#if learnError}<p class="sets-error">{learnError}</p>{/if}
     <div class="sets-grid">
       {#each sets as { filename, data }}
         {#if !data}
@@ -71,7 +120,19 @@
               {#if counts.elite} <span class="set-tier tier-x">Elite · {counts.elite}</span>{/if}
             </div>
             <div class="set-actions">
-              <a class="set-dl" href="/questions/{filename}" download={filename}>&#11015; Download JSON</a>
+              {#if $session}
+                <button
+                  class="set-learn-btn"
+                  class:learning={learningIds.has(filename)}
+                  disabled={learnBusy === filename}
+                  onclick={() => toggleLearn(filename, data)}
+                >
+                  {learnBusy === filename ? '…' : learningIds.has(filename) ? '✓ Learning' : '+ Learn'}
+                </button>
+              {:else}
+                <a class="set-learn-btn" href="/auth/login" title="Log in to track this set with spaced repetition">+ Learn</a>
+              {/if}
+              <a class="set-dl" href="/questions/{filename}" download={filename}>&#11015; JSON</a>
               <button class="set-preview-btn" onclick={() => togglePreview(filename)}>
                 {previewOpen[filename] ? 'Hide' : 'Preview'}
               </button>
@@ -112,6 +173,18 @@
   .set-actions { display: flex; gap: 8px; align-items: center; margin-top: auto; }
   .set-dl { font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; background: var(--gold); color: var(--black); border: none; padding: 9px 18px; border-radius: 2px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; transition: background .15s; white-space: nowrap; }
   .set-dl:hover { background: var(--gold2); }
+  .set-learn-btn {
+    font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 700;
+    letter-spacing: .1em; text-transform: uppercase;
+    background: transparent; color: var(--gold); border: 1px solid rgba(232,193,74,0.4);
+    padding: 9px 16px; border-radius: 2px; cursor: pointer; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: background .15s, color .15s, border-color .15s; white-space: nowrap;
+  }
+  .set-learn-btn:hover:not(:disabled) { background: rgba(232,193,74,0.08); }
+  .set-learn-btn.learning { color: #4CAF85; border-color: rgba(46,139,87,0.4); }
+  .set-learn-btn.learning:hover:not(:disabled) { background: rgba(46,139,87,0.08); }
+  .set-learn-btn:disabled { opacity: .5; cursor: wait; }
   .set-preview-btn { font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; background: transparent; color: var(--muted); border: 1px solid rgba(255,255,255,0.1); padding: 9px 16px; border-radius: 2px; cursor: pointer; transition: color .15s, border-color .15s; }
   .set-preview-btn:hover { color: var(--white); border-color: rgba(255,255,255,0.3); }
   .set-preview { margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.06); }

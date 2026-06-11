@@ -1,0 +1,372 @@
+{
+  "id": "golf-core",
+  "name": "Golf Knowledge",
+  "icon": "⛳",
+  "description": "Rules, majors, courses and legends from the world of golf.",
+  "tiers": {
+    "easy": [
+      {
+        "id": "GF-EA-001",
+        "question": "What is the term for finishing a hole one stroke under par?",
+        "options": ["Eagle", "Birdie", "Bogey", "Albatross"],
+        "answers": [1],
+        "explanation": "One under par is a birdie; two under is an eagle, one over is a bogey."
+      },
+      {
+        "id": "GF-EA-002",
+        "question": "What is the sand-filled hazard on a golf course called?",
+        "options": ["A trap pit", "A bunker", "A dune", "A waste lane"],
+        "answers": [1],
+        "explanation": "Bunkers are sand hazards — escaping them cleanly is one of golf's trickiest skills."
+      },
+      {
+        "id": "GF-EA-003",
+        "question": "How many holes make up a full standard round of golf?",
+        "options": ["9", "12", "18", "21"],
+        "answers": [2],
+        "explanation": "A full round is 18 holes — a convention cemented at St Andrews in 1764."
+      },
+      {
+        "id": "GF-EA-004",
+        "question": "Which club is used on the green?",
+        "options": ["Driver", "Wedge", "Putter", "5 Iron"],
+        "answers": [2],
+        "explanation": "The putter rolls the ball along the green and into the hole."
+      },
+      {
+        "id": "GF-EA-005",
+        "type": "true_false",
+        "question": "In golf, the player with the LOWEST score wins.",
+        "answers": [0],
+        "explanation": "True — golf is scored by strokes taken, so fewer is better."
+      },
+      {
+        "id": "GF-EA-006",
+        "question": "Why do golfers shout \"Fore!\"?",
+        "options": [
+          "To celebrate a great shot",
+          "To warn people a ball is heading their way",
+          "To call for a caddie",
+          "To declare a penalty"
+        ],
+        "answers": [1],
+        "explanation": "\"Fore!\" warns anyone in the ball's path to take cover."
+      },
+      {
+        "id": "GF-EA-007",
+        "question": "Which club typically hits the ball the farthest?",
+        "options": ["Putter", "Sand wedge", "7 Iron", "Driver"],
+        "answers": [3],
+        "explanation": "The driver has the longest shaft and lowest loft of the standard clubs, built for maximum distance off the tee."
+      },
+      {
+        "id": "GF-EA-008",
+        "question": "What is a score of two strokes under par on a hole called?",
+        "options": ["Birdie", "Eagle", "Condor", "Double bogey"],
+        "answers": [1],
+        "explanation": "Two under par is an eagle. Three under is an albatross — far rarer."
+      },
+      {
+        "id": "GF-EA-009",
+        "question": "What is the closely mown strip between the tee and the green called?",
+        "options": ["The rough", "The fairway", "The apron", "The runway"],
+        "answers": [1],
+        "explanation": "The fairway is the short grass you're aiming for — the rough lines either side of it."
+      },
+      {
+        "id": "GF-EA-010",
+        "question": "What marks the position of the hole on the green?",
+        "options": ["A cone", "A flagstick (pin)", "A stake", "A painted circle"],
+        "answers": [1],
+        "explanation": "The flagstick, or pin, stands in the cup so the hole is visible from distance."
+      },
+      {
+        "id": "GF-EA-011",
+        "type": "true_false",
+        "question": "Each hole begins from the teeing area.",
+        "answers": [0],
+        "explanation": "True — every hole starts with a tee shot from the teeing ground."
+      },
+      {
+        "id": "GF-EA-012",
+        "question": "What does \"par\" represent on a hole?",
+        "options": [
+          "The maximum strokes allowed",
+          "The expected number of strokes for an expert golfer",
+          "The minimum strokes possible",
+          "The average of all players' scores"
+        ],
+        "answers": [1],
+        "explanation": "Par is the score an expert golfer is expected to make — it sets the benchmark for birdies and bogeys."
+      }
+    ],
+    "medium": [
+      {
+        "id": "GF-ME-001",
+        "question": "Which famous course hosts The Masters every year?",
+        "options": ["Pebble Beach", "St Andrews", "Augusta National", "Pinehurst No. 2"],
+        "answers": [2],
+        "explanation": "The Masters is the only major played at the same venue every year: Augusta National in Georgia, USA."
+      },
+      {
+        "id": "GF-ME-002",
+        "question": "What is the maximum number of clubs allowed in a player's bag?",
+        "options": ["12", "14", "16", "18"],
+        "answers": [1],
+        "explanation": "The Rules of Golf allow a maximum of 14 clubs."
+      },
+      {
+        "id": "GF-ME-003",
+        "question": "The Ryder Cup is contested between which two teams?",
+        "options": [
+          "USA and Great Britain",
+          "USA and Europe",
+          "Europe and Asia",
+          "USA and the Rest of the World"
+        ],
+        "answers": [1],
+        "explanation": "Since 1979 the Ryder Cup has pitted the USA against a combined Team Europe."
+      },
+      {
+        "id": "GF-ME-004",
+        "question": "What is a score of three strokes under par on a single hole called?",
+        "options": ["Eagle", "Albatross", "Condor", "Phoenix"],
+        "answers": [1],
+        "explanation": "Three under is an albatross (double eagle in the US). Four under — the condor — has only ever been recorded a handful of times."
+      },
+      {
+        "id": "GF-ME-005",
+        "question": "Which legendary golfer is nicknamed \"The Golden Bear\"?",
+        "options": ["Arnold Palmer", "Gary Player", "Jack Nicklaus", "Tom Watson"],
+        "answers": [2],
+        "explanation": "Jack Nicklaus, winner of a record 18 major championships, is the Golden Bear."
+      },
+      {
+        "id": "GF-ME-006",
+        "type": "true_false",
+        "question": "Hitting your ball into a penalty area (water) costs a one-stroke penalty.",
+        "answers": [0],
+        "explanation": "True — you drop with a one-stroke penalty (or replay the shot)."
+      },
+      {
+        "id": "GF-ME-007",
+        "question": "What does a golfer's handicap measure?",
+        "options": [
+          "The number of penalties received",
+          "Their playing ability relative to par",
+          "The distance they can drive",
+          "The number of rounds played per year"
+        ],
+        "answers": [1],
+        "explanation": "A handicap expresses scoring ability relative to par, letting players of different levels compete fairly."
+      },
+      {
+        "id": "GF-ME-008",
+        "question": "What is a \"links\" course?",
+        "options": [
+          "A course connected to a hotel",
+          "A coastal course on sandy, dune-covered ground",
+          "A course with shared fairways",
+          "A nine-hole course played twice"
+        ],
+        "answers": [1],
+        "explanation": "Links courses sit on sandy coastal land — firm turf, dunes, wind, and few trees. The oldest style of golf course."
+      },
+      {
+        "id": "GF-ME-009",
+        "question": "Which major championship is traditionally the first of the calendar year?",
+        "options": ["The Open Championship", "US Open", "PGA Championship", "The Masters"],
+        "answers": [3],
+        "explanation": "The Masters opens the major season every April at Augusta National."
+      },
+      {
+        "id": "GF-ME-010",
+        "question": "In match play, how is the winner decided?",
+        "options": [
+          "Fewest total strokes over the round",
+          "Most holes won",
+          "Most birdies made",
+          "Best score on the final hole"
+        ],
+        "answers": [1],
+        "explanation": "Match play is scored hole by hole — win more holes than your opponent and the total stroke count doesn't matter."
+      },
+      {
+        "id": "GF-ME-011",
+        "question": "What is the slightly longer grass bordering the green called?",
+        "options": ["The collar zone", "The fringe", "The skirt", "The buffer"],
+        "answers": [1],
+        "explanation": "The fringe (or apron) rings the green — you can putt or chip from it."
+      },
+      {
+        "id": "GF-ME-012",
+        "type": "fill_gap",
+        "question": "Complete the sentence:",
+        "template": "A hole completed in one stroke is called a hole-in-one, or an ___.",
+        "answers": ["ace"],
+        "explanation": "A hole-in-one is also known as an ace."
+      }
+    ],
+    "hard": [
+      {
+        "id": "GF-HA-001",
+        "question": "Which of these are men's major championships? (Select all that apply)",
+        "options": [
+          "The Masters",
+          "The Players Championship",
+          "The Open Championship",
+          "PGA Championship"
+        ],
+        "answers": [0, 2, 3],
+        "explanation": "The four majors are the Masters, PGA Championship, US Open and The Open. The Players, despite its strength, is not a major."
+      },
+      {
+        "id": "GF-HA-002",
+        "question": "Tiger Woods shares the record of 82 PGA Tour wins with which golfer?",
+        "options": ["Ben Hogan", "Sam Snead", "Byron Nelson", "Arnold Palmer"],
+        "answers": [1],
+        "explanation": "Sam Snead's 82 wins stood alone for decades until Tiger Woods equalled it in 2019."
+      },
+      {
+        "id": "GF-HA-003",
+        "question": "Which course is known as \"the Home of Golf\"?",
+        "options": ["Augusta National", "Royal Troon", "The Old Course at St Andrews", "Muirfield"],
+        "answers": [2],
+        "explanation": "Golf has been played at St Andrews since the 15th century; the Old Course is the game's spiritual home."
+      },
+      {
+        "id": "GF-HA-004",
+        "question": "\"Amen Corner\" at Augusta National refers to which holes?",
+        "options": ["1, 2 and 3", "7, 8 and 9", "11, 12 and 13", "16, 17 and 18"],
+        "answers": [2],
+        "explanation": "Holes 11–13, where wind and water make and break Masters Sundays, were dubbed Amen Corner in 1958."
+      },
+      {
+        "id": "GF-HA-005",
+        "question": "The Claret Jug is the trophy awarded to the winner of which tournament?",
+        "options": ["The Masters", "US Open", "The Open Championship", "Ryder Cup"],
+        "answers": [2],
+        "explanation": "The Open champion lifts the Claret Jug — officially the Golf Champion Trophy, first presented in 1873."
+      },
+      {
+        "id": "GF-HA-006",
+        "question": "Who holds the record for most men's major championship wins?",
+        "options": ["Tiger Woods (15)", "Jack Nicklaus (18)", "Walter Hagen (11)", "Ben Hogan (9)"],
+        "answers": [1],
+        "explanation": "Jack Nicklaus won 18 majors between 1962 and 1986. Tiger Woods sits second with 15."
+      },
+      {
+        "id": "GF-HA-007",
+        "question": "The Solheim Cup is the women's equivalent of which event?",
+        "options": ["The Masters", "The Ryder Cup", "The FedEx Cup", "The Walker Cup"],
+        "answers": [1],
+        "explanation": "The Solheim Cup pits the best women of the USA against Europe, mirroring the Ryder Cup format."
+      },
+      {
+        "id": "GF-HA-008",
+        "type": "true_false",
+        "question": "A ball is out of bounds only when ALL of it lies beyond the boundary line.",
+        "answers": [0],
+        "explanation": "True — if any part of the ball touches or overhangs the course side of the line, it's still in play."
+      },
+      {
+        "id": "GF-HA-009",
+        "question": "In standard Stableford scoring, how many points does a birdie earn?",
+        "options": ["1", "2", "3", "4"],
+        "answers": [2],
+        "explanation": "Stableford awards 2 points for par, 3 for birdie, 4 for eagle, 1 for bogey."
+      },
+      {
+        "id": "GF-HA-010",
+        "type": "typed",
+        "question": "Name two of the four men's major championships.",
+        "answers": ["masters", "the masters", "us open", "the open", "open championship", "pga championship", "pga"],
+        "required_count": 2,
+        "explanation": "The four majors: the Masters, the PGA Championship, the US Open and The Open Championship."
+      }
+    ],
+    "elite": [
+      {
+        "id": "GF-EL-001",
+        "question": "How many greens does the Old Course at St Andrews have in total?",
+        "options": ["18", "14", "11", "9"],
+        "answers": [2],
+        "explanation": "Seven huge double greens plus four single greens (1st, 9th, 17th, 18th) make 11 in total."
+      },
+      {
+        "id": "GF-EL-002",
+        "question": "Who won the original calendar-year Grand Slam in 1930?",
+        "options": ["Walter Hagen", "Bobby Jones", "Gene Sarazen", "Harry Vardon"],
+        "answers": [1],
+        "explanation": "Amateur Bobby Jones won the US Open, The Open, US Amateur and British Amateur in 1930 — then retired at 28."
+      },
+      {
+        "id": "GF-EL-003",
+        "question": "What does a Stimpmeter measure?",
+        "options": [
+          "Wind speed on exposed holes",
+          "The speed of the greens",
+          "Clubhead speed at impact",
+          "The moisture of the fairways"
+        ],
+        "answers": [1],
+        "explanation": "A Stimpmeter rolls a ball down a ramp onto the green; the distance it runs gives the green's speed in feet."
+      },
+      {
+        "id": "GF-EL-004",
+        "question": "What is a score of FOUR strokes under par on a single hole called?",
+        "options": ["Albatross", "Condor", "Ostrich", "Phoenix"],
+        "answers": [1],
+        "explanation": "The condor — a hole-in-one on a par 5 — has been recorded only a handful of times, never in professional play."
+      },
+      {
+        "id": "GF-EL-005",
+        "question": "Which 20-year-old amateur famously won the 1913 US Open, popularising golf in America?",
+        "options": ["Francis Ouimet", "Chick Evans", "Jerome Travers", "Johnny McDermott"],
+        "answers": [0],
+        "explanation": "Local caddie Francis Ouimet beat British stars Vardon and Ray in a playoff at Brookline — a watershed for American golf."
+      },
+      {
+        "id": "GF-EL-006",
+        "question": "The 1977 \"Duel in the Sun\" at Turnberry was fought between which two players?",
+        "options": [
+          "Jack Nicklaus and Tom Watson",
+          "Arnold Palmer and Gary Player",
+          "Seve Ballesteros and Nick Faldo",
+          "Lee Trevino and Johnny Miller"
+        ],
+        "answers": [0],
+        "explanation": "Watson edged Nicklaus by one stroke after they traded blows for two final rounds of 65-65 vs 65-66."
+      },
+      {
+        "id": "GF-EL-007",
+        "question": "Harry Vardon, after whom the Vardon grip is named, won The Open how many times?",
+        "options": ["4", "5", "6", "7"],
+        "answers": [2],
+        "explanation": "Vardon's six Open Championships (1896–1914) remain the record."
+      },
+      {
+        "id": "GF-EL-008",
+        "type": "fill_gap",
+        "question": "Complete the sentence:",
+        "template": "In 1971, Apollo 14 astronaut Alan ___ hit golf balls on the surface of the Moon.",
+        "answers": ["shepard"],
+        "explanation": "Alan Shepard smuggled a modified 6-iron head aboard and hit two balls — the second going \"miles and miles\" in lunar gravity."
+      },
+      {
+        "id": "GF-EL-009",
+        "question": "What is the lowest single round ever shot in a men's major championship?",
+        "options": ["61", "62", "63", "64"],
+        "answers": [1],
+        "explanation": "Branden Grace shot 62 at Royal Birkdale in the 2017 Open, breaking the long-standing barrier of 63."
+      },
+      {
+        "id": "GF-EL-010",
+        "question": "Which player holds the record for most LPGA major championship wins?",
+        "options": ["Annika Sörenstam", "Mickey Wright", "Patty Berg", "Kathy Whitworth"],
+        "answers": [2],
+        "explanation": "Patty Berg won 15 majors between 1937 and 1958 — still the record in women's golf."
+      }
+    ]
+  }
+}
