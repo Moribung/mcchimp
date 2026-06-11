@@ -60,10 +60,10 @@ SHAPE
 - note: leave empty unless you generated fewer questions than requested (see GROUNDING) — then briefly explain why.
 
 QUESTION TYPES (use only the types requested by the user; respect the requested percentage mix as closely as the counts allow)
-- multi_select: "options" (array) + "answers" (array of correct option INDICES). One or more correct.
-- multiple_choice: "options" + "answers" with EXACTLY ONE index.
+- multi_select: "options" (array of DISTINCT choices — never repeat an option) + "answers" (array of the correct option INDICES, no duplicate indices). One or more correct.
+- multiple_choice: "options" (distinct) + "answers" with EXACTLY ONE index.
 - true_false: omit "options"; "answers" is [0] for True or [1] for False.
-- typed: "answers" is an array of accepted answer STRINGS. Optional "required_count" and numeric "tolerance".
+- typed: "answers" is the pool of accepted answers. Matching is case-insensitive and trimmed, so do NOT add entries that differ only in capitalization or spacing. "required_count" = how many DISTINCT answers the user must type: use 1 for a single-answer question (you MAY still list a few interchangeable spellings/synonyms in the pool — only one of them needs to be typed). Use a number greater than 1 ONLY when the question genuinely asks for several different items (e.g. "Name three ..."), and then the pool must contain at least that many genuinely different answers. ALWAYS set "required_count" explicitly. "tolerance" (optional, numeric answers only) allows a +/- margin.
 - fill_gap: "template" containing one or more "___" placeholders; "answers" is an array of strings, one per gap, in order. The number of "___" placeholders MUST exactly equal the number of entries in "answers". "question" is optional here.
 Every question: add a concise "explanation". Give each a stable "id".
 
@@ -76,6 +76,51 @@ Base every question strictly on the provided topic/material. Do NOT invent facts
 ADAPTING SOURCE MATERIAL
 Keep everything sized for a compact quiz UI: question text ideally under ~200 characters; each option a short phrase (ideally under ~80 characters); aim for 3–6 options. If a pre-written question or its options from an uploaded document run longer than this, rewrite them concisely while preserving meaning and the correct answer.
 - "Combination" multiple choice (a numbered list of statements with answer options like "a) 1 and 3", "b) 2 and 4"): KEEP this format when it is short enough to fit — roughly 4 or fewer statements, each a brief phrase. If it is longer than that, convert it to a multi_select instead: use the individual statements directly as the options and ask the user to select the true ones (e.g. question "Select all statements that are true.", options = [statement 1, statement 2, ...], answers = indices of the true statements), and do not reproduce the "a) 1 and 3" meta-options.`;
+
+/**
+ * Repair common model mistakes before validation, so a fixable question isn't
+ * dropped. Returns a new question object.
+ * - typed: dedupe accepted answers case-insensitively; default required_count to
+ *   1 (single answer) and clamp it to the number of DISTINCT answers. This stops
+ *   "give every spelling" traps and the "answer the same twice" exploit.
+ * - multi_select/multiple_choice: keep only unique, in-range integer answer
+ *   indices; multiple_choice keeps exactly one.
+ */
+export function sanitizeQuestion(q) {
+  if (!q || typeof q !== 'object') return q;
+  const type = q.type || 'multi_select';
+  const out = { ...q };
+
+  if (type === 'typed') {
+    const seen = new Set();
+    const deduped = [];
+    for (const a of Array.isArray(out.answers) ? out.answers : []) {
+      const s = (typeof a === 'string' ? a : String(a)).trim();
+      const key = s.toLowerCase();
+      if (!s || seen.has(key)) continue;
+      seen.add(key);
+      deduped.push(s);
+    }
+    out.answers = deduped;
+    let rc = out.required_count;
+    if (typeof rc !== 'number' || !Number.isFinite(rc) || rc < 1) rc = 1;
+    if (rc > deduped.length) rc = deduped.length || 1;
+    out.required_count = rc;
+  } else if (type === 'multi_select' || type === 'multiple_choice') {
+    const n = Array.isArray(out.options) ? out.options.length : 0;
+    const seen = new Set();
+    const uniq = [];
+    for (const ai of Array.isArray(out.answers) ? out.answers : []) {
+      if (Number.isInteger(ai) && ai >= 0 && ai < n && !seen.has(ai)) {
+        seen.add(ai);
+        uniq.push(ai);
+      }
+    }
+    out.answers = type === 'multiple_choice' ? uniq.slice(0, 1) : uniq;
+  }
+
+  return out;
+}
 
 /** Build the user-turn content blocks for a generation or reprompt request. */
 export function buildUserContent({ mode, prompt, text, pdfBase64, types, weights, counts, autoTypes, autoCounts, existingSet, comment }) {

@@ -5,7 +5,7 @@
   import { state as gs }          from '$lib/mma/state.svelte.js';
   import ArenaScene               from '$lib/mma/ArenaScene.svelte';
   import { buildDivision, divisionSlotToOpponent } from '$lib/mma/fighters.js';
-  import { PHASES }               from '$lib/mma/constants.js';
+  import { PHASES, CHAMP_SLOT }   from '$lib/mma/constants.js';
   import { getPhaseDef }          from '$lib/mma/career.js';
   import { setupNextFight }       from '$lib/mma/combat.js';
   import { ensureQPool, assignDivisionQuestions } from '$lib/mma/questions.js';
@@ -205,11 +205,17 @@
     <div class="ccm-inner">
       {#if choiceModalType === 'promotion'}
         {@const nextPromo = orgPromo(cs.phase + 1)}
+        {@const slot = cs.division?.playerSlot ?? 0}
         <div class="ccm-icon">📋</div>
         <div class="ccm-title">Contract Offer</div>
         <div class="ccm-text">
-          {nextPromo} wants to sign you. You're the champion here — you can stay and keep building
-          your legacy, or make the jump.
+          {#if slot >= CHAMP_SLOT}
+            {nextPromo} wants to sign you. You're the champion here — stay and keep building your legacy, or make the jump.
+          {:else if slot >= CHAMP_SLOT - 3}
+            {nextPromo} wants to sign you. You're one of the top contenders here — stay and chase the belt, or take the bigger stage.
+          {:else}
+            {nextPromo} wants to sign you. You've turned heads here — stay and keep climbing the ranks, or make the jump.
+          {/if}
         </div>
         <div class="ccm-row">
           <button class="btn btn-ghost" onclick={choiceStay}>Stay in {orgPromo(cs.phase)}</button>

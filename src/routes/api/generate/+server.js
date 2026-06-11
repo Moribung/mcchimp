@@ -2,7 +2,7 @@ import { json } from '@sveltejs/kit';
 import { createClient } from '@supabase/supabase-js';
 import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public';
 import { validateQuestionSet } from '$lib/validateQuestionSet';
-import { generateQuestionSet, buildUserContent, MODEL } from '$lib/ai/questionSet';
+import { generateQuestionSet, buildUserContent, sanitizeQuestion, MODEL } from '$lib/ai/questionSet';
 import { hasAiAccess, isAiElevated, monthlyCreditsFor } from '$lib/ai/access';
 
 // ── Caps & credit costs (constants — not DB/UI editable) ──
@@ -151,7 +151,7 @@ export async function POST({ request, platform }) {
   let pruned = 0;
   for (const tier of TIERS) {
     const arr = Array.isArray(data.tiers[tier]) ? data.tiers[tier] : [];
-    data.tiers[tier] = arr.filter((q) => {
+    data.tiers[tier] = arr.map(sanitizeQuestion).filter((q) => {
       const qIssues = validateQuestionSet({ name: 'x', tiers: { [tier]: [q] } })
         .filter((i) => !/not yet supported by the renderer/.test(i));
       if (qIssues.length) { pruned++; return false; }

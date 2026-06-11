@@ -61,12 +61,20 @@ export function validateQuestionSet(data) {
         if (!q.question?.trim()) issues.push(`${label}: question text is required.`);
         if (!Array.isArray(q.options) || q.options.filter(o => o?.trim()).length < 2) {
           issues.push(`${label}: at least 2 options are required.`);
+        } else {
+          const opts = q.options.map(o => String(o ?? '').trim().toLowerCase()).filter(Boolean);
+          if (new Set(opts).size !== opts.length) {
+            issues.push(`${label}: options must be distinct (duplicate option text).`);
+          }
         }
         if (!Array.isArray(q.answers) || q.answers.length === 0) {
           issues.push(`${label}: at least one correct answer is required.`);
         } else {
           if (type === 'multiple_choice' && q.answers.length > 1) {
             issues.push(`${label}: multiple_choice must have exactly one answer.`);
+          }
+          if (new Set(q.answers).size !== q.answers.length) {
+            issues.push(`${label}: duplicate answer indices.`);
           }
           for (const ai of q.answers) {
             if (typeof ai !== 'number' || !q.options?.[ai]?.trim()) {
@@ -87,14 +95,22 @@ export function validateQuestionSet(data) {
 
       else if (type === 'typed') {
         if (!q.question?.trim()) issues.push(`${label}: question text is required.`);
-        if (!Array.isArray(q.answers) || q.answers.length === 0) {
-          issues.push(`${label}: typed questions must have at least one accepted answer.`);
-        }
-        if (q.required_count !== undefined) {
-          if (typeof q.required_count !== 'number' || q.required_count < 1) {
+        const cleaned = (Array.isArray(q.answers) ? q.answers : [])
+          .map(a => String(a ?? '').trim().toLowerCase())
+          .filter(Boolean);
+        const distinct = new Set(cleaned).size;
+        if (distinct === 0) {
+          issues.push(`${label}: typed questions need at least one non-empty accepted answer.`);
+        } else {
+          if (q.required_count !== undefined && (typeof q.required_count !== 'number' || q.required_count < 1)) {
             issues.push(`${label}: required_count must be a positive number.`);
-          } else if (q.required_count > q.answers?.length) {
-            issues.push(`${label}: required_count (${q.required_count}) exceeds number of accepted answers (${q.answers?.length}).`);
+          }
+          // The engine asks for (required_count ?? answers.length) inputs; it is
+          // unsatisfiable if that exceeds the number of DISTINCT accepted answers
+          // (entries differing only in case/spacing collapse to one).
+          const effRequired = q.required_count ?? (Array.isArray(q.answers) ? q.answers.length : 0);
+          if (effRequired > distinct) {
+            issues.push(`${label}: asks for ${effRequired} answer(s) but only ${distinct} distinct accepted answer(s).`);
           }
         }
         if (q.tolerance !== undefined && (typeof q.tolerance !== 'number' || q.tolerance < 0)) {
