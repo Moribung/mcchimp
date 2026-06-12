@@ -51,6 +51,7 @@ function holeSnapshot(ch) {
 export function exportSave(gs) {
   return {
     version:     SAVE_VERSION,
+    mode:        gs.mode || 'simple',
     course:      deepCopy(gs.course),
     round:       deepCopy(gs.round),
     career:      deepCopy(gs.career),
@@ -63,9 +64,10 @@ export function exportSave(gs) {
 export function importSave(gs, blob) {
   if (!blob || blob.version !== SAVE_VERSION) return false;
   try {
+    gs.mode        = blob.mode || 'simple';
     gs.course      = blob.course;
     gs.round       = blob.round;
-    gs.career      = blob.career || freshCareer();
+    gs.career      = blob.career || null;
     gs.activeModId = blob.activeModId;
     gs.currentHole = blob.currentHole
       ? { ...blob.currentHole, phase: 'overview', pending: null, aim: null, power: 0, lastShot: null, shotPath: null, shotAnim: null }
@@ -81,10 +83,12 @@ export function importSave(gs, blob) {
 /* ── Local save (state → localStorage) ─────────────────── */
 export function saveGame(gs) {
   const snap = {
+    mode:        gs.mode || 'simple',
     course:      deepCopy(gs.course),
     round:       deepCopy(gs.round),
     activeModId: gs.activeModId,
     currentHole: holeSnapshot(gs.currentHole),
+    careerName:  gs.career?.name || null,
     saveId:      gs.saveId || null,
   };
   _store.set(KEYS.state,   JSON.stringify(snap));
@@ -102,6 +106,7 @@ export function loadGame(gs) {
     if (!raw) return false;
     const snap = JSON.parse(raw);
 
+    gs.mode        = snap.mode || 'simple';
     gs.course      = snap.course;
     gs.round       = snap.round;
     gs.activeModId = snap.activeModId;
@@ -111,7 +116,7 @@ export function loadGame(gs) {
     gs.saveId      = snap.saveId || null;
 
     gs._qScores = JSON.parse(_store.get(KEYS.qscores) || '{}');
-    gs.career   = JSON.parse(_store.get(KEYS.career)  || 'null') || freshCareer();
+    gs.career   = JSON.parse(_store.get(KEYS.career)  || 'null');
 
     const uploaded = JSON.parse(_store.get(KEYS.modules) || '[]');
     uploaded.forEach(m => {
@@ -134,18 +139,31 @@ export function clearSave() {
 }
 
 /* ── Peek at save (for menu continue card) ─────────────── */
+// Returns a descriptor for the local active game — an in-progress round (any
+// mode) OR an idle career with no active round — so "Continue" can resume it.
 export function peekSave() {
   try {
     const raw = _store.get(KEYS.state);
     if (!raw) return null;
     const snap = JSON.parse(raw);
-    if (!snap.round) return null;
-    return {
-      courseName: snap.course?.name || 'Round',
-      holeCount:  snap.course?.holeCount ?? 9,
-      holeNum:    snap.currentHole?.displayNum ?? (snap.round.holeIdx + 1),
-      toPar:      snap.round?.toPar ?? 0,
-    };
+    const mode = snap.mode || 'simple';
+    if (snap.round) {
+      return {
+        mode,
+        careerName: snap.careerName || null,
+        courseName: snap.course?.name || 'Round',
+        holeCount:  snap.course?.holeCount ?? 9,
+        holeNum:    snap.currentHole?.displayNum ?? (snap.round.holeIdx + 1),
+        toPar:      snap.round?.toPar ?? 0,
+        practice:   !!snap.round?.practice,
+      };
+    }
+    // Idle career (saved & exited between rounds).
+    if (mode === 'career' && snap.careerName) {
+      const career = loadCareer();
+      return { mode, careerName: snap.careerName, handicap: career?.handicap ?? null, idle: true };
+    }
+    return null;
   } catch { return null; }
 }
 
@@ -159,25 +177,33 @@ export function clearRound() {
   _store.remove(KEYS.state);
 }
 
-/* ── Round label for the cloud save row ────────────────── */
+/* ── Cloud save row label ──────────────────────────────── */
 export function saveLabel(gs) {
+  if (gs.mode === 'career' && gs.career) return gs.career.name || 'Career';
   const toPar = gs.round?.toPar ?? 0;
   const tp = toPar === 0 ? 'E' : toPar > 0 ? `+${toPar}` : `${toPar}`;
   const holeNum = gs.currentHole?.displayNum ?? ((gs.round?.holeIdx ?? 0) + 1);
   return `${gs.course?.holeCount ?? 9} Holes — Hole ${holeNum}, ${tp}`;
 }
 
-/* ── Fresh career record ───────────────────────────────── */
-export function freshCareer() {
+/* ── Career character ──────────────────────────────────── */
+export const DEFAULT_AVATAR = { skin: '#e0b08a', cap: '#c2453a', shirt: '#3a6ea5', pants: '#2b2b33' };
+
+export function newCareer({ name = 'Rookie', avatar = DEFAULT_AVATAR } = {}) {
   return {
-    roundsPlayed: 0,
-    totalStrokes: 0,
-    totalHoles:   0,
-    bestToPar:    null,
-    holesInOne:   0,
-    eagles:       0,
-    birdies:      0,
-    pars:         0,
-    bogeys:       0,
+    name:          name?.trim() || 'Rookie',
+    avatar:        { ...DEFAULT_AVATAR, ...avatar },
+    createdAt:     new Date().toISOString(),
+    differentials: [],   // ranked-round to-pars (newest last), capped to 20
+    handicap:      null,  // cached WHS index
+    roundsPlayed:  0,     // ranked rounds completed
+    totalStrokes:  0,
+    totalHoles:    0,
+    bestToPar:     null,
+    holesInOne:    0,
+    eagles:        0,
+    birdies:       0,
+    pars:          0,
+    bogeys:        0,
   };
 }

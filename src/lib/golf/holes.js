@@ -139,3 +139,26 @@ export const HOLES = [
 export function holeYards(hole) {
   return Math.round(Math.hypot(hole.pin[0] - hole.tee[0], hole.pin[1] - hole.tee[1]) * hole.scale);
 }
+
+/**
+ * Build a sequence of `count` hole-layout indices with no repeats inside any
+ * nine (one shuffled bag of all holes per cycle), and no identical hole across
+ * the seam between bags. So a 9-hole round visits every map once; an 18-hole
+ * round plays two independently shuffled nines.
+ */
+export function buildHoleOrder(count) {
+  const order = [];
+  while (order.length < count) {
+    const bag = HOLES.map((_, i) => i);
+    for (let i = bag.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [bag[i], bag[j]] = [bag[j], bag[i]];
+    }
+    // avoid the seam repeating the previous bag's last hole
+    if (order.length && bag.length > 1 && bag[0] === order[order.length - 1]) {
+      [bag[0], bag[1]] = [bag[1], bag[0]];
+    }
+    order.push(...bag);
+  }
+  return order.slice(0, count);
+}

@@ -5,6 +5,7 @@
   import { pickFlavour }            from '$lib/football/flavour.js';
   import { ordinal, divName }       from '$lib/football/utils.js';
   import { relegationCount, DIFF_LABELS } from '$lib/football/constants.js';
+  import { isAdvanceKey }            from '$lib/uiKeys.js';
 
   const { oncontinue } = $props();
 
@@ -93,7 +94,7 @@
   });
 
   function onKeydown(e) {
-    if (e.key === 'Enter') { e.preventDefault(); oncontinue?.(); }
+    if (isAdvanceKey(e)) { e.preventDefault(); oncontinue?.(); }
   }
 </script>
 

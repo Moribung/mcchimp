@@ -144,10 +144,8 @@
 
 <!-- Saved careers modal -->
 {#if showSaved}
-  <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-  <div class="overlay" onclick={closeSaved}>
-    <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-    <div class="modal" onclick={e => e.stopPropagation()}>
+  <div class="overlay" role="presentation" onclick={closeSaved}>
+    <div class="modal" role="presentation" onclick={e => e.stopPropagation()}>
       <div class="modal-header">
         <span class="modal-title">Saved Careers</span>
         {#if userId}

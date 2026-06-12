@@ -193,7 +193,7 @@
       </div>
     </div>
     <div class="form-group mb-0">
-      <label class="form-label">Kit Colour</label>
+      <span class="form-label">Kit Colour</span>
       <div class="kit-picker">
         {#each KIT_COLOURS as kit, i}
           <button class="kit-swatch" class:selected={i === selectedKit}
@@ -221,7 +221,7 @@
       {/if}
     </div>
     <div class="form-group mb-0">
-      <label class="form-label">Return Fixtures</label>
+      <span class="form-label">Return Fixtures</span>
       <div class="toggle-row">
         <label class="toggle-switch">
           <input type="checkbox" bind:checked={returnFixtures} />
@@ -297,10 +297,8 @@
 
 <!-- Browse modal -->
 {#if browseOpen}
-  <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-  <div class="lib-overlay" onclick={() => { browseOpen = false; browsePicked = null; }}>
-    <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-    <div class="lib-modal" onclick={e => e.stopPropagation()}>
+  <div class="lib-overlay" role="presentation" onclick={() => { browseOpen = false; browsePicked = null; }}>
+    <div class="lib-modal" role="presentation" onclick={e => e.stopPropagation()}>
       <div class="lib-header">
         <div class="lib-tabs">
           <button class="lib-tab" class:active={browseTab === 'public'} onclick={() => switchTab('public')}>Public</button>

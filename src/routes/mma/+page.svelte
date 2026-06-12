@@ -864,7 +864,7 @@
          bottom sheet on touch (with a Call out button when one is available). -->
     {#if hoverPop}
       {#if useSheet}
-        <div class="rtp-backdrop" onclick={() => (hoverPop = null)}></div>
+        <div class="rtp-backdrop" role="presentation" onclick={() => (hoverPop = null)}></div>
       {/if}
       <div
         class="rt-popup {useSheet ? 'rtp-sheet' : ''}"

@@ -107,7 +107,7 @@
   <a href="/games" onclick={toggleMobileNav}>Games</a>
   <a href="/mma"      onclick={toggleMobileNav} style="font-size:20px;color:var(--muted);padding:3px 0;padding-left:12px;">MMA Game</a>
   <a href="/football" onclick={toggleMobileNav} style="font-size:20px;color:var(--muted);padding:3px 0;padding-left:12px;">Football Game</a>
-  <a href="/golf" onclick={toggleMobileNav} style="font-size:20px;color:var(--muted);padding:3px 0;padding-left:12px;">Golf Game</a>
+  <a href="/golf"     onclick={toggleMobileNav} style="font-size:20px;color:var(--muted);padding:3px 0;padding-left:12px;">Golf Game</a>
   <a href="/questions" onclick={toggleMobileNav}>Questions</a>
   <a href="/questions/sets"      onclick={toggleMobileNav} style="font-size:20px;color:var(--muted);padding:3px 0;padding-left:12px;">Question Sets</a>
   <a href="/questions/guide"     onclick={toggleMobileNav} style="font-size:20px;color:var(--muted);padding:3px 0;padding-left:12px;">AI Do-It-Yourself Guide</a>

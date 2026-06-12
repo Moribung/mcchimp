@@ -588,10 +588,8 @@
 
   <!-- ── Browse modal (Questions tab) ──────────────────── -->
   {#if browseOpen}
-    <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-    <div class="lib-overlay" onclick={closeBrowse}>
-      <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-      <div class="lib-modal" onclick={e => e.stopPropagation()}>
+    <div class="lib-overlay" role="presentation" onclick={closeBrowse}>
+      <div class="lib-modal" role="presentation" onclick={e => e.stopPropagation()}>
         <div class="lib-header">
           <div class="lib-tabs">
             <button class="lib-tab" class:active={browseTab === 'public'} onclick={() => switchBrowseTab('public')}>Public</button>

@@ -7,6 +7,7 @@
   import { buildDivision, divisionSlotToOpponent } from '$lib/mma/fighters.js';
   import { PHASES, CHAMP_SLOT }   from '$lib/mma/constants.js';
   import { getPhaseDef }          from '$lib/mma/career.js';
+  import { isAdvanceKey }         from '$lib/uiKeys.js';
   import { setupNextFight }       from '$lib/mma/combat.js';
   import { ensureQPool, assignDivisionQuestions } from '$lib/mma/questions.js';
 
@@ -136,7 +137,8 @@
 
   // ── Enter key: next fight ─────────────────────────────
   function onKeydown(e) {
-    if (e.key !== 'Enter' || e.target.tagName === 'BUTTON') return;
+    if (!isAdvanceKey(e) || e.target.tagName === 'BUTTON') return;
+    e.preventDefault();
     onNextFight();
   }
 </script>

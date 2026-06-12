@@ -29,12 +29,21 @@
     } catch(e) {
       setsStatus = 'error';
     }
+  });
 
-    if ($session) {
-      try {
-        const ls = await loadLearningSets($session.user.id);
-        learningIds = new Set(ls.map(r => r.set_id));
-      } catch { /* learning state stays empty */ }
+  // Load the user's learning plan whenever auth becomes available (the session
+  // store can hydrate after mount, so this must be reactive, not onMount-only).
+  let _loadedFor = null;
+  $effect(() => {
+    const uid = $session?.user?.id ?? null;
+    if (uid && uid !== _loadedFor) {
+      _loadedFor = uid;
+      loadLearningSets(uid)
+        .then(ls => { learningIds = new Set(ls.map(r => r.set_id)); })
+        .catch(() => { /* learning state stays empty */ });
+    } else if (!uid && _loadedFor) {
+      _loadedFor = null;
+      learningIds = new Set();
     }
   });
 
@@ -122,15 +131,22 @@
             <div class="set-actions">
               {#if $session}
                 <button
-                  class="set-learn-btn"
-                  class:learning={learningIds.has(filename)}
+                  class="btn-learn-toggle"
+                  class:active={learningIds.has(filename)}
                   disabled={learnBusy === filename}
                   onclick={() => toggleLearn(filename, data)}
+                  title={learningIds.has(filename) ? 'Remove from your learning plan' : 'Add to your learning plan'}
                 >
-                  {learnBusy === filename ? '…' : learningIds.has(filename) ? '✓ Learning' : '+ Learn'}
+                  {#if learnBusy === filename}
+                    <span class="lt-icon">…</span>
+                  {:else if learningIds.has(filename)}
+                    <span class="lt-icon">&#127891;</span> Learning
+                  {:else}
+                    <span class="lt-icon">&#43;</span> Learn
+                  {/if}
                 </button>
               {:else}
-                <a class="set-learn-btn" href="/auth/login" title="Log in to track this set with spaced repetition">+ Learn</a>
+                <a class="btn-learn-toggle" href="/auth/login" title="Log in to track this set with spaced repetition"><span class="lt-icon">&#43;</span> Learn</a>
               {/if}
               <a class="set-dl" href="/questions/{filename}" download={filename}>&#11015; JSON</a>
               <button class="set-preview-btn" onclick={() => togglePreview(filename)}>
@@ -173,18 +189,20 @@
   .set-actions { display: flex; gap: 8px; align-items: center; margin-top: auto; }
   .set-dl { font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; background: var(--gold); color: var(--black); border: none; padding: 9px 18px; border-radius: 2px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; transition: background .15s; white-space: nowrap; }
   .set-dl:hover { background: var(--gold2); }
-  .set-learn-btn {
+  /* Learn toggle — matches the library page's pill (src/routes/questions/library) */
+  .btn-learn-toggle {
+    display: inline-flex; align-items: center; gap: 5px;
     font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 700;
-    letter-spacing: .1em; text-transform: uppercase;
-    background: transparent; color: var(--gold); border: 1px solid rgba(232,193,74,0.4);
-    padding: 9px 16px; border-radius: 2px; cursor: pointer; text-decoration: none;
-    display: inline-flex; align-items: center; gap: 6px;
-    transition: background .15s, color .15s, border-color .15s; white-space: nowrap;
+    letter-spacing: .08em; text-transform: uppercase;
+    background: transparent; color: #6FCF97;
+    border: 1px solid rgba(46,139,87,0.4); padding: 8px 16px; border-radius: 999px;
+    cursor: pointer; transition: all .15s; white-space: nowrap; text-decoration: none;
   }
-  .set-learn-btn:hover:not(:disabled) { background: rgba(232,193,74,0.08); }
-  .set-learn-btn.learning { color: #4CAF85; border-color: rgba(46,139,87,0.4); }
-  .set-learn-btn.learning:hover:not(:disabled) { background: rgba(46,139,87,0.08); }
-  .set-learn-btn:disabled { opacity: .5; cursor: wait; }
+  .btn-learn-toggle:hover:not(:disabled) { background: rgba(46,139,87,0.12); border-color: #6FCF97; }
+  .btn-learn-toggle.active { background: #2E8B57; color: #fff; border-color: #2E8B57; }
+  .btn-learn-toggle.active:hover:not(:disabled) { background: #267349; }
+  .btn-learn-toggle:disabled { opacity: .6; cursor: wait; }
+  .lt-icon { font-size: 12px; line-height: 1; }
   .set-preview-btn { font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; background: transparent; color: var(--muted); border: 1px solid rgba(255,255,255,0.1); padding: 9px 16px; border-radius: 2px; cursor: pointer; transition: color .15s, border-color .15s; }
   .set-preview-btn:hover { color: var(--white); border-color: rgba(255,255,255,0.3); }
   .set-preview { margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.06); }

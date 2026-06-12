@@ -9,6 +9,7 @@
     SELECTABLE_KO, SELECTABLE_TKO, SELECTABLE_SUB,
   } from '$lib/mma/constants.js';
   import { REGIONS, REGIONAL_PROMOTIONS, REGIONAL_PROMOTION_IDS, REGIONAL_FC_DIST } from '$lib/mma/regions.js';
+  import { isAdvanceKey } from '$lib/uiKeys.js';
   import { COUNTRY_OPTIONS, COUNTRY_BY_NAME, flagFor, countryName } from '$lib/mma/countries.js';
   import { pickEthnicGroup, pickFighterName } from '$lib/mma/names.js';
   import { nationalityFit } from '$lib/avatar/nationalityFits.js';
@@ -85,6 +86,8 @@
 
   // ── Character creator state ───────────────────────────
   // Generate a fresh random look on every new naming session.
+  // svelte-ignore state_referenced_locally -- intentional: seed the look from
+  // the country's initial value only; later changes are handled in pickCountry.
   const _init = buildLookFromCountry(selectedCountryName);
   let c = $state({
     skinIdx:       _init.skinIdx,
@@ -267,7 +270,7 @@
       }
       return;
     }
-    if (e.key === 'Enter' && canConfirm && !styleModalOpen && !movesModalOpen && !promoModalOpen && !creatorOpen) confirm();
+    if (isAdvanceKey(e) && canConfirm && !styleModalOpen && !movesModalOpen && !promoModalOpen && !creatorOpen) { e.preventDefault(); confirm(); }
   }
 </script>
 
@@ -444,7 +447,7 @@
 <!-- ── Style picker modal ─────────────────────────────── -->
 {#if styleModalOpen}
   <div class="modal-overlay" role="presentation" onclick={() => (styleModalOpen = false)}>
-    <div class="modal" role="dialog" aria-modal="true" onclick={(e) => e.stopPropagation()}>
+    <div class="modal" role="dialog" aria-modal="true" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()}>
       <div class="modal-head">
         <h3 class="modal-title">Choose Your Style</h3>
         <button type="button" class="modal-close" aria-label="Close" onclick={() => (styleModalOpen = false)}>✕</button>
@@ -469,7 +472,7 @@
 <!-- ── Starting promotion modal ───────────────────────── -->
 {#if promoModalOpen}
   <div class="modal-overlay" role="presentation" onclick={() => (promoModalOpen = false)}>
-    <div class="modal" role="dialog" aria-modal="true" onclick={(e) => e.stopPropagation()}>
+    <div class="modal" role="dialog" aria-modal="true" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()}>
       <div class="modal-head">
         <h3 class="modal-title">Starting Promotion</h3>
         <button type="button" class="modal-close" aria-label="Close" onclick={() => (promoModalOpen = false)}>✕</button>
@@ -495,7 +498,7 @@
 <!-- ── Signature moves modal ──────────────────────────── -->
 {#if movesModalOpen}
   <div class="modal-overlay" role="presentation" onclick={() => (movesModalOpen = false)}>
-    <div class="modal" role="dialog" aria-modal="true" onclick={(e) => e.stopPropagation()}>
+    <div class="modal" role="dialog" aria-modal="true" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()}>
       <div class="modal-head">
         <h3 class="modal-title">Signature Moves</h3>
         <button type="button" class="modal-close" aria-label="Close" onclick={() => (movesModalOpen = false)}>✕</button>
@@ -537,7 +540,7 @@
 <!-- ── Character creator modal ────────────────────────── -->
 {#if creatorOpen}
   <div class="modal-overlay" role="presentation" onclick={closeCreator}>
-    <div class="modal creator-modal" role="dialog" aria-modal="true" onclick={(e) => e.stopPropagation()}>
+    <div class="modal creator-modal" role="dialog" aria-modal="true" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()}>
       <div class="modal-head">
         <h3 class="modal-title">Character Creator</h3>
         <button type="button" class="modal-close" aria-label="Close" onclick={closeCreator}>✕</button>
@@ -767,12 +770,6 @@
     gap: 12px;
     flex-wrap: wrap;
     margin-bottom: 6px;
-    align-items: center;
-  }
-
-  .btn-demo {
-    text-decoration: none;
-    display: inline-flex;
     align-items: center;
   }
 

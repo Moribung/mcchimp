@@ -57,7 +57,7 @@ export function meterMaxYd(club, lie, ball, hole) {
  *             duffed: boolean, events: string[], penaltyStrokes: number,
  *             errDeg: number, travelYd: number }}
  */
-export function resolveShot({ ball, aimAngle, power, club, ratio, lie, grid, hole }) {
+export function resolveShot({ ball, aimAngle, power, club, ratio, lie, grid, hole, answerSpeed = 0 }) {
   const scale = hole.scale;
   const pin = hole.pin;
   const isPutt = club.id === 'putter';
@@ -68,18 +68,43 @@ export function resolveShot({ ball, aimAngle, power, club, ratio, lie, grid, hol
   // 1. Intended distance from power + lie
   const maxYd = meterMaxYd(club, lie, ball, hole);
 
-  // 2. Angular error: baseline dispersion + answer-quality spread
+  // 2. Angular error: baseline dispersion + answer-quality spread.
   const errBase = isPutt ? PHYS.BASE_ERR_DEG_PUTT : PHYS.BASE_ERR_DEG;
   const errMax  = isPutt ? PHYS.ERR_MAX_DEG_PUTT  : PHYS.ERR_MAX_DEG;
-  const errDeg = (errBase + (errMax - errBase) * (1 - ratio)) * tri();
+  const spread  = errBase + (errMax - errBase) * (1 - ratio);
+  let errDeg = spread * tri();
+  // Heavier tail for wrong answers: a wild miss flies far off the line.
+  let wild = false;
+  if (Math.random() < PHYS.WILD_MISS_CHANCE * (1 - ratio)) {
+    const [lo, hi] = PHYS.WILD_MISS_MULT;
+    errDeg = spread * (lo + Math.random() * (hi - lo)) * (Math.random() < 0.5 ? -1 : 1);
+    wild = true;
+  }
+  // Answering very late pulls the ball off course (slight directional bias).
+  if (answerSpeed > PHYS.LATE_THRESHOLD) {
+    const lateAmt = (answerSpeed - PHYS.LATE_THRESHOLD) / (1 - PHYS.LATE_THRESHOLD);
+    const pull = lateAmt * PHYS.LATE_PULL_DEG * (isPutt ? 0.5 : 1);
+    errDeg += pull * (Math.random() < 0.5 ? -1 : 1);
+  }
   const angle = aimAngle + (errDeg * Math.PI) / 180;
 
-  // 3. Distance: small strike noise always; wrong answers only lose distance
-  const distMult = (1 + PHYS.BASE_DIST_NOISE * tri())
-                 * (1 - PHYS.DIST_ERR_MAX * (1 - ratio) * Math.random());
+  // 3. Distance: small strike noise always; wrong answers come up short — the
+  //    further off the answer, the shorter the shot. Mostly proportional to
+  //    (1 - ratio) with a little noise, so a miss reliably falls short rather
+  //    than (as before) only losing distance on a random subset of misses.
+  const baseNoise = isPutt ? PHYS.BASE_DIST_NOISE_PUTT : PHYS.BASE_DIST_NOISE;
+  const distErrMax = isPutt ? PHYS.DIST_ERR_MAX_PUTT : PHYS.DIST_ERR_MAX;
+  const missLoss = distErrMax * (1 - ratio) * (0.6 + 0.4 * Math.random());
+  const distMult = (1 + baseNoise * tri()) * (1 - missLoss);
   const duffed = !isPutt && distMult < PHYS.DUFF_THRESHOLD;
 
-  const travelYd = maxYd * power * distMult;
+  // Fast answers (first fifth of the timer) earn a small power boost.
+  let speedPowerMult = 1;
+  if (!isPutt && answerSpeed < PHYS.FAST_THRESHOLD) {
+    speedPowerMult = 1 + PHYS.SPEED_POWER_BOOST * (1 - answerSpeed / PHYS.FAST_THRESHOLD);
+  }
+
+  const travelYd = maxYd * power * distMult * speedPowerMult;
   const travelPx = Math.max(0.5, travelYd / scale);
 
   const holeRadPx = Math.max(0.9, PHYS.HOLE_RADIUS_YD / scale);
@@ -172,7 +197,7 @@ export function resolveShot({ ball, aimAngle, power, club, ratio, lie, grid, hol
     events.push('holed');
   }
 
-  return { path, rest, restLie, holed, duffed, events, penaltyStrokes, errDeg, travelYd };
+  return { path, rest, restLie, holed, duffed, wild, events, penaltyStrokes, errDeg, travelYd };
 }
 
 /** Last dry, in-bounds point along the travel path (water drop). */

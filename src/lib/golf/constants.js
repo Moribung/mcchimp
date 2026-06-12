@@ -54,8 +54,20 @@ export const PHYS = {
   ERR_MAX_DEG:        25,   // angular spread at ratio 0 (full shots)
   ERR_MAX_DEG_PUTT:   12,   // angular spread at ratio 0 (putts)
   BASE_DIST_NOISE:    0.04, // ±4% strike-quality noise even when correct
-  DIST_ERR_MAX:       0.35, // max distance loss fraction at ratio 0
+  BASE_DIST_NOISE_PUTT: 0.02, // putts are struck more cleanly
+  DIST_ERR_MAX:       0.35, // max distance loss fraction at ratio 0 (full shots)
+  DIST_ERR_MAX_PUTT:  0.28, // missed putts come up clearly short
   DUFF_THRESHOLD:     0.75, // distance multiplier below this = duffed (whiff anim)
+  // Wrong answers don't just spread wider — they get a heavier tail: an
+  // occasional WILD miss that flies way off the intended line.
+  WILD_MISS_CHANCE:   0.45, // peak probability (scaled by 1-ratio) of a wild miss
+  WILD_MISS_MULT:     [1.6, 3.0], // multiplier range applied to the spread on a wild miss
+  // Answer-speed → power/accuracy. answerSpeed is the fraction of the timer
+  // used (0 = instant, 1 = buzzer). First half = no penalty.
+  FAST_THRESHOLD:     0.2,  // answered within this fraction → power boost
+  SPEED_POWER_BOOST:  0.1,  // up to +10% distance for an instant answer
+  LATE_THRESHOLD:     0.85, // answered after this fraction → pulled off course
+  LATE_PULL_DEG:      10,   // max extra angular pull at the buzzer (full shots)
   // Trees only catch the descending ball — sampled over this final fraction
   // of the flight. Approximation: the top-down map has no ball height.
   TREE_BLOCK_FRAC:    0.40,
@@ -63,7 +75,9 @@ export const PHYS = {
   HOLE_RADIUS_YD:     2,    // pin capture radius
   CAPTURE_ROLL_YD:    2,    // ball must be nearly spent to drop in
   GIMME_YD:           0.8,  // putt stopping this close counts as holed
-  PUTT_MIN_YD:        6,    // putter meter floor (full meter = 2× dist to pin)
+  // Putter meter scales so 50% power ≈ distance to the pin (full = 2× dist).
+  // A small floor keeps very short putts controllable without overshooting.
+  PUTT_MIN_YD:        2.5,
   PUTT_MAX_YD:        36,
   LONG_PUTT_YD:       20,   // putts beyond this bump the question tier
   LONG_PUTT_BUMP:     true,

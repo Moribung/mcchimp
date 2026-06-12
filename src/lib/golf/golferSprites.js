@@ -17,11 +17,22 @@
  *    src/lib/avatar/fighterRenderer.js can be reused for customization.
  *
  * Any sheet that is missing or fails to load falls back to the procedural
- * placeholder below — drop PNGs in one at a time, no code changes needed.
+ * placeholder below. To wire up real art, drop the PNG in and add its anim
+ * name to AVAILABLE_SHEETS — that's the only code change. Names not listed
+ * there are never requested, so the dev server stays free of 404 noise.
  * ────────────────────────────────────────────────────────────────────────
  */
 
 export const FRAME = 64;
+
+/**
+ * Anim names whose PNG sheets actually exist in /static/sprites/golfer/.
+ * Empty = placeholder-only (no network requests). Add a name here once you
+ * drop the matching golfer_<anim>.png in.
+ */
+export const AVAILABLE_SHEETS = [
+  'idle', 'windup', 'swing_soft', 'swing_full', 'putt', 'whiff', 'celebrate', 'frustrated',
+];
 
 export const GOLFER_ANIMS = {
   idle:       { file: 'golfer_idle.png',       frames: 4, fps: 4,  loop: true  },
@@ -38,6 +49,11 @@ export const GOLFER_ANIMS = {
 export function loadSheets() {
   const sheets = {};
   for (const [name, def] of Object.entries(GOLFER_ANIMS)) {
+    // Skip anims with no real sheet yet — avoids 404s; placeholder is used.
+    if (!AVAILABLE_SHEETS.includes(name)) {
+      sheets[name] = { img: null, ready: false };
+      continue;
+    }
     const img = new Image();
     img.src = `/sprites/golfer/${def.file}`;
     sheets[name] = { img, ready: false };
@@ -47,13 +63,56 @@ export function loadSheets() {
   return sheets;
 }
 
-/* ── Procedural placeholder ─────────────────────────────── */
+/* ── Recolourable character colours ─────────────────────── */
 
-const C = {
+// Default look (also the colours the procedural fallback uses if none given).
+export const DEFAULT_GOLFER_COLORS = {
   skin:  '#e0b08a',
   cap:   '#c2453a',
   shirt: '#3a6ea5',
   pants: '#2b2b33',
+};
+
+// Reserved key colours baked into the generated PNGs (gen_golfer.py). The
+// recolour pass swaps each keyed pixel to the character's chosen colour — the
+// SAME approach the MMA fighter renderer uses.
+export const GOLF_KEY_RGB = {
+  skin:  [255, 0, 255],
+  cap:   [0, 255, 0],
+  shirt: [0, 0, 255],
+  pants: [255, 255, 0],
+};
+
+export function hexToRgb(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+/** Swap every keyed pixel in `imgData` to the character's colours, in place. */
+export function recolorGolfer(imgData, colors = DEFAULT_GOLFER_COLORS) {
+  const d = imgData.data;
+  const pairs = [
+    [GOLF_KEY_RGB.skin,  hexToRgb(colors.skin  || DEFAULT_GOLFER_COLORS.skin)],
+    [GOLF_KEY_RGB.cap,   hexToRgb(colors.cap   || DEFAULT_GOLFER_COLORS.cap)],
+    [GOLF_KEY_RGB.shirt, hexToRgb(colors.shirt || DEFAULT_GOLFER_COLORS.shirt)],
+    [GOLF_KEY_RGB.pants, hexToRgb(colors.pants || DEFAULT_GOLFER_COLORS.pants)],
+  ];
+  for (let i = 0; i < d.length; i += 4) {
+    if (d[i + 3] === 0) continue; // transparent
+    const r = d[i], g = d[i + 1], b = d[i + 2];
+    for (const [k, t] of pairs) {
+      if (r === k[0] && g === k[1] && b === k[2]) {
+        d[i] = t[0]; d[i + 1] = t[1]; d[i + 2] = t[2];
+        break;
+      }
+    }
+  }
+}
+
+/* ── Procedural placeholder ─────────────────────────────── */
+
+// Fixed (non-recolourable) roles. Skin/cap/shirt/pants come from the character.
+const FIXED = {
   shoe:  '#1a1a1f',
   shaft: '#d8d8d8',
   head:  '#909098',
@@ -66,7 +125,7 @@ const C = {
  * @param frame   current frame index (0-based)
  * @param frames  total frames for this anim
  */
-export function drawPlaceholder(ctx, anim, frame, frames) {
+export function drawPlaceholder(ctx, anim, frame, frames, colors = DEFAULT_GOLFER_COLORS) {
   ctx.clearRect(0, 0, FRAME, FRAME);
   const p = frames > 1 ? frame / (frames - 1) : 0;  // 0..1 progress
 
@@ -119,21 +178,21 @@ export function drawPlaceholder(ctx, anim, frame, frames) {
   const baseY = 56 + bob;
 
   // legs
-  ctx.fillStyle = C.pants;
+  ctx.fillStyle = colors.pants;
   ctx.fillRect(cx - 1, baseY - 12, 3, 12);
   ctx.fillRect(cx + 4, baseY - 12, 3, 12);
   // shoes
-  ctx.fillStyle = C.shoe;
+  ctx.fillStyle = FIXED.shoe;
   ctx.fillRect(cx - 1, baseY - 1, 4, 2);
   ctx.fillRect(cx + 4, baseY - 1, 4, 2);
   // torso
-  ctx.fillStyle = C.shirt;
+  ctx.fillStyle = colors.shirt;
   ctx.fillRect(cx - 2, baseY - 26, 10, 14);
   // head
-  ctx.fillStyle = C.skin;
+  ctx.fillStyle = colors.skin;
   ctx.fillRect(cx - 1, baseY - 35 + headDrop, 8, 8);
   // cap
-  ctx.fillStyle = C.cap;
+  ctx.fillStyle = colors.cap;
   ctx.fillRect(cx - 1, baseY - 37 + headDrop, 8, 3);
   ctx.fillRect(cx + 6, baseY - 35 + headDrop, 3, 1);
 
@@ -143,7 +202,7 @@ export function drawPlaceholder(ctx, anim, frame, frames) {
   const hx = sx + Math.cos(rad) * 8;   // hands
   const hy = sy + Math.sin(rad) * 8;
 
-  ctx.strokeStyle = C.shirt;
+  ctx.strokeStyle = colors.shirt;
   ctx.lineWidth = 2;
   if (armsUp) {
     ctx.beginPath();
@@ -160,12 +219,12 @@ export function drawPlaceholder(ctx, anim, frame, frames) {
   const chx = armsUp ? sx + 4 : hx, chy = armsUp ? sy - 9 : hy;
   const cex = chx + Math.cos(rad) * 14;
   const cey = chy + Math.sin(rad) * 14;
-  ctx.strokeStyle = C.shaft;
+  ctx.strokeStyle = FIXED.shaft;
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(chx, chy); ctx.lineTo(cex, cey);
   ctx.stroke();
-  ctx.fillStyle = C.head;
+  ctx.fillStyle = FIXED.head;
   ctx.fillRect(Math.round(cex) - 1, Math.round(cey) - 1, 3, 2);
 
   // ball at address-ish poses

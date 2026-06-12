@@ -49,8 +49,8 @@
       <div class="card-title">Quiz<br>Golf</div>
       <p class="card-desc">Answer a question, lock it in blind, then aim and swing. Right answers fly true — wrong answers hook into the trees. Bunkers and long putts bring harder questions. Hole out in as few strokes as you can.</p>
       <div class="card-meta">
-        <span class="meta-pill">9 &amp; 18 Holes</span>
-        <span class="meta-pill">Adaptive Difficulty</span>
+        <span class="meta-pill">Career Mode</span>
+        <span class="meta-pill">Handicap Tracking</span>
         <span class="meta-pill">Cloud Saves</span>
       </div>
       <div class="card-arrow">Play Now →</div>
@@ -256,7 +256,6 @@
     border-radius: 2px;
   }
   .tag-live { background: rgba(46,139,87,0.15); color: #4CAF85; border: 1px solid rgba(46,139,87,0.3); }
-  .tag-ongoing { background: rgba(42,94,173,0.15); color: #6B9FE4; border: 1px solid rgba(42,94,173,0.35); }
   .tag-soon { background: rgba(107,107,107,0.1); color: var(--muted); border: 1px solid rgba(107,107,107,0.2); }
   .tag-demo { background: rgba(107,107,107,0.08); color: rgba(242,239,232,0.35); border: 1px solid rgba(107,107,107,0.15); }
 

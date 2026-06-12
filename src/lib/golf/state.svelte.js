@@ -3,7 +3,8 @@
  * Uses Svelte 5 $state rune.
  *
  * screen values:
- *   'menu' | 'round_setup' | 'hole' | 'scorecard' | 'round_end'
+ *   'menu' | 'round_setup' | 'career_create' | 'career_hub' |
+ *   'hole' | 'scorecard' | 'round_end'
  *
  * currentHole.phase values (per-stroke state machine):
  *   'overview' | 'question' | 'aim' | 'power' | 'flight' | 'result'
@@ -12,9 +13,13 @@
 export const state = $state({
   screen: 'menu',
 
+  // ── Game mode ─────────────────────────────────────────
+  // 'simple' = one-off round (no character). 'career' = persistent golfer.
+  mode: 'simple',
+
   // ── Round ─────────────────────────────────────────────
   course: null,        // { name, holeCount }
-  round:  null,        // { holeIdx, scorecard: [{num,par,strokes,label}], totalStrokes, totalPar, toPar }
+  round:  null,        // { holeIdx, scorecard:[...], totalStrokes, totalPar, toPar, practice }
 
   // ── Current hole / stroke ─────────────────────────────
   currentHole: null,   // {
@@ -25,8 +30,10 @@ export const state = $state({
                        //   shotPath: [{x,y,mode}],
                        // }
 
-  // ── Career totals ─────────────────────────────────────
-  career: null,        // { roundsPlayed, totalStrokes, totalHoles, bestToPar,
+  // ── Career (persistent golfer; null in simple mode) ───
+  career: null,        // { name, avatar:{skin,cap,shirt,pants}, createdAt,
+                       //   differentials:[...], handicap, roundsPlayed,
+                       //   totalStrokes, totalHoles, bestToPar,
                        //   holesInOne, eagles, birdies, pars, bogeys }
 
   // ── DB save ID (set after first cloud save) ───────────

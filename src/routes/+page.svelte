@@ -364,6 +364,9 @@
   }
   .game-card:hover { background: #1E2023; }
   .game-card:hover .card-arrow { transform: translate(4px, -4px); }
+  .game-card--soon { cursor: default; }
+  .game-card--soon:hover { background: var(--surface); }
+  .game-card--soon:hover .card-arrow { transform: none; }
   .card-num {
     font-family: 'Bebas Neue', sans-serif;
     font-size: 96px;
@@ -399,13 +402,6 @@
     color: rgba(242,239,232,0.45);
     line-height: 1.6;
     max-width: 320px;
-  }
-  .card-notice {
-    font-size: 11px;
-    color: rgba(242,239,232,0.3);
-    line-height: 1.4;
-    margin-top: 10px;
-    font-style: italic;
   }
   .card-arrow {
     font-family: 'Barlow Condensed', sans-serif;

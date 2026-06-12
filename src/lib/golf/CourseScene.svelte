@@ -12,6 +12,8 @@
     onaim = () => {},
     anim = null,            // { path: [{x,y,mode}], id } — plays when id changes
     onanimdone = () => {},
+    zoom = false,           // true on the green → camera zooms in, centred on the cup
+    holed = false,          // ball is in the cup → hide it once it has come to rest
   } = $props();
 
   let canvas;
@@ -19,6 +21,50 @@
   let raf = 0;
   let lastAnimId = null;
   let animState = null;     // { points, times, total, start }
+
+  // ── Camera (pan/zoom) ─────────────────────────────────
+  // Identity = z:1 centred on the map centre. When putting we frame the cup at
+  // the canvas centre, zoomed in enough to keep the ball in view as well.
+  const ZOOM_MAX    = 4;    // tightest zoom
+  const ZOOM_MARGIN = 5;    // world px of padding kept around the ball
+  const CAM_LERP    = 0.18; // per-frame easing toward the target
+  let cam       = { z: 1, fx: MAP_W / 2, fy: MAP_H / 2 };
+  let camTarget = { z: 1, fx: MAP_W / 2, fy: MAP_H / 2 };
+
+  // Recompute the framing whenever we enter/leave the green or the ball moves.
+  $effect(() => {
+    if (zoom && hole) {
+      const [px, py] = hole.pin;
+      const dx = Math.abs(ball[0] - px) + ZOOM_MARGIN;
+      const dy = Math.abs(ball[1] - py) + ZOOM_MARGIN;
+      // Cup stays centred, so the half-window must reach the ball — pick the
+      // tightest zoom that still keeps the ball on screen (clamped to ZOOM_MAX).
+      const z = Math.max(1, Math.min(ZOOM_MAX, (MAP_W / 2) / dx, (MAP_H / 2) / dy));
+      camTarget = { z, fx: px, fy: py };
+    } else {
+      camTarget = { z: 1, fx: MAP_W / 2, fy: MAP_H / 2 };
+    }
+  });
+
+  function updateCamera() {
+    cam.z  += (camTarget.z  - cam.z)  * CAM_LERP;
+    cam.fx += (camTarget.fx - cam.fx) * CAM_LERP;
+    cam.fy += (camTarget.fy - cam.fy) * CAM_LERP;
+    if (Math.abs(camTarget.z  - cam.z)  < 0.005) cam.z  = camTarget.z;
+    if (Math.abs(camTarget.fx - cam.fx) < 0.05)  cam.fx = camTarget.fx;
+    if (Math.abs(camTarget.fy - cam.fy) < 0.05)  cam.fy = camTarget.fy;
+  }
+
+  function applyCamera(ctx) {
+    ctx.translate(MAP_W / 2, MAP_H / 2);
+    ctx.scale(cam.z, cam.z);
+    ctx.translate(-cam.fx, -cam.fy);
+  }
+
+  // Canvas-logical point → world coords (inverse of the camera transform).
+  function screenToWorld(mx, my) {
+    return [(mx - MAP_W / 2) / cam.z + cam.fx, (my - MAP_H / 2) / cam.z + cam.fy];
+  }
 
   $effect(() => {
     if (!hole) return;
@@ -89,29 +135,38 @@
 
     function draw(now) {
       raf = requestAnimationFrame(draw);
+      updateCamera();
       ctx.clearRect(0, 0, MAP_W, MAP_H);
+      ctx.save();
+      applyCamera(ctx);
+
       if (terrainCv) ctx.drawImage(terrainCv, 0, 0);
-      if (!hole) return;
+      if (!hole) { ctx.restore(); return; }
 
       drawTee(ctx);
       drawPin(ctx, now);
 
-      // Ball (animated or at rest)
-      let bx = ball[0], by = ball[1], inFlight = false;
+      // Ball (animated or at rest). Once holed and at rest, it has dropped into
+      // the cup — hide it so it doesn't sit on top of the pin.
+      let bx = ball[0], by = ball[1], inFlight = false, showBall = true;
       if (animState) {
         const p = animPos(now);
         if (p?.done) {
           animState = null;
           onanimdone();
+          if (holed) showBall = false;
         } else if (p) {
           bx = p.x; by = p.y; inFlight = p.mode === 'flight';
         }
+      } else if (holed) {
+        showBall = false;
       }
 
       // Aim arrow (under the ball)
       if (aimAngle !== null && !animState) drawAim(ctx, bx, by);
 
-      drawBall(ctx, bx, by, inFlight);
+      if (showBall) drawBall(ctx, bx, by, inFlight);
+      ctx.restore();
     }
     raf = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(raf);
@@ -154,24 +209,27 @@
   }
 
   function drawAim(ctx, bx, by) {
-    const len = Math.max(8, aimLenPx);
+    // Use the length the caller computed (it already floors sensibly per phase/
+    // club). A hard 8px floor here would override the power-scaled putt preview.
+    const len = Math.max(1, aimLenPx);
     const ex = bx + Math.cos(aimAngle) * len;
     const ey = by + Math.sin(aimAngle) * len;
     ctx.strokeStyle = 'rgba(255,255,255,0.85)';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([2, 2]);
+    ctx.lineWidth = 1 / cam.z;            // keep ~1 logical px regardless of zoom
+    ctx.setLineDash([2 / cam.z, 2 / cam.z]);
     ctx.beginPath();
     ctx.moveTo(bx + 0.5, by + 0.5);
     ctx.lineTo(ex + 0.5, ey + 0.5);
     ctx.stroke();
     ctx.setLineDash([]);
-    // arrowhead
+    // arrowhead (keep a constant on-screen size regardless of zoom)
     const a = aimAngle;
+    const head = 4 / cam.z;
     ctx.beginPath();
     ctx.moveTo(ex + 0.5, ey + 0.5);
-    ctx.lineTo(ex + 0.5 - Math.cos(a - 0.5) * 4, ey + 0.5 - Math.sin(a - 0.5) * 4);
+    ctx.lineTo(ex + 0.5 - Math.cos(a - 0.5) * head, ey + 0.5 - Math.sin(a - 0.5) * head);
     ctx.moveTo(ex + 0.5, ey + 0.5);
-    ctx.lineTo(ex + 0.5 - Math.cos(a + 0.5) * 4, ey + 0.5 - Math.sin(a + 0.5) * 4);
+    ctx.lineTo(ex + 0.5 - Math.cos(a + 0.5) * head, ey + 0.5 - Math.sin(a + 0.5) * head);
     ctx.stroke();
   }
 
@@ -187,7 +245,8 @@
   function handlePointer(e) {
     if (!aiming || animState) return;
     const [mx, my] = pointToMap(e);
-    onaim(Math.atan2(my - ball[1], mx - ball[0]));
+    const [wx, wy] = screenToWorld(mx, my);
+    onaim(Math.atan2(wy - ball[1], wx - ball[0]));
   }
 
   let dragging = false;

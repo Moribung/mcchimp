@@ -6,6 +6,7 @@
   import { sortTable, getClubName } from '$lib/football/league.js';
   import { scoreTypedInputs, scoreFillGapInputs } from '$lib/football/questions.js';
   import { DIFF_LABELS, DIFF_COLORS, relegationCount } from '$lib/football/constants.js';
+  import { isAdvanceKey } from '$lib/uiKeys.js';
 
   /** onlockin(selectedOptions: number[], typedInputs: string[]) → void */
   /** onnext() → void  (page increments currentQIdx or finalises) */
@@ -172,9 +173,8 @@
           e.preventDefault(); toggleOption(idx);
         }
       }
-      if (e.key === 'Enter' && !isText && canSubmit) { e.preventDefault(); submit(); }
-    } else if (phase === 'revealed' && e.key === 'Enter') {
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      if (isAdvanceKey(e) && !isText && canSubmit) { e.preventDefault(); submit(); }
+    } else if (phase === 'revealed' && isAdvanceKey(e)) {
       e.preventDefault(); next();
     }
   }

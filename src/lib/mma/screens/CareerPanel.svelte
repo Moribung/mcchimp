@@ -261,7 +261,7 @@
 
   {#if editOpen}
     <div class="av-overlay" role="presentation" onclick={closeEdit}>
-      <div class="av-modal" role="dialog" aria-modal="true" onclick={(e) => e.stopPropagation()}>
+      <div class="av-modal" role="dialog" aria-modal="true" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()}>
         <div class="av-head">
           <h3 class="av-title">Appearance</h3>
           <button class="av-close" aria-label="Close" onclick={closeEdit}>✕</button>

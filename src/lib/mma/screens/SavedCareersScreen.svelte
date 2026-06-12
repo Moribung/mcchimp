@@ -178,7 +178,7 @@
 
 <!-- Slot-full blocking prompt -->
 {#if slotFull}
-  <div class="sf-overlay" role="dialog" aria-modal="true"
+  <div class="sf-overlay" role="dialog" aria-modal="true" tabindex="-1"
     onclick={() => slotFull = false}
     onkeydown={(e) => e.key === 'Escape' && (slotFull = false)}>
     <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->

@@ -80,7 +80,7 @@
   }
   .meter-fill {
     position: absolute; inset: 0 auto 0 0;
-    background: linear-gradient(90deg, var(--green), var(--gold));
+    background: linear-gradient(90deg, var(--green), var(--accent));
     opacity: .75;
   }
   .meter-needle {
@@ -92,7 +92,7 @@
     display: flex; justify-content: space-between; align-items: baseline;
     margin-top: 6px;
   }
-  .meter-yd  { font-family: var(--font-display); font-size: 18px; color: var(--gold); min-width: 64px; }
+  .meter-yd  { font-family: var(--font-display); font-size: 18px; color: var(--accent); min-width: 64px; }
   .meter-max { font-size: 11px; color: var(--muted); }
-  .meter-hint { font-size: 11px; color: var(--text-dim); letter-spacing: .06em; text-transform: uppercase; }
+  .meter-hint { font-size: 11px; color: var(--text-muted); letter-spacing: .06em; text-transform: uppercase; }
 </style>

@@ -2,6 +2,7 @@
 <script>
   import { state as gs }        from '$lib/mma/state.svelte.js';
   import { gf } from '$lib/mma/fighters.js';
+  import { isAdvanceKey } from '$lib/uiKeys.js';
   import {
     DIFF_LABELS, DIFF_COLORS, DIFF_BG, DIFFICULTY_TIMERS,
   }                       from '$lib/mma/constants.js';
@@ -63,7 +64,7 @@
   }
 
   function onKeydown(e) {
-    if (e.key === 'Enter') startFight();
+    if (isAdvanceKey(e)) { e.preventDefault(); startFight(); }
   }
 </script>
 

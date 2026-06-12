@@ -2,6 +2,7 @@
 <script>
   import { state as gs }       from '$lib/football/state.svelte.js';
   import { ordinal, divName }  from '$lib/football/utils.js';
+  import { isAdvanceKey }      from '$lib/uiKeys.js';
 
   const { oncontinue } = $props();
 
@@ -22,7 +23,7 @@
   const visibleTable = $derived(showFullTable ? finalTable : finalTable.slice(0, 6));
 
   function onKeydown(e) {
-    if (e.key === 'Enter') { e.preventDefault(); oncontinue?.(); }
+    if (isAdvanceKey(e)) { e.preventDefault(); oncontinue?.(); }
   }
 </script>
 

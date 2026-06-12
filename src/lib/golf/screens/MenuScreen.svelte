@@ -2,16 +2,22 @@
 <script>
   import { loadAllSaves, deleteSave, toggleSaveStar } from '$lib/saves.js';
   import { toParStr } from '$lib/golf/constants.js';
+  import { handicapLabel } from '$lib/golf/handicap.js';
 
   const {
     oncontinue    = null,
     savedInfo     = null,
-    onstartsetup,
+    onstartcareer,
+    onquickround,
+    onpastrounds  = null,
     onloadsave,
     onsavedeleted = null,
+    pastCount     = 0,
     userId        = null,
     userTier      = 'regular',
   } = $props();
+
+  const continueIsCareer = $derived(savedInfo?.mode === 'career');
 
   const saveLimit = $derived(userTier === 'pro' || userTier === 'dev' ? 20 : 5);
 
@@ -21,6 +27,16 @@
   let loadingSaves = $state(false);
   let savesError   = $state('');
   let deleting     = $state(null);
+
+  // Eagerly load the saved-games count once the user is known, so the menu badge
+  // shows the real count without first opening the modal.
+  let _countLoaded = false;
+  $effect(() => {
+    if (userId && !_countLoaded) {
+      _countLoaded = true;
+      loadAllSaves(userId, 'golf').then(d => { dbSaves = d; }).catch(() => {});
+    }
+  });
 
   async function openSaved() {
     showSaved  = true;
@@ -73,6 +89,12 @@
     const d = save.save_data;
     if (!d) return '';
     const parts = [];
+    if (d.mode === 'career' && d.career) {
+      parts.push(`Hcp ${handicapLabel(d.career.handicap)}`);
+      parts.push(`${d.career.roundsPlayed ?? 0} rounds`);
+      if (d.round) parts.push(`mid-round · Hole ${d.currentHole?.displayNum ?? d.round.holeIdx + 1}`);
+      return parts.join(' · ');
+    }
     if (d.course?.holeCount) parts.push(`${d.course.holeCount} holes`);
     if (d.currentHole?.holeNum) parts.push(`Hole ${d.currentHole.holeNum}`);
     if (d.round) parts.push(toParStr(d.round.toPar ?? 0));
@@ -92,37 +114,57 @@
     <p>Quiz Golf — every shot is a question</p>
   </div>
 
-  <!-- Continue current round -->
+  <!-- Continue current game -->
   <button class="menu-btn"
     class:menu-btn-active={!!savedInfo}
     disabled={!oncontinue || !savedInfo}
     onclick={oncontinue ?? (() => {})}>
     <div class="menu-btn-icon">▶</div>
     <div class="menu-btn-body">
-      <div class="menu-btn-title">Continue Round</div>
+      <div class="menu-btn-title">{continueIsCareer ? 'Continue Career' : 'Continue Round'}</div>
       <div class="menu-btn-sub">
-        {#if savedInfo}
+        {#if savedInfo && continueIsCareer}
+          {savedInfo.careerName} · Hcp {handicapLabel(savedInfo.handicap)}{savedInfo.idle ? '' : ' · mid-round'}
+        {:else if savedInfo}
           {savedInfo.courseName} · {savedInfo.holeCount} holes · {toParStr(savedInfo.toPar)}
         {:else}
-          No round in progress
+          No game in progress
         {/if}
       </div>
     </div>
     {#if savedInfo}
-      <div class="menu-btn-badge">H{savedInfo.holeNum}</div>
+      <div class="menu-btn-badge">{continueIsCareer ? (savedInfo.idle ? 'CAREER' : `H${savedInfo.holeNum}`) : `H${savedInfo.holeNum}`}</div>
     {/if}
   </button>
 
-  <!-- Saved rounds -->
+  <!-- New career -->
+  <button class="menu-btn menu-btn-new" onclick={onstartcareer}>
+    <div class="menu-btn-icon">★</div>
+    <div class="menu-btn-body">
+      <div class="menu-btn-title">New Career</div>
+      <div class="menu-btn-sub">Create a golfer and track your handicap</div>
+    </div>
+  </button>
+
+  <!-- Quick round -->
+  <button class="menu-btn" onclick={onquickround}>
+    <div class="menu-btn-icon">+</div>
+    <div class="menu-btn-body">
+      <div class="menu-btn-title">Quick Round</div>
+      <div class="menu-btn-sub">One-off round — pick holes and a question set</div>
+    </div>
+  </button>
+
+  <!-- Saved games -->
   <button class="menu-btn" onclick={openSaved}>
     <div class="menu-btn-icon">≡</div>
     <div class="menu-btn-body">
-      <div class="menu-btn-title">Saved Rounds</div>
+      <div class="menu-btn-title">Saved Games</div>
       <div class="menu-btn-sub">
         {#if !userId}
-          Log in to access saved rounds
+          Log in to access saved games
         {:else}
-          Your round save slots
+          Careers and saved rounds
         {/if}
       </div>
     </div>
@@ -131,24 +173,25 @@
     {/if}
   </button>
 
-  <!-- Tee off -->
-  <button class="menu-btn menu-btn-new" onclick={onstartsetup}>
-    <div class="menu-btn-icon">+</div>
+  <!-- Past games -->
+  <button class="menu-btn" onclick={() => onpastrounds?.()}>
+    <div class="menu-btn-icon">🏆</div>
     <div class="menu-btn-body">
-      <div class="menu-btn-title">Tee Off — New Round</div>
-      <div class="menu-btn-sub">Pick holes and a question set</div>
+      <div class="menu-btn-title">Past Games</div>
+      <div class="menu-btn-sub">
+        {#if !userId}Log in to record completed rounds{:else}Your finished scorecards{/if}
+      </div>
     </div>
+    {#if userId && pastCount > 0}<div class="menu-btn-badge">{pastCount}</div>{/if}
   </button>
 </div>
 
 <!-- Saved rounds modal -->
 {#if showSaved}
-  <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-  <div class="overlay" onclick={closeSaved}>
-    <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-    <div class="modal" onclick={e => e.stopPropagation()}>
+  <div class="overlay" role="presentation" onclick={closeSaved}>
+    <div class="modal" role="presentation" onclick={e => e.stopPropagation()}>
       <div class="modal-header">
-        <span class="modal-title">Saved Rounds</span>
+        <span class="modal-title">Saved Games</span>
         {#if userId}
           <span class="modal-count">{dbSaves.length} / {saveLimit}</span>
         {/if}
@@ -167,8 +210,8 @@
           <div class="empty-state error">{savesError}</div>
         {:else if dbSaves.length === 0}
           <div class="empty-state">
-            No saved rounds yet.<br>
-            <span style="font-size:11px;color:var(--muted)">Use "Save & Quit" in-game to save a round here.</span>
+            No saved games yet.<br>
+            <span style="font-size:11px;color:var(--muted)">Start a career or use "Save & Quit" in-game to save here.</span>
           </div>
         {:else}
           <div class="saves-list">
@@ -181,7 +224,10 @@
                 <div class="save-info" role="button" tabindex="0"
                   onclick={() => handleLoad(save)}
                   onkeydown={e => (e.key === 'Enter' || e.key === ' ') && handleLoad(save)}>
-                  <div class="save-name">{save.fighter_name || 'Unnamed Round'}</div>
+                  <div class="save-name">
+                    <span class="type-tag" class:tag-career={save.save_data?.mode === 'career'}>{save.save_data?.mode === 'career' ? 'Career' : 'Round'}</span>
+                    {save.fighter_name || 'Unnamed'}
+                  </div>
                   <div class="save-meta">{saveSubtitle(save)} · {fmtDate(save.updated_at)}</div>
                 </div>
                 <button class="save-load-btn" onclick={() => handleLoad(save)}>Load</button>
@@ -208,7 +254,7 @@
   .menu-wrap { max-width: 480px; margin: 0 auto; padding: 56px 0 48px; display: flex; flex-direction: column; gap: 10px; }
 
   .start-header { text-align: center; margin-bottom: 40px; }
-  .start-header h1 { font-family: var(--font-display); font-size: 96px; line-height: 0.9; color: var(--gold); letter-spacing: .02em; }
+  .start-header h1 { font-family: var(--font-display); font-size: 96px; line-height: 0.9; color: var(--accent); letter-spacing: .02em; }
   .start-header p  { color: var(--muted); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; margin-top: 8px; }
 
   .menu-btn {
@@ -221,18 +267,18 @@
   .menu-btn:hover:not(:disabled) { border-color: rgba(255,255,255,0.25); background: var(--surface2); }
   .menu-btn:disabled { opacity: .38; cursor: not-allowed; }
   .menu-btn.menu-btn-active { border-color: rgba(255,255,255,0.2); }
-  .menu-btn.menu-btn-active:hover { border-color: var(--gold); }
+  .menu-btn.menu-btn-active:hover { border-color: var(--accent); }
   .menu-btn.menu-btn-new { border-color: rgba(212,168,71,.3); }
-  .menu-btn.menu-btn-new:hover { border-color: var(--gold); background: color-mix(in srgb,var(--gold) 6%,var(--surface)); }
+  .menu-btn.menu-btn-new:hover { border-color: var(--accent); background: color-mix(in srgb,var(--accent) 6%,var(--surface)); }
 
   .menu-btn-icon {
-    font-family: var(--font-display); font-size: 22px; color: var(--gold);
+    font-family: var(--font-display); font-size: 22px; color: var(--accent);
     width: 32px; text-align: center; flex-shrink: 0; line-height: 1;
   }
   .menu-btn-body { flex: 1; display: flex; flex-direction: column; gap: 3px; }
   .menu-btn-title { font-family: var(--font-display); font-size: 18px; letter-spacing: .04em; color: var(--text); }
   .menu-btn-sub   { font-size: 12px; color: var(--muted); }
-  .menu-btn-badge { font-family: var(--font-display); font-size: 14px; color: var(--gold); flex-shrink: 0; }
+  .menu-btn-badge { font-family: var(--font-display); font-size: 14px; color: var(--accent); flex-shrink: 0; }
 
   .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.8); display: flex; align-items: center; justify-content: center; z-index: 9999; }
   .modal   {
@@ -259,7 +305,7 @@
     font-size: 13px; display: flex; flex-direction: column; align-items: center; gap: 12px;
   }
   .empty-state.error { color: var(--red); }
-  .login-link { color: var(--gold); text-decoration: none; font-size: 13px; }
+  .login-link { color: var(--accent); text-decoration: none; font-size: 13px; }
   .login-link:hover { text-decoration: underline; }
 
   .saves-list { display: flex; flex-direction: column; gap: 6px; }
@@ -271,19 +317,21 @@
     transition: border-color .15s;
   }
   .save-row:hover { border-color: rgba(255,255,255,0.2); }
-  .save-row.save-row-starred { border-left: 3px solid var(--gold); }
+  .save-row.save-row-starred { border-left: 3px solid var(--accent); }
 
   .star-btn {
     background: none; border: none; cursor: pointer; font-size: 16px;
     color: var(--muted); padding: 0 2px; flex-shrink: 0; line-height: 1;
     transition: color .15s;
   }
-  .star-btn:hover  { color: var(--gold); }
-  .star-btn.starred { color: var(--gold); }
+  .star-btn:hover  { color: var(--accent); }
+  .star-btn.starred { color: var(--accent); }
 
   .save-info { flex: 1; cursor: pointer; min-width: 0; }
-  .save-info:hover .save-name { color: var(--gold); }
-  .save-name { font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color .15s; }
+  .save-info:hover .save-name { color: var(--accent); }
+  .save-name { font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color .15s; display: flex; align-items: center; gap: 7px; }
+  .type-tag { font-size: 9px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; padding: 2px 6px; border-radius: 3px; background: rgba(255,255,255,.08); color: var(--muted); flex-shrink: 0; }
+  .type-tag.tag-career { background: rgba(212,168,71,.18); color: var(--accent); }
   .save-meta { font-size: 11px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
   .save-load-btn {
@@ -292,7 +340,7 @@
     letter-spacing: .08em; text-transform: uppercase; padding: 5px 12px; cursor: pointer;
     flex-shrink: 0; transition: border-color .15s, color .15s;
   }
-  .save-load-btn:hover { border-color: var(--gold); color: var(--gold); }
+  .save-load-btn:hover { border-color: var(--accent); color: var(--accent); }
 
   .save-del-btn {
     background: none; border: none; color: var(--muted); cursor: pointer;

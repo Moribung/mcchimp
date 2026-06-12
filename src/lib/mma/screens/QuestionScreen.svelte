@@ -6,6 +6,7 @@
   import { resolveResult } from '$lib/mma/combat.js';
   import { scoreQuestion } from '$lib/mma/questions.js';
   import { DIFF_LABELS, DIFF_COLORS } from '$lib/mma/constants.js';
+  import { isAdvanceKey } from '$lib/uiKeys.js';
   import ArenaScene from '$lib/mma/ArenaScene.svelte';
   import { pickArenaScene } from '$lib/mma/arenaScene.js';
 
@@ -200,9 +201,8 @@
 
   // ── Enter key ─────────────────────────────────────────
   function onKeydown(e) {
-    if (e.key !== 'Enter') return;
-    // Don't intercept Enter inside text inputs
-    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    // Enter or Space advances — but not while typing in a text input.
+    if (!isAdvanceKey(e)) return;
     if (document.activeElement) document.activeElement.blur();
     if (!revealed) submit();
     e.preventDefault();
