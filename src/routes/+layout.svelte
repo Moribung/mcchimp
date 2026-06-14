@@ -34,7 +34,8 @@
   $effect(() => {
     const isGamePage = $page.url.pathname.startsWith('/mma') ||
                        $page.url.pathname.startsWith('/football') ||
-                       $page.url.pathname.startsWith('/golf');
+                       $page.url.pathname.startsWith('/golf') ||
+                       $page.url.pathname.startsWith('/racing');
     if (typeof document !== 'undefined') {
       document.body.classList.toggle('game-page', isGamePage);
     }

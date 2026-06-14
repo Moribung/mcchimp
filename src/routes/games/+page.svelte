@@ -68,6 +68,15 @@
     <div class="game-card game-card--soon">
       <div class="card-num">04</div>
       <div class="card-tag tag-soon">● In Development</div>
+      <div class="card-title">Quiz<br>Racing</div>
+      <p class="card-desc">Duels break out across the field — attack, defend, or get caught in traffic. The race halts, you choose how hard to commit, then answer against the clock. Right and you make the move; wrong and the pack comes back. Pit fast to change tyres.</p>
+      <div class="card-arrow" style="color:var(--muted)">Coming Soon</div>
+      <div class="card-accent" style="background:#e05252;opacity:.25"></div>
+    </div>
+
+    <div class="game-card game-card--soon">
+      <div class="card-num">05</div>
+      <div class="card-tag tag-soon">● In Development</div>
       <div class="card-title">More<br>Sports</div>
       <p class="card-desc">More sports, more careers, more questions. The platform is built to grow — new games drop as the question sets are ready.</p>
       <div class="card-arrow" style="color:var(--muted)">Coming Soon</div>
@@ -75,7 +84,7 @@
     </div>
 
     <div class="game-card game-card--soon">
-      <div class="card-num">05</div>
+      <div class="card-num">06</div>
       <div class="card-tag tag-soon">● Planned</div>
       <div class="card-title">Community<br>Sets</div>
       <p class="card-desc">Upload your own question sets and challenge others. Build sets around any sport, any era, any niche — the engine handles the rest.</p>
