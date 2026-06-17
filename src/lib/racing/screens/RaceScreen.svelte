@@ -12,7 +12,7 @@
   import QuestionCard from './QuestionCard.svelte';
   import TrackScene from './TrackScene.svelte';
 
-  const { onskip, onpickcommitment, onanswer, oncontinue, onpitbox, onpitstay, onquit } = $props();
+  const { onskip, onlightsout, onpickcommitment, onanswer, oncontinue, onpitbox, onpitstay, onquit } = $props();
 
   const r   = $derived(gs.race);
   const pos = $derived(r.playerIdx + 1);
@@ -20,6 +20,22 @@
 
   const lap = $derived(Math.min(r.totalLaps, Math.floor(r.field[r.playerIdx].dist / SIM.LAP_DIST) + 1));
   const raceProgress = $derived(Math.max(0, Math.min(100, Math.round(r.field[r.playerIdx].dist / (r.totalLaps * SIM.LAP_DIST) * 100))));
+
+  // Starting lights: five reds light up one by one, then out → go.
+  let litCount = $state(0);
+  $effect(() => {
+    if (r.phase === 'grid') {
+      litCount = 0;
+      const id = setInterval(() => {
+        litCount += 1;
+        if (litCount >= 5) {
+          clearInterval(id);
+          setTimeout(() => onlightsout?.(), 700 + Math.random() * 800);
+        }
+      }, 600);
+      return () => clearInterval(id);
+    }
+  });
 
   const wearPct = $derived(Math.round(r.tireWear * 100));
   const wearColor = $derived(
@@ -47,14 +63,16 @@
   const outcome = $derived((() => {
     const d = r.duel;
     if (!d || d.band == null) return null;
+    const newPos = d.newPos ?? pos;
     if (d.band === 'gain') {
-      if (d.posDelta > 1)  return { cls: 'good', head: `Double move! +${d.posDelta}`, sub: `Up to ${ordinal(pos)}.` };
-      if (d.posDelta === 1) return { cls: 'good', head: 'Overtake!', sub: `Up to ${ordinal(pos)}.` };
-      if (d.type === 'defend') return { cls: 'good', head: 'Held firm', sub: `Door slammed — still ${ordinal(pos)}.` };
+      if (d.posDelta > 1)  return { cls: 'good', head: `Double move! +${d.posDelta}`, sub: `Up to ${ordinal(newPos)}.` };
+      if (d.posDelta === 1) return { cls: 'good', head: 'Overtake!', sub: `Up to ${ordinal(newPos)}.` };
+      if (d.type === 'defend') return { cls: 'good', head: 'Held firm', sub: `Door slammed — still ${ordinal(newPos)}.` };
       return { cls: 'good', head: 'Out front', sub: `Leading — nothing to catch.` };
     }
-    if (d.band === 'hold') return { cls: 'hold', head: 'Held position', sub: `No change — still ${ordinal(pos)}.` };
-    return { cls: 'bad', head: 'Lost a place', sub: `Dropped to ${ordinal(pos)}.` };
+    if (d.band === 'hold') return { cls: 'hold', head: 'Held position', sub: `No change — still ${ordinal(newPos)}.` };
+    if (d.posDelta < 0) return { cls: 'bad', head: 'Getting passed', sub: `Slips to ${ordinal(newPos)}.` };
+    return { cls: 'hold', head: 'Ran wide', sub: `Held last — still ${ordinal(newPos)}.` };
   })());
 
   const exitHint = $derived(r.duel?.exit >= 0.6 ? 'Clean exit — charging on' : r.duel?.exit <= 0.3 ? 'Poor exit — on the defensive' : 'Settling back in');
@@ -73,7 +91,18 @@
     <TrackScene />
 
     <div class="panel">
-      {#if r.phase === 'running'}
+      {#if r.phase === 'grid'}
+        <div class="grid-start">
+          <div class="lights">
+            {#each Array(5) as _, i}
+              <span class="light" class:lit={i < litCount}></span>
+            {/each}
+          </div>
+          <div class="grid-msg">Starting grid</div>
+          <div class="grid-sub">You start {ordinal(pos)} on the grid · lights out soon…</div>
+        </div>
+
+      {:else if r.phase === 'running'}
         <div class="running">
           <div class="run-tag">On track · {ordinal(pos)}</div>
           <div class="run-line">Racing…</div>
@@ -189,6 +218,13 @@
   .lap-prog-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width .3s; }
 
   .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 18px; min-height: 200px; display: flex; flex-direction: column; gap: 12px; }
+
+  .grid-start { display: flex; flex-direction: column; gap: 12px; align-items: center; margin: auto 0; }
+  .lights { display: flex; gap: 8px; }
+  .light { width: 26px; height: 26px; border-radius: 50%; background: #3a1414; border: 1px solid #511; transition: background .15s, box-shadow .15s; }
+  .light.lit { background: var(--red); border-color: var(--red); box-shadow: 0 0 10px rgba(224,82,82,.6); }
+  .grid-msg { font-family: var(--font-display); font-size: 26px; letter-spacing: .04em; color: var(--text); }
+  .grid-sub { font-size: 12px; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
 
   .running { display: flex; flex-direction: column; gap: 10px; align-items: center; margin: auto 0; }
   .run-tag { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }

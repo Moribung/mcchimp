@@ -11,7 +11,7 @@
     buildPool, selectQuestion, effectiveTier, updateQScore, qidOf,
   } from '$lib/racing/questions.js';
   import {
-    initField, advanceField, resortField, triggerType, applyDuelDist,
+    initField, advanceField, resortField, triggerType, duelOutcome, applyOutcome,
     exitRating, pitOutcome, applyPitDropDist,
   } from '$lib/racing/race.js';
   import { trackById, randomTrackId } from '$lib/racing/tracks.js';
@@ -70,12 +70,26 @@
     r.playerIdx = r.field.findIndex(c => c.isPlayer);
   }
 
+  // Nearest racing (non-pitting) car ahead / behind the player.
+  function aheadCar(field, idx)  { for (let j = idx - 1; j >= 0; j--) if (!field[j].pitting) return field[j]; return null; }
+  function behindCar(field, idx) { for (let j = idx + 1; j < field.length; j++) if (!field[j].pitting) return field[j]; return null; }
+
   function simFrame(t) {
     const r = gs.race;
     if (r && r.phase === 'running') {
       if (simLast == null) simLast = t;
       const dt = Math.min(0.05, (t - simLast) / 1000); simLast = t;
       advanceField(r.field, dt, r.playerBoost ?? 0);
+
+      // Hold station — the player can't pass (or be passed) on track without a
+      // duel. Clamp BEFORE re-sorting so no silent place change ever happens.
+      // Cars parked in the pit bay are skipped (you race straight past them).
+      const pIdx = r.playerIdx;
+      const me = r.field[pIdx];
+      const carAhead  = aheadCar(r.field, pIdx);
+      const carBehind = behindCar(r.field, pIdx);
+      if (carAhead && me.dist > carAhead.dist - SIM.DRAFT) me.dist = carAhead.dist - SIM.DRAFT;
+      if (carBehind && carBehind.dist > me.dist - SIM.DRAFT) carBehind.dist = me.dist - SIM.DRAFT;
       resync();
 
       const player = r.field[r.playerIdx];
@@ -90,18 +104,15 @@
         }
       }
 
-      // A duel can only break out after racing a real stretch of track.
+      // A duel breaks out once you've raced a real stretch and a neighbour is in
+      // the draft (you've caught them, or they've caught you).
       const run = player.dist - (r.lastDuelDist ?? 0);
-      if (run >= SIM.MIN_RUN_DIST) {
-        const last = r.field.length - 1;
-        const ahead  = r.playerIdx > 0 ? r.field[r.playerIdx - 1] : null;
-        const behind = r.playerIdx < last ? r.field[r.playerIdx + 1] : null;
-        const gA = ahead ? ahead.dist - player.dist : Infinity;
-        const gB = behind ? player.dist - behind.dist : Infinity;
-        if (gA <= SIM.DRAFT)        { player.dist = ahead.dist - SIM.DRAFT; triggerDuel(); }
-        else if (gB <= SIM.DRAFT)   { behind.dist = player.dist - SIM.DRAFT; triggerDuel(); }
-        else if (run >= SIM.MAX_RUN_DIST) { triggerDuel(); }
-      }
+      const a = aheadCar(r.field, r.playerIdx);
+      const b = behindCar(r.field, r.playerIdx);
+      const gA = a ? a.dist - player.dist : Infinity;
+      const gB = b ? player.dist - b.dist : Infinity;
+      if (run >= SIM.MIN_RUN_DIST && (gA <= SIM.DRAFT || gB <= SIM.DRAFT)) triggerDuel();
+      else if (run >= SIM.MAX_RUN_DIST) triggerDuel();
     } else {
       simLast = null;
     }
@@ -122,6 +133,12 @@
   }
 
   function skipToDuel() { triggerDuel(); }
+
+  // Lights out → go racing (the grid stagger eases into the racing line).
+  function lightsOut() {
+    const r = gs.race;
+    if (r?.phase === 'grid') r.phase = 'running';
+  }
 
   // Resume racing after a duel/pit — momentum from the last exit, reset the
   // distance gate so the next duel is a full stretch away.
@@ -188,7 +205,7 @@
       lapsCovered: Math.floor(field[playerIdx].dist / SIM.LAP_DIST),
       tireWear:    0,
       stance,
-      phase:       'running',
+      phase:       'grid',
       duel:        null,
       lastDuelDist: field[playerIdx].dist,
       playerBoost: 0,
@@ -229,36 +246,41 @@
       if (meta) logAnswer(userId, q, meta, 'racing', ratio, score, maxPts);
     }
 
-    const oldIdx = r.playerIdx;
-    const band = applyDuelDist({
+    // Work out the result now (for the banner) but DON'T move anyone yet — the
+    // position change plays out on the track when we zoom back out.
+    const out = duelOutcome({
       type: r.duel.type, commitment: r.duel.commitment, ratio,
-      field: r.field, playerIdx: r.playerIdx,
+      playerIdx: r.playerIdx, fieldLen: r.field.length,
     });
-    resync();
-    const posDelta = oldIdx - r.playerIdx;
 
     const cfg = COMMITMENTS[r.duel.commitment] || COMMITMENTS.push;
     r.tireWear = Math.min(1, r.tireWear + cfg.wearRate * trackById(r.trackId).wearMult);
 
-    if (posDelta > 0) {
-      r.recap.overtakes += posDelta;
-      r.recap.streak    += posDelta;
+    if (out.posDelta > 0) {
+      r.recap.overtakes += out.posDelta;
+      r.recap.streak    += out.posDelta;
       r.recap.bestStreak = Math.max(r.recap.bestStreak, r.recap.streak);
-    } else if (posDelta < 0) {
-      r.recap.lost  += -posDelta;
+    } else if (out.posDelta < 0) {
+      r.recap.lost  += -out.posDelta;
       r.recap.streak = 0;
     }
 
     const answerSpeed = Math.min(1, answerMs / DUEL_TIMER_MS);
-    const exit = exitRating({ band, answerSpeed, commitment: r.duel.commitment });
+    const exit = exitRating({ band: out.band, answerSpeed, commitment: r.duel.commitment });
     r.lastExit = exit;
-    Object.assign(r.duel, { ratio, band, posDelta, exit });
+    Object.assign(r.duel, {
+      ratio, band: out.band, gains: out.gains, posDelta: out.posDelta,
+      newPos: (r.playerIdx - out.posDelta) + 1, exit,
+    });
     r.phase = 'resolve';
   }
 
   function continueAfterResolve() {
     const r = gs.race;
     if (!r || r.phase !== 'resolve') return;
+    // Now apply the result — the pass plays out as the camera zooms out.
+    applyOutcome({ field: r.field, playerIdx: r.playerIdx, band: r.duel.band, type: r.duel.type, gains: r.duel.gains });
+    resync();
     // Race end is lap-based (handled when crossing the line) — just race on.
     resumeRunning(r.lastExit ?? 0.5);
   }
@@ -267,7 +289,8 @@
   function enterPit() {
     const r = gs.race;
     if (!r || r.phase !== 'pitdecision') return;
-    r.pit = { tiresToChange: tyresToChange(r.tireWear), tireIdx: 0, results: [], q: pickQuestion('easy') };
+    r.field.forEach(c => { c.pitting = false; });   // clear any AI mid-bay (TrackScene unmounts now)
+    r.pit = { tiresToChange: tyresToChange(r.tireWear), tireIdx: 0, results: [], q: pickQuestion('easy'), done: false };
     r.phase = 'pit';
   }
 
@@ -287,9 +310,12 @@
       r.pit.tireIdx += 1;
       r.pit.q = pickQuestion('easy');
     } else {
-      finishPit();
+      // All tyres done — the bay animation drives out, then calls pitComplete().
+      r.pit.done = true;
     }
   }
+
+  function pitComplete() { finishPit(); }
 
   function finishPit() {
     const r = gs.race;
@@ -347,10 +373,11 @@
 
     {:else if gs.screen === 'race'}
       {#if gs.race?.phase === 'pit'}
-        <div class="screen-wrap"><PitStopScreen onpitanswer={pitAnswer} /></div>
+        <div class="screen-wrap"><PitStopScreen onpitanswer={pitAnswer} onpitcomplete={pitComplete} /></div>
       {:else}
         <RaceScreen
           onskip={skipToDuel}
+          onlightsout={lightsOut}
           onpickcommitment={pickCommitment}
           onanswer={answerDuel}
           oncontinue={continueAfterResolve}

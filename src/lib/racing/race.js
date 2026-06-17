@@ -71,6 +71,7 @@ export function resortField(field) {
  */
 export function advanceField(field, dt, playerBoost = 0, rng = Math.random) {
   for (const c of field) {
+    if (c.pitting) continue;   // parked in the pit bay (held by TrackScene)
     const noise = (rng() * 2 - 1) * SIM.SPEED_NOISE;
     const v = speedOf(c.pace) + noise + (c.isPlayer ? playerBoost : 0);
     c.dist += Math.max(0, v) * dt;
@@ -104,31 +105,39 @@ export function triggerType(field, playerIdx) {
 }
 
 /**
- * Resolve a duel by score band, moving the player's `dist`. Caller resorts after.
- *   gain  → attack/sandwich: jump ahead of the car(s) passed (up to maxGain);
- *           defend: pull a small gap.
- *   hold  → stay put.
- *   lose  → drop just behind the chaser.
- * @returns the band.
+ * Work out a duel's result by score band WITHOUT moving anyone yet — so the
+ * banner can announce it while the cars are still frozen.
+ *   gain → attack/sandwich: pass up to maxGain places; defend: hold (no places).
+ *   hold → no change.   lose → drop one place.
+ * @returns { band, gains, posDelta } (posDelta > 0 = places gained).
  */
-export function applyDuelDist({ field, playerIdx, type, commitment, ratio }) {
+export function duelOutcome({ type, commitment, ratio, playerIdx, fieldLen }) {
   const cfg = COMMITMENTS[commitment] || COMMITMENTS.push;
   const band = bandOf(ratio);
-  const me = field[playerIdx];
-
+  let gains = 0, posDelta = 0;
   if (band === BAND_GAIN) {
-    if (type === 'attack' || type === 'sandwich') {
-      const gains = Math.min(cfg.maxGain, playerIdx);
-      if (gains > 0) me.dist = field[playerIdx - gains].dist + SIM.PASS_GAP;
-    } else {
-      me.dist += SIM.DEFEND_GAP;
-    }
-  } else if (band === BAND_HOLD) {
-    me.dist += 1;
-  } else {
-    if (playerIdx < field.length - 1) me.dist = field[playerIdx + 1].dist - SIM.PASS_GAP;
+    if (type === 'attack' || type === 'sandwich') { gains = Math.min(cfg.maxGain, playerIdx); posDelta = gains; }
+  } else if (band === BAND_LOSE) {
+    posDelta = playerIdx < fieldLen - 1 ? -1 : 0;
   }
-  return band;
+  return { band, gains, posDelta };
+}
+
+/**
+ * Play the result out organically when the camera zooms back out. The car that
+ * does the passing is the one that moves: on a win YOU surge ahead of the
+ * car(s) in front; on a loss the CHASER comes by (you keep your distance and
+ * just get passed — you never slide backwards). Mutates `dist`; caller resorts.
+ */
+export function applyOutcome({ field, playerIdx, band, type, gains }) {
+  const me = field[playerIdx];
+  if (band === BAND_GAIN) {
+    if ((type === 'attack' || type === 'sandwich') && gains > 0) me.dist = field[playerIdx - gains].dist + SIM.PASS_GAP;
+    else if (type === 'defend') me.dist += SIM.DEFEND_GAP;
+  } else if (band === BAND_LOSE) {
+    if (playerIdx < field.length - 1) field[playerIdx + 1].dist = me.dist + SIM.PASS_GAP;
+  }
+  // hold: nobody moves
 }
 
 /**

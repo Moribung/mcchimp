@@ -50,13 +50,13 @@ export const STANCE_ORDER = ['cautious', 'balanced', 'aggressive'];
 /* ── Continuous-distance sim (Level 2) ──────────────────── */
 export const SIM = {
   LAP_DIST:     1000,  // dist units per lap of the track loop
-  GAP_DIST:     78,    // initial dist spacing between grid slots (field spread)
-  JITTER:       14,    // initial dist jitter for organic gaps
-  SPEED_NOISE:  6,     // ± velocity noise (units/s) → live order shuffle
-  DRAFT:        14,    // gap at which a neighbour duel triggers
-  PROX_RANGE:   40,    // both neighbours within this → sandwich
-  PASS_GAP:     22,    // dist placed beyond a passed/passing car (> DRAFT)
-  DEFEND_GAP:   22,    // gap pulled on a clean defence
+  GAP_DIST:     28,    // initial grid spacing — packed at the start, spreads over the race
+  JITTER:       4,     // initial dist jitter
+  SPEED_NOISE:  2,     // ± velocity noise (units/s); small so closing rates read clean
+  DRAFT:        24,    // gap held to a neighbour (no silent passing) + duel trigger
+  PROX_RANGE:   52,    // both neighbours within this → sandwich
+  PASS_GAP:     36,    // dist placed beyond a passed/passing car (> DRAFT)
+  DEFEND_GAP:   30,    // gap pulled on a clean defence
   PLAYER_BOOST: 44,    // max ± player velocity from exit momentum (units/s)
   MIN_RUN_DIST: 380,   // distance you must race between duels (the long gap)
   MAX_RUN_DIST: 1300,  // force a duel after this much clear running
