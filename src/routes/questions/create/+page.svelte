@@ -5,6 +5,7 @@
   import { goto } from '$app/navigation';
   import QuestionSetCard from '$lib/components/QuestionSetCard.svelte';
   import { hasAiAccess, isAiElevated } from '$lib/ai/access';
+  import { setLimitFor } from '$lib/tiers';
 
   // ── ACCESS (dev tier only) + remembered settings ──
   let tier = $state(null);
@@ -21,7 +22,7 @@
     supabase.from('profiles').select('tier, create_prefs, set_limit').eq('id', s.user.id).single()
       .then(({ data }) => {
         tier = data?.tier ?? null;
-        setLimit = data?.set_limit ?? 3;
+        setLimit = setLimitFor(data?.tier, data?.set_limit);
         const p = data?.create_prefs;
         if (p && typeof p === 'object') {
           if (typeof p.prompt === 'string') prompt = p.prompt;

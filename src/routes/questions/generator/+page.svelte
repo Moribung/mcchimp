@@ -3,6 +3,7 @@
   import { supabase } from '$lib/supabase';
   import { session } from '$lib/stores/session';
   import { onMount } from 'svelte';
+  import { setLimitFor } from '$lib/tiers';
 
   // ── LOAD FROM LIBRARY ──
   onMount(() => {
@@ -382,8 +383,8 @@
     if (libraryId) {
       // Promoting an AI draft to the library must respect the set limit first.
       if (fromStaged) {
-        const { data: prof } = await supabase.from('profiles').select('set_limit').eq('id', $session.user.id).single();
-        const lim = prof?.set_limit ?? 3;
+        const { data: prof } = await supabase.from('profiles').select('tier, set_limit').eq('id', $session.user.id).single();
+        const lim = setLimitFor(prof?.tier, prof?.set_limit);
         const { count: nonStaged } = await supabase.from('user_question_sets')
           .select('id', { count: 'exact', head: true }).eq('user_id', $session.user.id).eq('staged', false);
         if ((nonStaged ?? 0) >= lim) {
@@ -413,7 +414,7 @@
       // Check limit
       const { data: profile } = await supabase.from('profiles').select('tier, set_limit').eq('id', $session.user.id).single();
       const { count: existing } = await supabase.from('user_question_sets').select('id', { count: 'exact', head: true }).eq('user_id', $session.user.id).eq('staged', false);
-      const limit = profile?.set_limit ?? 3;
+      const limit = setLimitFor(profile?.tier, profile?.set_limit);
       if (existing >= limit) {
         saving = false;
         saveError = `You've reached your limit of ${limit} sets. Upgrade your plan for more.`;

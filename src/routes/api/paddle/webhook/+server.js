@@ -61,42 +61,7 @@ export async function POST({ request, platform }) {
   const sig = request.headers.get('paddle-signature') || '';
   const raw = await request.text();
   if (!sig || !(await verifySignature(raw, sig, SECRET))) {
-    // ── TEMP DEBUG — remove once signature verifies ──
-    const parts = Object.fromEntries(
-      sig.split(';').map((kv) => kv.split('=').map((s) => s.trim()))
-    );
-    let computed = '';
-    try {
-      const key = await crypto.subtle.importKey(
-        'raw', new TextEncoder().encode(SECRET),
-        { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
-      );
-      const mac = await crypto.subtle.sign(
-        'HMAC', key, new TextEncoder().encode(`${parts.ts}:${raw}`)
-      );
-      computed = [...new Uint8Array(mac)].map((b) => b.toString(16).padStart(2, '0')).join('');
-    } catch (e) {
-      computed = 'ERR:' + e.message;
-    }
-    return json(
-      {
-        error: 'Invalid signature.',
-        debug: {
-          sig_header_present: !!sig,
-          ts: parts.ts ?? null,
-          received_h1: parts.h1 ?? null,
-          received_h1_len: parts.h1?.length ?? 0,
-          computed,
-          computed_len: computed.length,
-          match: computed === parts.h1,
-          secret_len: SECRET.length,
-          secret_head: SECRET.slice(0, 6),
-          secret_tail: SECRET.slice(-4),
-          body_len: raw.length
-        }
-      },
-      { status: 401 }
-    );
+    return json({ error: 'Invalid signature.' }, { status: 401 });
   }
 
   let event;

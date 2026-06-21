@@ -19,7 +19,7 @@
 
   const continueIsCareer = $derived(savedInfo?.mode === 'career');
 
-  const saveLimit = $derived(userTier === 'max' ? 100 : (userTier === 'pro' || userTier === 'dev') ? 20 : 5);
+  const saveLimit = $derived((userTier === 'max' || userTier === 'admin') ? 100 : (userTier === 'pro' || userTier === 'dev') ? 20 : 5);
 
   // ── Saved rounds modal ────────────────────────────────
   let showSaved    = $state(false);

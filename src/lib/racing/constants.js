@@ -82,7 +82,8 @@ export const SIM = {
   PASS_TIMEOUT: 6.5,   // give up a pass that won't stick after this long and tuck back in
   PASS_COOLDOWN: 1.3,  // wait this long after a pass before trying another (no twitchy re-pulls)
   MERGE_TIME:   1.6,   // a car out of the pit holds the outer lane this long while it blends in
-  LANE_SIM_K:   5,     // how quickly cars slide between lanes (per-second lerp rate)
+  LANE_SIM_K:   2.6,   // rate cars pull OUT to a lane (lower = more gradual, no twitch)
+  LANE_IN_K:    1.6,   // rate cars ease back IN toward the racing line — gentler, no sharp cut-back
 };
 
 /* ── Outcome bands ──────────────────────────────────────── */

@@ -19,7 +19,7 @@
   // Lanes come from the sim (car.lane — a lateral px offset; 0 = racing line).
   // The renderer just smooths to them and, as a hard guarantee, nudges any two
   // sprites apart if they'd ever touch (covers duel passes + lane transitions).
-  const SEP_LONG = 26, SEP_LAT = 22, LANE_MAX = 16;
+  const SEP_LONG = 26, SEP_LAT = 22, LANE_MAX = 16, PUSH_K = 5;   // PUSH_K: how gently the no-overlap nudge eases in
   // Racing line: cars hug the INSIDE of the corner they're in (eases to centre
   // on straights, flips smoothly through S-curves), with passing offsets on top.
   const RACE_LINE = 8, RACE_GAIN = 55;
@@ -27,7 +27,7 @@
   // timed, eased move that takes SURGE_TIME (triggered when the jump exceeds the
   // normal render lag), swinging to the outside (POUT_K) so it reads as a
   // controlled move-around rather than a clip straight through.
-  const SURGE_TIME = 1.8, SURGE_TRIG = 0.025, POUT_K = 5;
+  const SURGE_TIME = 1.8, SURGE_TRIG = 0.025, POUT_OUT_K = 4, POUT_IN_K = 1.6;
   const FALTER_DUR = 0.9, FALTER_AMP = 8, FALTER_YAW = 0.18;   // wobble after a botched duel: px sway, radian nose-twitch
   // Pit complex set back in the infield: a lane branches off the start/finish,
   // runs in to a garage block, AI park under the roof, then rejoin ahead.
@@ -289,6 +289,7 @@
       const tprog = car.dist / SIM.LAP_DIST;
       if (car.isPlayer && r.phase === 'running' && !st.surging && (tprog - st.prog) > SURGE_TRIG) {
         st.surging = true; st.surgeT = 0; st.surgeFrom = st.prog;
+        st.poutSide = -Math.sign(racingLine(st.prog) || 1);   // lock the pass side now so it can't flip mid-move
       }
       if (st.surging) {
         st.surgeT += dt;
@@ -351,8 +352,11 @@
           // no-overlap pass). AI pull-out is already in car.lane from the sim.
           if (car.isPlayer) {
             const want = (st.surging && r.overtaking) ? 1 : 0;
-            st.pout = (st.pout ?? 0) + (want - (st.pout ?? 0)) * (1 - Math.exp(-POUT_K * dt));
-            lat += -Math.sign(rl || 1) * SIM.LANE_W * st.pout;
+            // Pull out at a normal rate; ease back IN much more gently (no sharp
+            // cut to the line that reads like braking) using the locked-in side.
+            const pk = want > (st.pout ?? 0) ? POUT_OUT_K : POUT_IN_K;
+            st.pout = (st.pout ?? 0) + (want - (st.pout ?? 0)) * (1 - Math.exp(-pk * dt));
+            lat += (st.poutSide ?? -1) * SIM.LANE_W * st.pout;
           }
         }
         draw.push({ car, st, p, lat });
@@ -380,7 +384,10 @@
     // ── Pass 3: draw the track cars ──
     for (const { car, st, p, lat } of draw) {
       const nx = -Math.sin(p.ang), ny = Math.cos(p.ang);
-      let off = Math.max(-LANE_MAX, Math.min(LANE_MAX, lat + (push.get(car.id) || 0)));
+      // Ease the no-overlap nudge instead of applying it raw, so it can't snap or
+      // oscillate frame-to-frame in a tight pack — keeps lateral motion smooth.
+      st.pushSm = (st.pushSm ?? 0) + ((push.get(car.id) || 0) - (st.pushSm ?? 0)) * (1 - Math.exp(-PUSH_K * dt));
+      let off = Math.max(-LANE_MAX, Math.min(LANE_MAX, lat + st.pushSm));
       let wob = 0;
       if (car.isPlayer && r.falter > 0) {
         // Botched duel: shimmy side-to-side and twitch the nose as grip goes.

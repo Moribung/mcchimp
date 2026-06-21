@@ -208,9 +208,14 @@ export function stepField(field, dt, { playerBoost = 0 } = {}, rng = Math.random
     if (mrg) c.laneT = -Math.sign(mrg.lane || 1) * SIM.LANE_W;
   }
 
-  // Slide between lanes.
-  const lk = 1 - Math.exp(-SIM.LANE_SIM_K * dt);
-  for (const c of active) c.lane += ((c.laneT ?? 0) - c.lane) * lk;
+  // Slide between lanes — pull out at LANE_SIM_K, ease back toward the line more
+  // gently at LANE_IN_K so a car never snaps back in (no braking-like cut-back).
+  for (const c of active) {
+    const t = c.laneT ?? 0;
+    const returning = Math.abs(t) < Math.abs(c.lane);
+    const lk = 1 - Math.exp(-(returning ? SIM.LANE_IN_K : SIM.LANE_SIM_K) * dt);
+    c.lane += (t - c.lane) * lk;
+  }
 
   // Integrate distance with an EASED speed and a no-creep limit. Each car's
   // speed lerps toward a target rather than snapping, so an overtake is a

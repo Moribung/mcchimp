@@ -4,6 +4,7 @@
   import { session } from '$lib/stores/session';
   import { goto } from '$app/navigation';
   import { validateQuestionSet } from '$lib/validateQuestionSet';
+  import { TIER_SET_LIMITS as TIER_LIMITS, TIER_GROUP_LIMITS as GROUP_LIMITS } from '$lib/tiers';
   import {
     loadLearningSets, addLearningSet, removeLearningSet,
     loadGroups, createGroup, deleteGroup, addToGroup, removeFromGroup, setGroupColor, setGroupStarred,
@@ -38,8 +39,6 @@
   let setFilters = $state(new Set(['all']));
   const showAll  = $derived(setFilters.has('all') || setFilters.size === 0);
 
-  const TIER_LIMITS  = { regular: 3, pro: 20, max: 100, dev: 9999, admin: 20 };
-  const GROUP_LIMITS = { regular: 3, pro: 20, max: 100, dev: 9999, admin: 20 };
 
   onMount(async () => {
     if (!$session) { goto('/auth/login'); return; }

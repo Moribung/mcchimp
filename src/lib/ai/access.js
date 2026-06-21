@@ -9,7 +9,7 @@ export const AI_ELEVATED_TIERS = ['dev', 'admin'];
 
 // Default monthly credit allotment per tier. A non-null profiles.ai_monthly_credits
 // overrides this for an individual user.
-export const TIER_MONTHLY_CREDITS = { regular: 1, pro: 30, max: 150, dev: 1000000, admin: 30 };
+export const TIER_MONTHLY_CREDITS = { regular: 1, pro: 30, max: 150, dev: 1000000, admin: 150 };
 
 export const hasAiAccess = (tier) => AI_ACCESS_TIERS.includes(tier);
 export const isAiElevated = (tier) => AI_ELEVATED_TIERS.includes(tier);

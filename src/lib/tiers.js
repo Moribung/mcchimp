@@ -51,6 +51,17 @@ export const PAID_PLANS = [
   }
 ];
 
+// Per-tier limits for question sets & groups. A profile's `set_limit` column
+// (a per-user override) takes precedence when set; otherwise the tier default
+// applies. admin is kept in line with max. Keep these in sync with the perk
+// copy above and the cloud-save limits in src/lib/saves.js.
+export const TIER_SET_LIMITS   = { regular: 3, pro: 20, max: 100, dev: 9999, admin: 100 };
+export const TIER_GROUP_LIMITS = { regular: 3, pro: 20, max: 100, dev: 9999, admin: 100 };
+
+// override ?? tier default ?? hard floor of 3.
+export const setLimitFor   = (tier, override) => override ?? TIER_SET_LIMITS[tier] ?? 3;
+export const groupLimitFor = (tier, override) => override ?? TIER_GROUP_LIMITS[tier] ?? 3;
+
 // True when `tier` already includes (owns) the given plan. dev/admin rank as
 // above everything so internal accounts never see an upgrade prompt.
 export function ownsPlan(tier, planRank) {
