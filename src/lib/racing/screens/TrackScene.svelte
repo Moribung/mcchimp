@@ -19,7 +19,10 @@
   // Lanes come from the sim (car.lane — a lateral px offset; 0 = racing line).
   // The renderer just smooths to them and, as a hard guarantee, nudges any two
   // sprites apart if they'd ever touch (covers duel passes + lane transitions).
-  const SEP_LONG = 22, SEP_LAT = 21, LANE_MAX = 14, REJOIN_GAP = 24;
+  const SEP_LONG = 22, SEP_LAT = 21, LANE_MAX = 16, REJOIN_GAP = 24;
+  // Racing line: cars hug the INSIDE of the corner they're in (eases to centre
+  // on straights, flips smoothly through S-curves), with passing offsets on top.
+  const RACE_LINE = 8, RACE_GAIN = 55;
   const FALTER_DUR = 0.9, FALTER_AMP = 8, FALTER_YAW = 0.18;   // wobble after a botched duel: px sway, radian nose-twitch
   // Pit complex set back in the infield: a lane branches off the start/finish,
   // runs in to a garage block, AI park under the roof, then rejoin ahead.
@@ -44,6 +47,17 @@
     const a = trackEl.getPointAtLength(l);
     const b = trackEl.getPointAtLength((l + 1.2) % L);
     return { x: a.x, y: a.y, ang: Math.atan2(b.y - a.y, b.x - a.x) };
+  }
+
+  // Inside-of-corner offset (left-normal px) from the local turn direction: the
+  // tangent rotating left (dA>0) means a left corner, whose inside is +Ln. Eases
+  // to 0 on straights and flips smoothly through an S-curve's inflection.
+  function racingLine(prog) {
+    const d = 7 / L;
+    let dA = at(prog + d).ang - at(prog - d).ang;
+    while (dA > Math.PI) dA -= 2 * Math.PI;
+    while (dA < -Math.PI) dA += 2 * Math.PI;
+    return Math.max(-RACE_LINE, Math.min(RACE_LINE, dA * RACE_GAIN));
   }
 
   function mkRing(color) {
@@ -298,9 +312,11 @@
         st.off = 0;
         setTf(car, rx, ry, rang);
       } else {
-        // Track-running car: lane comes from the sim (grid uses a fixed stagger).
-        const lane = r.phase === 'grid' ? (i % 2 ? 1 : -1) * GRID_COL : (car.lane ?? 0);
-        draw.push({ car, st, lane });
+        // Track-running car: racing line (inside of the corner) + the sim's
+        // passing offset. The grid uses a fixed lateral stagger instead.
+        const p = at(st.prog);
+        const lat = r.phase === 'grid' ? (i % 2 ? 1 : -1) * GRID_COL : (car.lane ?? 0) + racingLine(st.prog);
+        draw.push({ car, st, p, lat });
       }
     }
 
@@ -313,7 +329,7 @@
         let dl = A.st.prog - B.st.prog; dl -= Math.round(dl);   // shortest way round the loop
         const longGap = Math.abs(dl) * L;
         if (longGap >= SEP_LONG) continue;
-        const la = A.lane + (push.get(A.car.id) || 0), lb = B.lane + (push.get(B.car.id) || 0);
+        const la = A.lat + (push.get(A.car.id) || 0), lb = B.lat + (push.get(B.car.id) || 0);
         const lat = la - lb;
         if (Math.abs(lat) >= SEP_LAT) continue;
         const need = SEP_LAT - Math.abs(lat), dir = lat >= 0 ? 1 : -1, w = 1 - longGap / SEP_LONG, half = (need / 2) * w;
@@ -323,10 +339,9 @@
     }
 
     // ── Pass 3: draw the track cars ──
-    for (const { car, st, lane } of draw) {
-      const p = at(st.prog);
+    for (const { car, st, p, lat } of draw) {
       const nx = -Math.sin(p.ang), ny = Math.cos(p.ang);
-      let off = Math.max(-LANE_MAX, Math.min(LANE_MAX, lane + (push.get(car.id) || 0)));
+      let off = Math.max(-LANE_MAX, Math.min(LANE_MAX, lat + (push.get(car.id) || 0)));
       let wob = 0;
       if (car.isPlayer && r.falter > 0) {
         // Botched duel: shimmy side-to-side and twitch the nose as grip goes.

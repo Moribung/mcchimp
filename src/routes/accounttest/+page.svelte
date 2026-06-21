@@ -1,6 +1,5 @@
 <script>
   import { supabase } from '$lib/supabase';
-  import { session } from '$lib/stores/session';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import { env } from '$env/dynamic/public';
@@ -19,6 +18,7 @@
   const CLIENT_TOKEN = env.PUBLIC_PADDLE_CLIENT_TOKEN || '';
   const PRICE_FOR = { pro: env.PUBLIC_PADDLE_PRICE_PRO || '', max: env.PUBLIC_PADDLE_PRICE_MAX || '' };
 
+  let user = $state(null);
   let profile = $state(null);
   let loading = $state(true);
   let allowed = $state(false);
@@ -37,16 +37,20 @@
   }
 
   async function refreshProfile() {
-    const { data } = await supabase.from('profiles').select('*').eq('id', $session.user.id).single();
+    const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
     if (data) profile = data;
   }
 
   onMount(async () => {
-    if (!$session) { goto('/auth/login'); return; }
+    // Await the real session — the session store hydrates async, so on a direct
+    // page load it's still null when onMount first runs.
+    const { data: { session: sess } } = await supabase.auth.getSession();
+    if (!sess) { goto('/auth/login'); return; }
+    user = sess.user;
 
     await refreshProfile();
     allowed =
-      ALLOWED_EMAILS.includes($session.user.email) ||
+      ALLOWED_EMAILS.includes(user.email) ||
       profile?.tier === 'dev' ||
       profile?.tier === 'admin';
 
@@ -78,8 +82,8 @@
     if (!window.Paddle || !priceId) { status = `No price id configured for ${planKey}.`; return; }
     window.Paddle.Checkout.open({
       items: [{ priceId, quantity: 1 }],
-      customData: { user_id: $session.user.id },
-      customer: { email: $session.user.email }
+      customData: { user_id: user.id },
+      customer: { email: user.email }
     });
   }
 </script>
@@ -98,7 +102,7 @@
     {:else}
       <h1>Checkout test</h1>
       <p class="sub">
-        Signed in as <strong>{$session?.user?.email}</strong> · current tier:
+        Signed in as <strong>{user?.email}</strong> · current tier:
         <strong>{TIER_LABELS[profile?.tier] || 'Free'}</strong>
       </p>
 
