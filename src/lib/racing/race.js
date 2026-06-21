@@ -37,12 +37,19 @@ function speedOf(pace) { return 80 + (pace - 74) * 0.6; }
  */
 export function initField(fieldSize) {
   const names = shuffle(AI_NAMES).slice(0, fieldSize - 1);
-  const lane0 = { lane: 0, laneT: 0, blockT: 0, passing: false, passSide: 0, passTarget: null };
+  const lane0 = { lane: 0, laneT: 0, blockT: 0, passing: false, passSide: 0, passTarget: null,
+                  passT: 0, passCool: 0, merging: 0, mergeLane: 0 };
   const ai = names.map((name, i) => ({
     id: `ai_${i}`, name, pace: randInt(60, 88), isPlayer: false,
     color: LIVERIES[i % LIVERIES.length], variant: i % 3, dist: 0, ...lane0,
   }));
-  ai.sort((a, b) => b.pace - a.pace);
+  // Grid order is roughly by pace but deliberately MESSY (a scrappy qualifying):
+  // faster cars often start a few rows back, so they have to carve through —
+  // that's where the on-track overtaking comes from, all over the field. Use a
+  // fixed per-car key so the sort stays consistent (no per-compare randomness).
+  ai.forEach(c => { c._grid = c.pace + (Math.random() * 2 - 1) * 14; });
+  ai.sort((a, b) => b._grid - a._grid);
+  ai.forEach(c => { delete c._grid; });
 
   const player = { id: 'player', name: 'You', pace: 74, isPlayer: true, color: PLAYER_COLOR, variant: 0, dist: 0, ...lane0 };
   const startIdx = clamp(Math.round(fieldSize * 0.66), 1, fieldSize - 1);
@@ -143,6 +150,12 @@ export function stepField(field, dt, { playerBoost = 0 } = {}, rng = Math.random
     if (c.lane == null) c.lane = 0;
     if (c.blockT == null) c.blockT = 0;
     if (c.passing == null) c.passing = false;
+    if (c.passT == null) c.passT = 0;
+    if (c.passCool == null) c.passCool = 0;
+    if (c.merging == null) c.merging = 0;
+    if (c.mergeLane == null) c.mergeLane = 0;
+    if (c.merging > 0) c.merging = Math.max(0, c.merging - dt);
+    if (c.passCool > 0) c.passCool = Math.max(0, c.passCool - dt);
   }
   active.sort((a, b) => b.dist - a.dist);
 
@@ -162,58 +175,79 @@ export function stepField(field, dt, { playerBoost = 0 } = {}, rng = Math.random
     if (blocked) c.blockT += dt; else c.blockT = 0;
 
     if (c.isPlayer) { c.laneT = 0; continue; }   // player line is driven by duels, not the AI
+    if (c.merging > 0) { c.laneT = c.mergeLane; continue; }   // just out of the pit — hold the outer lane
 
-    if (!c.passing && blocked && c.blockT > SIM.PATIENCE && vf.get(c) > vf.get(blk) + SIM.OVERTAKE_PACE) {
+    // Commit to a pass: faster than the car ahead, stuck behind it a beat, a
+    // clear side to go, and not still cooling down from the last pass.
+    if (!c.passing && c.passCool <= 0 && blocked && c.blockT > SIM.PATIENCE
+        && vf.get(c) > vf.get(blk) + SIM.OVERTAKE_PACE) {
       const S = pickSide(active, c, blk);
-      if (S) { c.passing = true; c.passSide = S; c.passTarget = blk; }
+      if (S) { c.passing = true; c.passSide = S; c.passTarget = blk; c.passT = 0; c.blockT = 0; }
     }
     if (c.passing) {
-      c.laneT = c.passSide * SIM.LANE_W;
+      c.passT += dt;
+      c.laneT = c.passSide * SIM.LANE_W;   // commit to the chosen side for the whole move
       const tgt = c.passTarget;
       const past = tgt ? c.dist - tgt.dist : Infinity;
-      if (!tgt || tgt.pitting || (past > SIM.CLEAR_AHEAD && laneWindowClear(active, c, 0, 6, SIM.CLEAR_AHEAD, null))) {
-        c.passing = false; c.passTarget = null; c.laneT = 0;
-      }
+      const done = !tgt || tgt.pitting || (past > SIM.CLEAR_AHEAD && laneWindowClear(active, c, 0, 6, SIM.CLEAR_AHEAD, null));
+      const giveUp = c.passT > SIM.PASS_TIMEOUT && past < SIM.CLEAR_AHEAD;   // it won't stick → back in line
+      if (done || giveUp) { c.passing = false; c.passTarget = null; c.laneT = 0; c.passCool = SIM.PASS_COOLDOWN; }
     } else {
       c.laneT = 0;
     }
   }
 
-  // Yield: a car being overtaken steps to the opposite side to open the door.
+  // Yield: cars make space. A car being overtaken — or one a pit-exiting car is
+  // merging beside — steps to the opposite side to open the door.
   for (const c of active) {
-    if (c.isPlayer || c.passing) continue;
+    if (c.isPlayer || c.passing || c.merging > 0) continue;
     const atk = active.find(o => o.passing && o.passTarget === c);
-    if (atk) c.laneT = -atk.passSide * SIM.LANE_W;
+    if (atk) { c.laneT = -atk.passSide * SIM.LANE_W; continue; }
+    const mrg = active.find(o => o.merging > 0 && o !== c
+      && Math.abs(o.dist - c.dist) < SIM.BLOCK_GAP * 1.6 && Math.abs(o.lane - c.lane) < SIM.LANE_CLEAR);
+    if (mrg) c.laneT = -Math.sign(mrg.lane || 1) * SIM.LANE_W;
   }
 
   // Slide between lanes.
   const lk = 1 - Math.exp(-SIM.LANE_SIM_K * dt);
   for (const c of active) c.lane += ((c.laneT ?? 0) - c.lane) * lk;
 
-  // Integrate distance, capped behind a same-lane car ahead (can't drive through).
+  // Integrate distance with an EASED speed and a no-creep limit. Each car's
+  // speed lerps toward a target rather than snapping, so an overtake is a
+  // controlled draw-past (a modest OVERTAKE_DV over the car being passed), not a
+  // rocket — even for a big pace gap. The no-creep limit means a car never comes
+  // within BLOCK_GAP of a same-lane car ahead and is NEVER yanked backward, so
+  // nothing overlaps and nothing teleports. Leader-first, using predecessors'
+  // already-updated positions.
+  active.sort((a, b) => b.dist - a.dist);
+  const sk = 1 - Math.exp(-SIM.ACCEL_K * dt);
+  const nd = new Map();
   for (let i = 0; i < active.length; i++) {
     const c = active[i];
     const { blk, gap } = blockerAhead(active, i);
-    let v = vf.get(c);
-    if (blk && gap <= SIM.BLOCK_GAP) v = Math.min(v, vf.get(blk));
-    c.dist += Math.max(0, v) * dt;
-  }
-
-  // Safety net: hold every (non-player) car at least BLOCK_GAP behind the
-  // NEAREST same-lane car ahead — not just its sorted neighbour, so a car in a
-  // different lane between them can't let a same-lane pair creep together. The
-  // player is never shoved here (its own clamp governs that).
-  active.sort((a, b) => b.dist - a.dist);
-  for (let i = 1; i < active.length; i++) {
-    const c = active[i];
-    if (c.isPlayer) continue;
+    const blocked = blk && gap <= SIM.BLOCK_GAP;
+    let targetV;
+    if (c.passing && !blocked) {
+      // clear of the blocker's lane → ease up to a controlled overtaking pace
+      const base = c.passTarget ? vf.get(c.passTarget) : vf.get(c);
+      targetV = Math.min(vf.get(c), base + SIM.OVERTAKE_DV);
+    } else if (blocked) {
+      targetV = Math.min(vf.get(c), vf.get(blk));   // tucked behind — match the car ahead
+    } else {
+      targetV = vf.get(c);
+    }
+    if (c.spd == null) c.spd = targetV;
+    c.spd += (targetV - c.spd) * sk;
+    let d = c.dist + Math.max(0, c.spd) * dt;
     let cap = Infinity;
     for (let j = 0; j < i; j++) {
       const p = active[j];
-      if (Math.abs(p.lane - c.lane) < SIM.LANE_CLEAR) cap = Math.min(cap, p.dist - SIM.BLOCK_GAP);
+      if (Math.abs(p.lane - c.lane) < SIM.LANE_CLEAR) cap = Math.min(cap, nd.get(active[j]) - SIM.BLOCK_GAP);
     }
-    if (c.dist > cap) c.dist = cap;
+    if (d > cap) d = Math.max(c.dist, cap);   // hold position, don't snap back
+    nd.set(c, d);
   }
+  for (const c of active) c.dist = nd.get(c);
 }
 
 /**

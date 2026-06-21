@@ -223,6 +223,7 @@
       phase:       'grid',
       duel:        null,
       falter:      0,                      // >0 while the player wobbles after a botched duel
+      overtaking:  false,                  // true while a won attack is being driven round the outside
       lastDuelDist: field[playerIdx].dist,
       playerBoost: 0,
       lastExit:    0.5,
@@ -298,6 +299,9 @@
     if (!r || r.phase !== 'resolve') return;
     // Now apply the result — the pass plays out as the camera zooms out.
     const lost = r.duel.band === 'lose';
+    // A genuine overtake (moved ahead of car(s) in front) → TrackScene swings the
+    // player to the outside on the way past; a defend just extends the gap.
+    r.overtaking = r.duel.band === 'gain' && (r.duel.type === 'attack' || r.duel.type === 'sandwich') && r.duel.gains > 0;
     applyOutcome({ field: r.field, playerIdx: r.playerIdx, band: r.duel.band, type: r.duel.type, gains: r.duel.gains });
     resync();
     r.falter = lost ? 0.9 : 0;   // TrackScene wobbles the player as it scrubs speed

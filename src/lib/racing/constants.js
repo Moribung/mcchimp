@@ -74,10 +74,15 @@ export const SIM = {
   BLOCK_GAP:    24,    // a same-lane car ahead caps you to its speed inside this dist gap
   LOOKAHEAD:    90,    // how far ahead (dist) to scan for a blocker
   PASS_SPAN:    70,    // the overtaking lane must be clear this far ahead (dist) to commit
-  CLEAR_AHEAD:  30,    // you've completed a pass once this far (dist) ahead of who you passed
+  CLEAR_AHEAD:  20,    // you've completed a pass once this far (dist) ahead of who you passed
   OVERTAKE_PACE: 1.5,  // must be this much faster (pace) than the blocker to try a pass
-  PATIENCE:     0.7,   // seconds held up before pulling out
-  LANE_SIM_K:   7,     // how quickly cars slide between lanes (per-second lerp rate)
+  OVERTAKE_DV:  9,     // closing speed (units/s) over the car being passed — modest, so a pass is a controlled draw-past, not a rocket
+  ACCEL_K:      1.8,   // how gently a car eases between speeds (low = gradual, controlled)
+  PATIENCE:     1.0,   // seconds held up before pulling out
+  PASS_TIMEOUT: 6.5,   // give up a pass that won't stick after this long and tuck back in
+  PASS_COOLDOWN: 1.3,  // wait this long after a pass before trying another (no twitchy re-pulls)
+  MERGE_TIME:   1.6,   // a car out of the pit holds the outer lane this long while it blends in
+  LANE_SIM_K:   5,     // how quickly cars slide between lanes (per-second lerp rate)
 };
 
 /* ── Outcome bands ──────────────────────────────────────── */

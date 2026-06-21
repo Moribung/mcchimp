@@ -19,10 +19,15 @@
   // Lanes come from the sim (car.lane — a lateral px offset; 0 = racing line).
   // The renderer just smooths to them and, as a hard guarantee, nudges any two
   // sprites apart if they'd ever touch (covers duel passes + lane transitions).
-  const SEP_LONG = 22, SEP_LAT = 21, LANE_MAX = 16, REJOIN_GAP = 24;
+  const SEP_LONG = 26, SEP_LAT = 22, LANE_MAX = 16;
   // Racing line: cars hug the INSIDE of the corner they're in (eases to centre
   // on straights, flips smoothly through S-curves), with passing offsets on top.
   const RACE_LINE = 8, RACE_GAIN = 55;
+  // Player's won-duel pass: when its distance jumps ahead, play it out as a
+  // timed, eased move that takes SURGE_TIME (triggered when the jump exceeds the
+  // normal render lag), swinging to the outside (POUT_K) so it reads as a
+  // controlled move-around rather than a clip straight through.
+  const SURGE_TIME = 1.8, SURGE_TRIG = 0.025, POUT_K = 5;
   const FALTER_DUR = 0.9, FALTER_AMP = 8, FALTER_YAW = 0.18;   // wobble after a botched duel: px sway, radian nose-twitch
   // Pit complex set back in the infield: a lane branches off the start/finish,
   // runs in to a garage block, AI park under the roof, then rejoin ahead.
@@ -31,7 +36,7 @@
   // Starting grid: the packed field with an alternating lateral stagger.
   const GRID_COL = 7;
   let boxX = CX, boxY = CY, entryAng = 0, boxAng = 0;
-  let pitPathEl = null, pitLen = 0, boxLen = 0, pitExitDist = 0, pitStartFrac = 0;
+  let pitPathEl = null, pitLen = 0, boxLen = 0, pitExitDist = 0, pitStartFrac = 0, pitSideSign = 1;
 
   const track = $derived(trackById(gs.race?.trackId));
 
@@ -168,6 +173,7 @@
     if (gs.race) gs.race.pitEntryFrac = pitStartFrac;   // tell the orchestrator where the pit lane begins
     const cpt = at(straight.centreFrac);
     const inSign = ((centroidX - cpt.x) * (-Math.sin(cpt.ang)) + (centroidY - cpt.y) * Math.cos(cpt.ang)) >= 0 ? 1 : -1;
+    pitSideSign = inSign;   // the side the pit lane sits on → cars merge back in from here
     entryAng = at(pitStartFrac).ang;
     const PN = 28;
     let dPit = '';
@@ -262,6 +268,10 @@
       let st = cs.get(car.id);
       if (!st) { st = { prog: car.dist / SIM.LAP_DIST, off: 0, pitState: null, pitT: 0, prevFrac: null }; cs.set(car.id, st); }
 
+      // Clear a stale pit state once the car is racing again (the player exits
+      // via the pit-stop screen, so its state isn't reset on the track).
+      if (!car.pitting && st.pitState) { st.pitState = null; st.pitT = 0; }
+
       // AI cars occasionally peel into the pit lane as they reach the entry.
       if (r.phase === 'running' && !car.isPlayer && !car.pitting) {
         const frac = ((car.dist / SIM.LAP_DIST) % 1 + 1) % 1;
@@ -273,8 +283,22 @@
       // The player's pit (flag set by the orchestrator on 'Box') starts here.
       if (car.pitting && !st.pitState) { st.pitState = 'in'; st.pitT = 0; }
 
-      // Smooth the loop position toward the sim distance.
-      st.prog += (car.dist / SIM.LAP_DIST - st.prog) * k;
+      // Smooth the loop position toward the sim distance. The player's won-duel
+      // surge (a forward jump in dist) plays out as a timed, eased move so the
+      // overtake is a controlled move-around, not a teleport through the car ahead.
+      const tprog = car.dist / SIM.LAP_DIST;
+      if (car.isPlayer && r.phase === 'running' && !st.surging && (tprog - st.prog) > SURGE_TRIG) {
+        st.surging = true; st.surgeT = 0; st.surgeFrom = st.prog;
+      }
+      if (st.surging) {
+        st.surgeT += dt;
+        const u = Math.min(1, st.surgeT / SURGE_TIME);
+        const e = u * u * (3 - 2 * u);                       // smoothstep: slow build, ease off
+        st.prog = st.surgeFrom + (tprog - st.surgeFrom) * e;
+        if (u >= 1) { st.surging = false; r.overtaking = false; }
+      } else {
+        st.prog += (tprog - st.prog) * k;
+      }
 
       if (car.pitting && st.pitState) {
         // Drive the pit lane in, sit under the roof, drive out, rejoin ahead.
@@ -299,13 +323,14 @@
           const a = pitPathEl.getPointAtLength(l), b2 = pitPathEl.getPointAtLength(Math.min(l + 1, pitLen));
           rx = a.x; ry = a.y; rang = Math.atan2(b2.y - a.y, b2.x - a.x);
           if (u >= 1 && racing) {
-            // Rejoin in a clear gap (don't land on top of a car at the exit).
+            // Rejoin at the natural exit point (no backward snap → no teleport);
+            // ease in from the pit side while the cars on the line make room.
             const LAP = SIM.LAP_DIST;
-            const circ = (a, b) => { const x = Math.abs((a - b) % LAP); return Math.min(x, LAP - x); };
-            let d = car.dist + pitExitDist;
-            for (let t = 0; t < 10; t++) { if (!field.some(o => o !== car && !o.pitting && circ(o.dist, d) < REJOIN_GAP)) break; d -= REJOIN_GAP; }
+            const d = car.dist + pitExitDist;
             car.dist = d; st.prog = d / LAP; st.prevFrac = ((st.prog % 1) + 1) % 1;
-            car.lane = 0; car.laneT = 0; car.passing = false;   // rejoin clean on the racing line
+            const ml = pitSideSign * SIM.LANE_W;
+            car.lane = ml; car.laneT = ml; car.mergeLane = ml; car.merging = SIM.MERGE_TIME;
+            car.passing = false; car.passTarget = null;
             st.pitState = null; car.pitting = false;
           }
         }
@@ -315,7 +340,21 @@
         // Track-running car: racing line (inside of the corner) + the sim's
         // passing offset. The grid uses a fixed lateral stagger instead.
         const p = at(st.prog);
-        const lat = r.phase === 'grid' ? (i % 2 ? 1 : -1) * GRID_COL : (car.lane ?? 0) + racingLine(st.prog);
+        let lat;
+        if (r.phase === 'grid') {
+          lat = (i % 2 ? 1 : -1) * GRID_COL;
+        } else {
+          const rl = racingLine(st.prog);
+          lat = (car.lane ?? 0) + rl;
+          // Player's won-duel pass: swing to the OUTSIDE of the line while the
+          // surge plays out, then tuck back in (the passed car yields via the
+          // no-overlap pass). AI pull-out is already in car.lane from the sim.
+          if (car.isPlayer) {
+            const want = (st.surging && r.overtaking) ? 1 : 0;
+            st.pout = (st.pout ?? 0) + (want - (st.pout ?? 0)) * (1 - Math.exp(-POUT_K * dt));
+            lat += -Math.sign(rl || 1) * SIM.LANE_W * st.pout;
+          }
+        }
         draw.push({ car, st, p, lat });
       }
     }
