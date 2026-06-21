@@ -27,12 +27,15 @@ export const DUEL_TIMER_MS = 20000;
 // Chosen during the action-break. tier sets the question difficulty;
 // maxGain/wrongLoss set the risk/reward; wearRate burns tyres;
 // exitBonus feeds the momentum that decides the next duel.
+// wearRate here is the EXTRA wear a hard move adds ON TOP of the base wear that
+// accrues just from running (SIM.BASE_WEAR_PER_SEC). Base wear is the bigger
+// share — you can't dodge the pit by simply avoiding duels.
 export const COMMITMENTS = {
-  measured: { id: 'measured', label: 'Measured', tier: 'easy',   maxGain: 1, wrongLoss: 1, wearRate: 0.07, exitBonus: 0.00,
+  measured: { id: 'measured', label: 'Measured', tier: 'easy',   maxGain: 1, wrongLoss: 1, wearRate: 0.02, exitBonus: 0.00,
               blurb: 'Easier question. Climb steadily — low downside.' },
-  push:     { id: 'push',     label: 'Push',     tier: 'medium', maxGain: 1, wrongLoss: 1, wearRate: 0.12, exitBonus: 0.10,
+  push:     { id: 'push',     label: 'Push',     tier: 'medium', maxGain: 1, wrongLoss: 1, wearRate: 0.035, exitBonus: 0.10,
               blurb: 'Balanced question. A clean answer makes the move.' },
-  lunge:    { id: 'lunge',    label: 'Lunge',    tier: 'hard',   maxGain: 2, wrongLoss: 2, wearRate: 0.20, exitBonus: 0.25,
+  lunge:    { id: 'lunge',    label: 'Lunge',    tier: 'hard',   maxGain: 2, wrongLoss: 2, wearRate: 0.06, exitBonus: 0.25,
               blurb: 'Hard question. Lunge for two — or run wide and drop two.' },
 };
 export const COMMIT_ORDER = ['measured', 'push', 'lunge'];
@@ -60,8 +63,21 @@ export const SIM = {
   PLAYER_BOOST: 44,    // max ± player velocity from exit momentum (units/s)
   MIN_RUN_DIST: 380,   // distance you must race between duels (the long gap)
   MAX_RUN_DIST: 1300,  // force a duel after this much clear running
+  BASE_WEAR_PER_SEC: 0.008, // tyres wear just from running (~0.10/lap) — the bulk of wear
   PIT_OPEN_LAP:   2,   // pit lane opens from this lap
   PIT_WEAR_PROMPT: 0.45, // only prompt to pit at the line when tyres are this worn
+
+  /* 2D lanes — AI swap places by pulling out alongside (mutual room), never
+     overlapping. Lane is a lateral px offset; 0 = racing line. */
+  LANE_W:       11,    // how far out a passing / yielding car sits from the line
+  LANE_CLEAR:   18,    // two cars share a lane band (block each other) within this lateral px
+  BLOCK_GAP:    24,    // a same-lane car ahead caps you to its speed inside this dist gap
+  LOOKAHEAD:    90,    // how far ahead (dist) to scan for a blocker
+  PASS_SPAN:    70,    // the overtaking lane must be clear this far ahead (dist) to commit
+  CLEAR_AHEAD:  30,    // you've completed a pass once this far (dist) ahead of who you passed
+  OVERTAKE_PACE: 1.5,  // must be this much faster (pace) than the blocker to try a pass
+  PATIENCE:     0.7,   // seconds held up before pulling out
+  LANE_SIM_K:   7,     // how quickly cars slide between lanes (per-second lerp rate)
 };
 
 /* ── Outcome bands ──────────────────────────────────────── */

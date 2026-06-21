@@ -156,7 +156,7 @@
 
   /* ── Cloud save ──────────────────────────────────────── */
   function footballSaveLimit() {
-    return (userTier === 'pro' || userTier === 'dev') ? 20 : 5;
+    return userTier === 'max' ? 100 : (userTier === 'pro' || userTier === 'dev') ? 20 : 5;
   }
 
   async function saveToCloud() {

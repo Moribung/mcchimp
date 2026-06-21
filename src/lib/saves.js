@@ -20,6 +20,9 @@ import { supabase } from '$lib/supabase';
 
 export function getUserLimits(profile) {
   const tier = profile?.tier;
+  if (tier === 'max') {
+    return { maxActiveSaves: 100, maxFavouritables: 50, maxPastCareers: 100, maxFavouritablePast: 50 };
+  }
   if (tier === 'pro' || tier === 'dev') {
     return { maxActiveSaves: 20, maxFavouritables: 10, maxPastCareers: 20, maxFavouritablePast: 10 };
   }

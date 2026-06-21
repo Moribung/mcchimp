@@ -13,7 +13,7 @@
     userTier      = 'regular',
   } = $props();
 
-  const saveLimit = $derived(userTier === 'pro' || userTier === 'dev' ? 20 : 5);
+  const saveLimit = $derived(userTier === 'max' ? 100 : (userTier === 'pro' || userTier === 'dev') ? 20 : 5);
 
   // ── Saved careers modal ───────────────────────────────
   let showSaved    = $state(false);

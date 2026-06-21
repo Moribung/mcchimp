@@ -16,24 +16,19 @@
   const VB_W = 680, VB_H = 360, CX = VB_W / 2, CY = VB_H / 2;
   const ZOOM_IN = 2.4, CAR_K = 6, CAM_K = 4;
   const DRAW_W = 22, DRAW_H = DRAW_W * (SPRITE_H / SPRITE_W);
-  // Lanes: everyone runs the inner line; a car pulls out to the outer line to
-  // pass. A big forward jump (a duel pass, incl. a +2 lunge) runs a staged
-  // move — swing wide first, THEN surge past, THEN tuck back in — so a passing
-  // car never clips the car(s) it's going by.
-  const LANE = 7, LANE_K = 6, VSMOOTH = 0.15, SIDE_BY_SIDE = 46, PASS_TRIGGER = 0.03, LANE_HOLD = 0.22, CLOSE_MIN = 1.2;
-  // Once a pass is done, pull back to the inner line as soon as the car you
-  // passed is this far clear behind (less than PASS_GAP, so you don't get stuck out).
-  const INNER_CLEAR = 28;
-  // A pass accelerates rather than teleporting: ramp up to SURGE_MAX, then ease
-  // back toward cruise as the gap closes.
-  const SURGE_MAX = 0.22, SURGE_ACCEL = 7, CRUISE_V = 0.08;
-  // A small pit bay at the start/finish: AI cars occasionally peel in, vanish
-  // under the roof, and rejoin. (The player's stop is its own screen.)
-  const PIT_DEPTH = 30, AI_PIT_CHANCE = 0.1, PIT_IN = 0.9, PIT_PARK = 2.4, PIT_OUT = 0.9, PIT_FWD = 50;
+  // Lanes come from the sim (car.lane — a lateral px offset; 0 = racing line).
+  // The renderer just smooths to them and, as a hard guarantee, nudges any two
+  // sprites apart if they'd ever touch (covers duel passes + lane transitions).
+  const SEP_LONG = 22, SEP_LAT = 21, LANE_MAX = 14, REJOIN_GAP = 24;
+  const FALTER_DUR = 0.9, FALTER_AMP = 8, FALTER_YAW = 0.18;   // wobble after a botched duel: px sway, radian nose-twitch
+  // Pit complex set back in the infield: a lane branches off the start/finish,
+  // runs in to a garage block, AI park under the roof, then rejoin ahead.
+  const AI_PIT_CHANCE = 0.25, PIT_IN = 1.1, PIT_PARK = 2.4, PIT_OUT = 1.1;
+  const PIT_SPAN = 110, OFFSET = 36;   // pit lane runs PIT_SPAN of track, offset OFFSET to the side
   // Starting grid: the packed field with an alternating lateral stagger.
   const GRID_COL = 7;
   let boxX = CX, boxY = CY, entryAng = 0, boxAng = 0;
-  let pitPathEl = null, pitLen = 0, boxLen = 0, pitExitDist = 0;
+  let pitPathEl = null, pitLen = 0, boxLen = 0, pitExitDist = 0, pitStartFrac = 0;
 
   const track = $derived(trackById(gs.race?.trackId));
 
@@ -122,7 +117,7 @@
       g.appendChild(img);
       carsG.appendChild(g);
       carEls.set(car.id, g);
-      cs.set(car.id, { prog: car.dist / SIM.LAP_DIST, vSmooth: 0, lane: 0, pass: null, vSurge: 0, outer: false, outerT: 0, gPrev: Infinity, closeV: 0, aheadId: null, pitState: null, pitT: 0, pitLap: null });
+      cs.set(car.id, { prog: car.dist / SIM.LAP_DIST, off: 0, pitState: null, pitT: 0, prevFrac: null });
     });
 
     rings.player = mkRing('#E8C14A');
@@ -136,29 +131,52 @@
       + '<rect x="-1.5" y="-15" width="3" height="4" fill="#1c2521"/><rect x="-1.5" y="-3" width="3" height="4" fill="#1c2521"/><rect x="-1.5" y="9" width="3" height="4" fill="#1c2521"/>';
     carsG.parentNode.insertBefore(sf, carsG);
 
-    // ── Pit lane + bay, just inside the line ──
-    entryAng = s.ang;
-    const nx0 = -Math.sin(s.ang), ny0 = Math.cos(s.ang);
-    const inSign = ((centroidX - s.x) * nx0 + (centroidY - s.y) * ny0) >= 0 ? 1 : -1;
-    const tx = Math.cos(s.ang), ty = Math.sin(s.ang);
-    const inx = nx0 * inSign, iny = ny0 * inSign;
-    const e2 = trackEl.getPointAtLength(PIT_FWD % L);
-    // A lane that peels in off the line, bows inward to the box, and rejoins ahead.
-    const c1x = s.x + tx * 14 + inx * PIT_DEPTH, c1y = s.y + ty * 14 + iny * PIT_DEPTH;
-    const c2x = e2.x - tx * 14 + inx * PIT_DEPTH, c2y = e2.y - ty * 14 + iny * PIT_DEPTH;
-    const dPit = `M ${s.x.toFixed(1)} ${s.y.toFixed(1)} C ${c1x.toFixed(1)} ${c1y.toFixed(1)} ${c2x.toFixed(1)} ${c2y.toFixed(1)} ${e2.x.toFixed(1)} ${e2.y.toFixed(1)}`;
+    // ── Pit lane: a tapered sideways offset of the track, on its longest
+    // straight — so it leaves/rejoins tangentially and the garages sit in clear
+    // space (offsetting on a corner would land on the adjacent track). ──
+    // NOTE: at() takes a fraction of the lap (0..1), not a length.
+    const findStraight = () => {
+      const M = 160, ang = [];
+      for (let i = 0; i < M; i++) ang.push(at(i / M).ang);
+      const turn = (i) => { let d = Math.abs(ang[(i + 1) % M] - ang[i]); if (d > Math.PI) d = 2 * Math.PI - d; return d; };
+      let bestLen = 0, bestStart = 0, curLen = 0, curStart = 0;
+      for (let i = 0; i < M * 2; i++) {
+        const k = i % M;
+        if (turn(k) < 0.045) { if (curLen === 0) curStart = i; curLen++; if (curLen > bestLen) { bestLen = curLen; bestStart = curStart; } }
+        else curLen = 0;
+      }
+      return { centreFrac: ((bestStart + bestLen / 2) % M) / M, lenPx: (bestLen / M) * L };
+    };
+    const straight = findStraight();
+    const span = Math.min(PIT_SPAN, Math.max(70, straight.lenPx - 8));   // px of track length
+    const spanFrac = span / L;
+    pitStartFrac = (((straight.centreFrac - spanFrac / 2) % 1) + 1) % 1;
+    if (gs.race) gs.race.pitEntryFrac = pitStartFrac;   // tell the orchestrator where the pit lane begins
+    const cpt = at(straight.centreFrac);
+    const inSign = ((centroidX - cpt.x) * (-Math.sin(cpt.ang)) + (centroidY - cpt.y) * Math.cos(cpt.ang)) >= 0 ? 1 : -1;
+    entryAng = at(pitStartFrac).ang;
+    const PN = 28;
+    let dPit = '';
+    for (let i = 0; i <= PN; i++) {
+      const a = at(pitStartFrac + (i / PN) * spanFrac);
+      const taper = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / PN);   // 0→1→0, flat (tangent) at both ends
+      const nx = -Math.sin(a.ang), ny = Math.cos(a.ang);
+      const off = OFFSET * taper * inSign;
+      dPit += (i === 0 ? 'M ' : 'L ') + (a.x + nx * off).toFixed(1) + ' ' + (a.y + ny * off).toFixed(1) + ' ';
+    }
 
     pitPathEl = document.createElementNS(NS, 'path');
     pitPathEl.setAttribute('d', dPit);
     pitPathEl.setAttribute('fill', 'none');
     pitPathEl.setAttribute('stroke', '#33383f');
-    pitPathEl.setAttribute('stroke-width', '11');
+    pitPathEl.setAttribute('stroke-width', '12');
+    pitPathEl.setAttribute('stroke-linejoin', 'round');
     pitPathEl.setAttribute('stroke-linecap', 'round');
     camG.insertBefore(pitPathEl, carsG);
     const pitEdge = document.createElementNS(NS, 'path');
     pitEdge.setAttribute('d', dPit);
     pitEdge.setAttribute('fill', 'none'); pitEdge.setAttribute('stroke', '#e9e6dd');
-    pitEdge.setAttribute('stroke-width', '1'); pitEdge.setAttribute('stroke-dasharray', '4 6'); pitEdge.setAttribute('opacity', '0.3');
+    pitEdge.setAttribute('stroke-width', '1'); pitEdge.setAttribute('stroke-dasharray', '5 7'); pitEdge.setAttribute('opacity', '0.35');
     camG.insertBefore(pitEdge, carsG);
 
     pitLen = pitPathEl.getTotalLength();
@@ -166,17 +184,32 @@
     const bp = pitPathEl.getPointAtLength(boxLen);
     const bp2 = pitPathEl.getPointAtLength(Math.min(boxLen + 1, pitLen));
     boxX = bp.x; boxY = bp.y; boxAng = Math.atan2(bp2.y - bp.y, bp2.x - bp.x);
-    pitExitDist = (PIT_FWD / L) * SIM.LAP_DIST;
-    const roofAng = (boxAng * 180 / Math.PI).toFixed(1);
+    pitExitDist = (span / L) * SIM.LAP_DIST;
+    const deg = (boxAng * 180 / Math.PI).toFixed(1);
 
-    const floor = document.createElementNS(NS, 'rect');
-    floor.setAttribute('x', (boxX - 14).toFixed(1)); floor.setAttribute('y', (boxY - 10).toFixed(1));
-    floor.setAttribute('width', '28'); floor.setAttribute('height', '20'); floor.setAttribute('rx', '2'); floor.setAttribute('fill', '#2b2f35');
+    // Garage block behind the pit lane (a touch further to the same side).
+    const bnx = -Math.sin(boxAng) * inSign, bny = Math.cos(boxAng) * inSign;
+    const gX = boxX + bnx * 19, gY = boxY + bny * 19;
+    const garage = document.createElementNS(NS, 'g');
+    garage.setAttribute('transform', `translate(${gX.toFixed(1)},${gY.toFixed(1)}) rotate(${deg})`);
+    let gi = '<rect x="-36" y="-11" width="72" height="22" rx="2" fill="#1a1f24" stroke="#3a4047" stroke-width="1.5"/>';
+    for (let d = -27; d <= 27; d += 13.5) gi += `<rect x="${(d - 5).toFixed(1)}" y="-7" width="10" height="11" rx="1" fill="#0d1116" stroke="#2b3036" stroke-width="1"/>`;
+    gi += '<rect x="-36" y="-11" width="72" height="4" rx="2" fill="#3ecf6a" opacity="0.5"/>';
+    garage.innerHTML = gi;
+    camG.insertBefore(garage, carsG);
+
+    // Pit-lane apron + box marking (under the cars).
+    const floor = document.createElementNS(NS, 'g');
+    floor.setAttribute('transform', `translate(${boxX.toFixed(1)},${boxY.toFixed(1)}) rotate(${deg})`);
+    floor.innerHTML = '<rect x="-40" y="-8" width="80" height="16" rx="2" fill="#2b2f35"/>'
+      + '<rect x="-11" y="-8" width="22" height="16" rx="1" fill="none" stroke="#3ecf6a" stroke-width="1" opacity="0.5"/>';
     camG.insertBefore(floor, carsG);
+
+    // Roof overhang over the box — fully hides the parked car (drawn on top).
     const roof = document.createElementNS(NS, 'g');
-    roof.setAttribute('transform', `translate(${boxX.toFixed(1)},${boxY.toFixed(1)}) rotate(${roofAng})`);
-    roof.innerHTML = '<rect x="-17" y="-12" width="34" height="24" rx="3" fill="#11161b" stroke="#3a4047" stroke-width="1"/>'
-      + '<rect x="-17" y="-12" width="34" height="5" rx="3" fill="#3ecf6a" opacity="0.55"/>';
+    roof.setAttribute('transform', `translate(${boxX.toFixed(1)},${boxY.toFixed(1)}) rotate(${deg})`);
+    roof.innerHTML = '<rect x="-15" y="-9" width="30" height="18" rx="2" fill="#11161b" stroke="#3a4047" stroke-width="1"/>'
+      + '<rect x="-15" y="-9" width="30" height="4" rx="2" fill="#3ecf6a" opacity="0.5"/>';
     camG.appendChild(roof);
 
     // Clear any stale pit flags from a previous mount.
@@ -188,8 +221,9 @@
     if (!st) { ring.setAttribute('opacity', '0'); return; }
     const p = at(st.prog);
     const nx = -Math.sin(p.ang), ny = Math.cos(p.ang);
-    ring.setAttribute('cx', (p.x + nx * st.lane).toFixed(2));
-    ring.setAttribute('cy', (p.y + ny * st.lane).toFixed(2));
+    const off = st.off ?? 0;
+    ring.setAttribute('cx', (p.x + nx * off).toFixed(2));
+    ring.setAttribute('cy', (p.y + ny * off).toFixed(2));
     ring.setAttribute('opacity', '0.85');
   }
 
@@ -199,122 +233,126 @@
     if (lastT == null) lastT = t;
     const dt = Math.min(0.05, (t - lastT) / 1000); lastT = t;
     const k = 1 - Math.exp(-CAR_K * dt);
-    const laneK = 1 - Math.exp(-LANE_K * dt);
     const field = r.field;
+    let playerRX = null, playerRY = null;   // where the player actually drew this frame (for the camera)
+    const setTf = (car, rx, ry, rang) => {
+      const el = carEls.get(car.id);
+      if (el) el.setAttribute('transform', `translate(${rx.toFixed(2)},${ry.toFixed(2)}) rotate(${(rang * 180 / Math.PI).toFixed(2)})`);
+      if (car.isPlayer) { playerRX = rx; playerRY = ry; }
+    };
 
+    // ── Pass 1: advance render state; draw pit cars now, collect track cars ──
+    const draw = [];   // { car, st, lane } for cars out on the circuit
     for (let i = 0; i < field.length; i++) {
       const car = field[i];
-      const target = car.dist / SIM.LAP_DIST;
       let st = cs.get(car.id);
-      if (!st) { st = { prog: target, vSmooth: 0, lane: 0, pass: null, vSurge: 0, outer: false, outerT: 0, gPrev: Infinity, closeV: 0, aheadId: null, pitState: null, pitT: 0, pitLap: null }; cs.set(car.id, st); }
+      if (!st) { st = { prog: car.dist / SIM.LAP_DIST, off: 0, pitState: null, pitT: 0, prevFrac: null }; cs.set(car.id, st); }
 
-      // Side of the track, from the current position.
-      const pc = at(st.prog);
-      const innerSign = ((centroidX - pc.x) * (-Math.sin(pc.ang)) + (centroidY - pc.y) * Math.cos(pc.ang)) >= 0 ? 1 : -1;
-
-      const ahead  = i > 0 ? field[i - 1] : null;
-      const behind = i < field.length - 1 ? field[i + 1] : null;
-      const aSt = ahead ? cs.get(ahead.id) : null;
-      const bSt = behind ? cs.get(behind.id) : null;
-      const gapAhead  = ahead ? ahead.dist - car.dist : Infinity;
-      const gapBehind = behind ? car.dist - behind.dist : Infinity;
-      // Lane intent updates only while racing. During the frozen duel (break/
-      // question/resolve) it HOLDS, so a car already on the outer line when the
-      // zoom-in hit (e.g. mid-overtake) stays out instead of tucking back in.
-      // Pull out only to OVERTAKE the car ahead (clearly faster while alongside)
-      // or during a staged pass; latch on, releasing once you've cleared behind.
-      if (r.phase === 'running') {
-        // Closing rate to the car ahead. Drafting in a clamped tow ≈ 0 (you stay
-        // inner); a real run at the car ahead is clearly positive (you pull out).
-        // Using the gap's motion instead of a noisy speed compare kills the
-        // matched-speed ping. Reset when the car ahead changes or in clear air.
-        const aheadId = ahead ? ahead.id : null;
-        if (ahead && aheadId === st.aheadId && st.gPrev < Infinity) {
-          st.closeV += ((st.gPrev - gapAhead) / dt - st.closeV) * 0.25;
-        } else {
-          st.closeV = 0;
-        }
-        st.gPrev = gapAhead; st.aheadId = aheadId;
-
-        if (!st.pass && target - st.prog > PASS_TRIGGER) st.pass = 'out';
-        const attackingAhead = !!aSt && gapAhead < SIDE_BY_SIDE && st.closeV > CLOSE_MIN;
-        // Outer to pass the car ahead, or to finish clearing the one you passed.
-        // Debounced: the intent must hold for LANE_HOLD before the car switches;
-        // a staged duel pass commits immediately.
-        const want = st.pass || attackingAhead || (st.outer && !!bSt && gapBehind < INNER_CLEAR);
-        if (st.pass) { st.outer = true; st.outerT = 0; }
-        else if (want !== st.outer) { st.outerT += dt; if (st.outerT >= LANE_HOLD) { st.outer = want; st.outerT = 0; } }
-        else st.outerT = 0;
-      }
-
-      // AI cars occasionally peel into the pit bay as they cross the line.
+      // AI cars occasionally peel into the pit lane as they reach the entry.
       if (r.phase === 'running' && !car.isPlayer && !car.pitting) {
-        const lap = Math.floor(car.dist / SIM.LAP_DIST);
-        if (st.pitLap != null && lap > st.pitLap && Math.random() < AI_PIT_CHANCE) {
+        const frac = ((car.dist / SIM.LAP_DIST) % 1 + 1) % 1;
+        if (st.prevFrac != null && st.prevFrac < pitStartFrac && frac >= pitStartFrac && Math.random() < AI_PIT_CHANCE) {
           car.pitting = true; st.pitState = 'in'; st.pitT = 0;
         }
-        st.pitLap = lap;
+        st.prevFrac = frac;
       }
+      // The player's pit (flag set by the orchestrator on 'Box') starts here.
+      if (car.pitting && !st.pitState) { st.pitState = 'in'; st.pitT = 0; }
 
-      if (r.phase === 'grid') {
-        st.lane = (i % 2 ? 1 : -1) * GRID_COL;   // staggered starting formation
-      } else {
-        const laneTarget = (st.outer ? -innerSign : innerSign) * LANE;
-        st.lane += (laneTarget - st.lane) * laneK;
-      }
+      // Smooth the loop position toward the sim distance.
+      st.prog += (car.dist / SIM.LAP_DIST - st.prog) * k;
 
-      // Forward motion: while swinging out, HOLD until wide; then ACCELERATE
-      // through the pass (ramp up to a surge speed, ease back near the end).
-      if (st.pass === 'out' && Math.abs(st.lane - (-innerSign * LANE)) < 2.5) { st.pass = 'surge'; st.vSurge = CRUISE_V; }
-      const prog0 = st.prog;
-      if (st.pass === 'surge') {
-        const gap = target - st.prog;
-        const vt = Math.min(SURGE_MAX, CRUISE_V + gap * 1.6);   // ease back toward cruise as the gap closes
-        st.vSurge += (vt - st.vSurge) * (1 - Math.exp(-SURGE_ACCEL * dt));
-        st.prog += st.vSurge * dt;
-        if (target - st.prog < 0.002) { st.prog = target; st.pass = null; }
-      } else if (st.pass !== 'out') {
-        st.prog += (target - st.prog) * k;
-      }
-
-      const instV = dt > 0 ? (st.prog - prog0) / dt : 0;
-      st.vSmooth += (instV - st.vSmooth) * VSMOOTH;
-
-      const p = at(st.prog);
-      let rx, ry, rang;
       if (car.pitting && st.pitState) {
         // Drive the pit lane in, sit under the roof, drive out, rejoin ahead.
-        st.pitT += dt;
+        // Progresses while racing (and during the player's own 'pitenter');
+        // during the frozen duel everything holds.
+        const racing = r.phase === 'running' || (r.phase === 'pitenter' && car.isPlayer);
+        if (racing) st.pitT += dt;
+        let rx, ry, rang;
         if (st.pitState === 'in') {
           const u = Math.min(1, st.pitT / PIT_IN), l = u * boxLen;
           const a = pitPathEl.getPointAtLength(l), b2 = pitPathEl.getPointAtLength(Math.min(l + 1, boxLen));
           rx = a.x; ry = a.y; rang = Math.atan2(b2.y - a.y, b2.x - a.x);
-          if (u >= 1) { st.pitState = 'parked'; st.pitT = 0; }
+          if (u >= 1 && racing) {
+            if (car.isPlayer && r.phase === 'pitenter') gs.race.phase = 'pit';   // hand off to the pit-stop screen
+            else { st.pitState = 'parked'; st.pitT = 0; }
+          }
         } else if (st.pitState === 'parked') {
           rx = boxX; ry = boxY; rang = boxAng;
-          if (st.pitT >= PIT_PARK) { st.pitState = 'out'; st.pitT = 0; }
+          if (st.pitT >= PIT_PARK && racing) { st.pitState = 'out'; st.pitT = 0; }
         } else {
           const u = Math.min(1, st.pitT / PIT_OUT), l = boxLen + u * (pitLen - boxLen);
           const a = pitPathEl.getPointAtLength(l), b2 = pitPathEl.getPointAtLength(Math.min(l + 1, pitLen));
           rx = a.x; ry = a.y; rang = Math.atan2(b2.y - a.y, b2.x - a.x);
-          if (u >= 1) { car.dist += pitExitDist; st.prog = car.dist / SIM.LAP_DIST; st.pitState = null; car.pitting = false; }
+          if (u >= 1 && racing) {
+            // Rejoin in a clear gap (don't land on top of a car at the exit).
+            const LAP = SIM.LAP_DIST;
+            const circ = (a, b) => { const x = Math.abs((a - b) % LAP); return Math.min(x, LAP - x); };
+            let d = car.dist + pitExitDist;
+            for (let t = 0; t < 10; t++) { if (!field.some(o => o !== car && !o.pitting && circ(o.dist, d) < REJOIN_GAP)) break; d -= REJOIN_GAP; }
+            car.dist = d; st.prog = d / LAP; st.prevFrac = ((st.prog % 1) + 1) % 1;
+            car.lane = 0; car.laneT = 0; car.passing = false;   // rejoin clean on the racing line
+            st.pitState = null; car.pitting = false;
+          }
         }
+        st.off = 0;
+        setTf(car, rx, ry, rang);
       } else {
-        const nx = -Math.sin(p.ang), ny = Math.cos(p.ang);
-        rx = p.x + nx * st.lane; ry = p.y + ny * st.lane; rang = p.ang;
+        // Track-running car: lane comes from the sim (grid uses a fixed stagger).
+        const lane = r.phase === 'grid' ? (i % 2 ? 1 : -1) * GRID_COL : (car.lane ?? 0);
+        draw.push({ car, st, lane });
       }
-      const el = carEls.get(car.id);
-      if (el) el.setAttribute('transform',
-        `translate(${rx.toFixed(2)},${ry.toFixed(2)}) rotate(${(rang * 180 / Math.PI).toFixed(2)})`);
     }
 
-    const zoomIn = r.phase === 'break' || r.phase === 'question' || r.phase === 'resolve' || r.phase === 'pitdecision';
+    // ── Pass 2: hard no-overlap — nudge any two track sprites apart laterally
+    // if they'd touch (covers duel passes + lane-change transitions). ──
+    const push = new Map();
+    for (let it = 0; it < 2; it++) {
+      for (let a = 0; a < draw.length; a++) for (let b = a + 1; b < draw.length; b++) {
+        const A = draw[a], B = draw[b];
+        let dl = A.st.prog - B.st.prog; dl -= Math.round(dl);   // shortest way round the loop
+        const longGap = Math.abs(dl) * L;
+        if (longGap >= SEP_LONG) continue;
+        const la = A.lane + (push.get(A.car.id) || 0), lb = B.lane + (push.get(B.car.id) || 0);
+        const lat = la - lb;
+        if (Math.abs(lat) >= SEP_LAT) continue;
+        const need = SEP_LAT - Math.abs(lat), dir = lat >= 0 ? 1 : -1, w = 1 - longGap / SEP_LONG, half = (need / 2) * w;
+        push.set(A.car.id, (push.get(A.car.id) || 0) + dir * half);
+        push.set(B.car.id, (push.get(B.car.id) || 0) - dir * half);
+      }
+    }
+
+    // ── Pass 3: draw the track cars ──
+    for (const { car, st, lane } of draw) {
+      const p = at(st.prog);
+      const nx = -Math.sin(p.ang), ny = Math.cos(p.ang);
+      let off = Math.max(-LANE_MAX, Math.min(LANE_MAX, lane + (push.get(car.id) || 0)));
+      let wob = 0;
+      if (car.isPlayer && r.falter > 0) {
+        // Botched duel: shimmy side-to-side and twitch the nose as grip goes.
+        const phase = (FALTER_DUR - r.falter) / FALTER_DUR, decay = r.falter / FALTER_DUR;
+        off += Math.sin(phase * Math.PI * 6) * FALTER_AMP * decay;
+        wob = Math.sin(phase * Math.PI * 6) * FALTER_YAW * decay;
+      }
+      st.off = off;
+      setTf(car, p.x + nx * off, p.y + ny * off, p.ang + wob);
+    }
+    if (r.falter > 0) r.falter = Math.max(0, r.falter - dt);   // fade the wobble out
+
+    const zoomIn = r.phase === 'break' || r.phase === 'question' || r.phase === 'resolve' || r.phase === 'pitdecision' || r.phase === 'pitenter';
     let tcam;
     if (zoomIn) {
-      const pc = field[r.playerIdx];
-      const pst = pc && cs.get(pc.id);
-      const pp = pst ? at(pst.prog) : { x: CX, y: CY };
-      tcam = { s: ZOOM_IN, fx: pp.x, fy: pp.y };
+      // Follow where the player actually drew — including along the pit lane
+      // during 'pitenter' — so the drive-in stays centred, not the track point.
+      let fx, fy;
+      if (playerRX != null) { fx = playerRX; fy = playerRY; }
+      else {
+        const pc = field[r.playerIdx];
+        const pst = pc && cs.get(pc.id);
+        const pp = pst ? at(pst.prog) : { x: CX, y: CY };
+        fx = pp.x; fy = pp.y;
+      }
+      tcam = { s: ZOOM_IN, fx, fy };
     } else {
       tcam = { s: 1, fx: CX, fy: CY };
     }

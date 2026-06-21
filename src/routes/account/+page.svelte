@@ -4,6 +4,7 @@
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import { PUBLIC_SUPABASE_URL } from '$env/static/public';
+  import { TIER_LABELS, PAID_PLANS, PLAN_RANK, ownsPlan } from '$lib/tiers';
 
   let profile = $state(null);
   let loading = $state(true);
@@ -26,8 +27,6 @@
   let showDeleteModal = $state(false);
   let deleteConfirm = $state('');
   let deleting = $state(false);
-
-  const TIER_LABELS = { regular: 'Free', pro: 'Pro', dev: 'Developer', admin: 'Admin' };
 
   onMount(async () => {
     if (!$session) {
@@ -272,6 +271,30 @@
           </div>
           <span class="tier-badge tier-{profile?.tier || 'regular'}">{TIER_LABELS[profile?.tier] || (profile?.tier ?? 'Free')}</span>
         </div>
+
+        {#if PLAN_RANK[profile?.tier ?? 'regular'] !== undefined}
+          <div class="plans">
+            {#each PAID_PLANS as plan (plan.key)}
+              {@const owned = ownsPlan(profile?.tier ?? 'regular', plan.rank)}
+              <div class="plan-card" class:plan-featured={plan.featured} class:plan-owned={owned}>
+                {#if plan.featured}<div class="plan-tag">Most Popular</div>{/if}
+                <div class="plan-head">
+                  <div class="plan-name">{plan.label}</div>
+                  <div class="plan-tagline">{plan.tagline}</div>
+                </div>
+                <ul class="plan-perks">
+                  {#each plan.perks as perk}<li>{perk}</li>{/each}
+                </ul>
+                {#if owned}
+                  <button class="btn-secondary plan-btn" disabled>Current Plan</button>
+                {:else}
+                  <button class="btn-primary btn-soon plan-btn" disabled aria-disabled="true">Upgrade — Coming Soon</button>
+                {/if}
+              </div>
+            {/each}
+          </div>
+          <div class="plans-note">Payments are coming soon — these plans aren't purchasable yet.</div>
+        {/if}
       </div>
 
       <!-- DATA -->
@@ -429,6 +452,7 @@
   }
   .tier-regular { color: var(--muted); border-color: rgba(255,255,255,0.15); background: rgba(255,255,255,0.04); }
   .tier-pro { color: var(--gold); border-color: rgba(232,193,74,0.4); background: rgba(232,193,74,0.1); }
+  .tier-max { color: #E8EDF4; border-color: rgba(232,237,244,0.45); background: rgba(232,237,244,0.12); }
   .tier-dev { color: #6B9FE4; border-color: rgba(42,94,173,0.45); background: rgba(42,94,173,0.12); }
   .tier-admin { color: #C07AEA; border-color: rgba(180,74,232,0.45); background: rgba(180,74,232,0.12); }
 
@@ -441,6 +465,62 @@
   }
   .btn-primary:hover:not(:disabled) { background: var(--gold2); }
   .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+
+  .btn-soon {
+    background: rgba(255,255,255,0.06);
+    color: var(--muted);
+    border: 1px solid rgba(255,255,255,0.1);
+    cursor: not-allowed;
+  }
+  .btn-soon:hover { background: rgba(255,255,255,0.06); }
+
+  .plans {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+    margin-top: 20px;
+  }
+  .plan-card {
+    position: relative;
+    display: flex; flex-direction: column;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 4px;
+    padding: 22px 20px;
+    background: rgba(255,255,255,0.015);
+  }
+  .plan-featured { border-color: rgba(232,193,74,0.35); background: rgba(232,193,74,0.04); }
+  .plan-owned { opacity: .72; }
+  .plan-tag {
+    position: absolute; top: -10px; left: 20px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 10px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--black); background: var(--gold);
+    padding: 3px 10px; border-radius: 3px;
+  }
+  .plan-head { margin-bottom: 16px; }
+  .plan-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 26px; letter-spacing: .04em; color: var(--white); line-height: 1;
+  }
+  .plan-tagline { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .plan-perks {
+    list-style: none; padding: 0; margin: 0 0 20px;
+    display: flex; flex-direction: column; gap: 9px; flex: 1;
+  }
+  .plan-perks li {
+    font-size: 13px; color: var(--white); line-height: 1.4;
+    padding-left: 20px; position: relative;
+  }
+  .plan-perks li::before {
+    content: '✓'; position: absolute; left: 0;
+    color: var(--gold); font-size: 12px; font-weight: 700;
+  }
+  .plan-btn { width: 100%; text-align: center; }
+  .plans-note { font-size: 12px; color: var(--muted); margin-top: 14px; }
+
+  @media (max-width: 600px) {
+    .plans { grid-template-columns: 1fr; }
+  }
 
   .btn-secondary {
     font-family: 'Barlow Condensed', sans-serif;

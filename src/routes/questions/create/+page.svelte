@@ -345,7 +345,7 @@
 {:else if !hasAiAccess(tier)}
   <div class="state-msg">
     <h2>Not available yet</h2>
-    <p>AI question generation isn't available on your account. <a class="state-link" href="/account">Upgrade to Pro</a> to unlock it.</p>
+    <p>AI question generation isn't available on your account. <a class="state-link" href="/account">Upgrade your plan</a> to unlock it.</p>
   </div>
 {:else}
   <div class="create-wrap">

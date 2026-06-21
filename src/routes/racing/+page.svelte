@@ -11,7 +11,7 @@
     buildPool, selectQuestion, effectiveTier, updateQScore, qidOf,
   } from '$lib/racing/questions.js';
   import {
-    initField, advanceField, resortField, triggerType, duelOutcome, applyOutcome,
+    initField, stepField, playerBoxed, resortField, triggerType, duelOutcome, applyOutcome,
     exitRating, pitOutcome, applyPitDropDist,
   } from '$lib/racing/race.js';
   import { trackById, randomTrackId } from '$lib/racing/tracks.js';
@@ -79,7 +79,13 @@
     if (r && r.phase === 'running') {
       if (simLast == null) simLast = t;
       const dt = Math.min(0.05, (t - simLast) / 1000); simLast = t;
-      advanceField(r.field, dt, r.playerBoost ?? 0);
+      // 2D step: AI hold the line, swap places by pulling out alongside (mutual
+      // room, never overlapping); the player's order only moves through duels.
+      stepField(r.field, dt, { playerBoost: r.playerBoost ?? 0 });
+
+      // Tyres wear just from running — the bulk of wear, so you can't dodge the
+      // pit by sitting out of duels. Hard moves add extra on top (answerDuel).
+      r.tireWear = Math.min(1, r.tireWear + SIM.BASE_WEAR_PER_SEC * dt * trackById(r.trackId).wearMult);
 
       // Hold station — the player can't pass (or be passed) on track without a
       // duel. Clamp BEFORE re-sorting so no silent place change ever happens.
@@ -94,15 +100,20 @@
 
       const player = r.field[r.playerIdx];
 
-      // Crossed the start/finish line → new lap. Finish the race or offer the pit.
+      // Crossed the start/finish line → new lap → finish the race when done.
       const laps = Math.floor(player.dist / SIM.LAP_DIST);
       if (laps > r.lapsCovered) {
         r.lapsCovered = laps;
         if (laps >= r.totalLaps) { finishRace(); simRaf = requestAnimationFrame(simFrame); return; }
-        if (laps + 1 >= SIM.PIT_OPEN_LAP && r.tireWear >= SIM.PIT_WEAR_PROMPT) {
-          r.phase = 'pitdecision'; simRaf = requestAnimationFrame(simFrame); return;
-        }
       }
+      // Offer the pit as the player reaches the pit-lane entry (not the line).
+      const frac = ((player.dist / SIM.LAP_DIST) % 1 + 1) % 1;
+      const pef = r.pitEntryFrac;
+      if (pef != null && (laps + 1) >= SIM.PIT_OPEN_LAP && r.tireWear >= SIM.PIT_WEAR_PROMPT
+          && r.playerPrevFrac != null && r.playerPrevFrac < pef && frac >= pef) {
+        r.playerPrevFrac = frac; r.phase = 'pitdecision'; simRaf = requestAnimationFrame(simFrame); return;
+      }
+      r.playerPrevFrac = frac;
 
       // A duel breaks out once you've raced a real stretch and a neighbour is in
       // the draft (you've caught them, or they've caught you).
@@ -111,8 +122,12 @@
       const b = behindCar(r.field, r.playerIdx);
       const gA = a ? a.dist - player.dist : Infinity;
       const gB = b ? player.dist - b.dist : Infinity;
-      if (run >= SIM.MIN_RUN_DIST && (gA <= SIM.DRAFT || gB <= SIM.DRAFT)) triggerDuel();
-      else if (run >= SIM.MAX_RUN_DIST) triggerDuel();
+      // Attack only fires if there's actually room to go around (not boxed in);
+      // a defend fires whenever someone's on your tail.
+      const attackOK = gA <= SIM.DRAFT && !playerBoxed(r.field, r.playerIdx);
+      const defendOK = gB <= SIM.DRAFT;
+      if (run >= SIM.MIN_RUN_DIST && (attackOK || defendOK)) triggerDuel();
+      else if (run >= SIM.MAX_RUN_DIST && defendOK) triggerDuel();
     } else {
       simLast = null;
     }
@@ -207,9 +222,12 @@
       stance,
       phase:       'grid',
       duel:        null,
+      falter:      0,                      // >0 while the player wobbles after a botched duel
       lastDuelDist: field[playerIdx].dist,
       playerBoost: 0,
       lastExit:    0.5,
+      pitEntryFrac: null,                 // set by TrackScene once the track is measured
+      playerPrevFrac: ((field[playerIdx].dist / SIM.LAP_DIST) % 1 + 1) % 1,
       pit:         null,
       pitsMade:    0,
       finishPos:   null,
@@ -279,19 +297,23 @@
     const r = gs.race;
     if (!r || r.phase !== 'resolve') return;
     // Now apply the result — the pass plays out as the camera zooms out.
+    const lost = r.duel.band === 'lose';
     applyOutcome({ field: r.field, playerIdx: r.playerIdx, band: r.duel.band, type: r.duel.type, gains: r.duel.gains });
     resync();
+    r.falter = lost ? 0.9 : 0;   // TrackScene wobbles the player as it scrubs speed
     // Race end is lap-based (handled when crossing the line) — just race on.
     resumeRunning(r.lastExit ?? 0.5);
   }
 
-  /* ── Pit stops (offered only at the start/finish line) ── */
+  /* ── Pit stops (offered at the pit-lane entry) ── */
   function enterPit() {
     const r = gs.race;
     if (!r || r.phase !== 'pitdecision') return;
-    r.field.forEach(c => { c.pitting = false; });   // clear any AI mid-bay (TrackScene unmounts now)
+    r.field.forEach(c => { if (!c.isPlayer) c.pitting = false; });   // clear AI mid-bay; keep the player
     r.pit = { tiresToChange: tyresToChange(r.tireWear), tireIdx: 0, results: [], q: pickQuestion('easy'), done: false };
-    r.phase = 'pit';
+    // Drive the player onto the pit lane first; TrackScene flips to 'pit' once parked.
+    const me = r.field[r.playerIdx]; if (me) me.pitting = true;
+    r.phase = 'pitenter';
   }
 
   function pitStay() {
@@ -319,6 +341,7 @@
 
   function finishPit() {
     const r = gs.race;
+    const me = r.field[r.playerIdx]; if (me) me.pitting = false;   // back out of the bay
     const { timeLostMs, positionsLost } = pitOutcome({ tireResults: r.pit.results });
     applyPitDropDist(r.field, r.playerIdx, positionsLost);
     resync();

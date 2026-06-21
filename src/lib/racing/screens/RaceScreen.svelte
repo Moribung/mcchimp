@@ -150,6 +150,12 @@
           </button>
         </div>
 
+      {:else if r.phase === 'pitenter'}
+        <div class="running">
+          <div class="run-tag">Pit lane</div>
+          <div class="run-line">Into the pits…</div>
+        </div>
+
       {:else if r.phase === 'question'}
         <div class="context context-q">{duelContext}</div>
         {#key r.duel?.q?.id}

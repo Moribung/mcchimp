@@ -38,8 +38,8 @@
   let setFilters = $state(new Set(['all']));
   const showAll  = $derived(setFilters.has('all') || setFilters.size === 0);
 
-  const TIER_LIMITS  = { regular: 3, pro: 20, dev: 9999, admin: 20 };
-  const GROUP_LIMITS = { regular: 3, pro: 20, dev: 9999, admin: 20 };
+  const TIER_LIMITS  = { regular: 3, pro: 20, max: 100, dev: 9999, admin: 20 };
+  const GROUP_LIMITS = { regular: 3, pro: 20, max: 100, dev: 9999, admin: 20 };
 
   onMount(async () => {
     if (!$session) { goto('/auth/login'); return; }
@@ -260,7 +260,7 @@
     if (!file.name.endsWith('.json')) { error = 'Only .json files are supported.'; return; }
 
     if (atLimit()) {
-      error = `You've reached your limit of ${TIER_LIMITS[profile.tier]} question sets. Upgrade to Pro for more.`;
+      error = `You've reached your limit of ${TIER_LIMITS[profile.tier]} question sets. Upgrade your plan for more.`;
       e.target.value = '';
       return;
     }
@@ -333,7 +333,7 @@
           <span class="tier-badge tier-{profile?.tier}">{profile?.tier || 'regular'}</span>
         </div>
         {#if profile?.tier === 'regular'}
-          <p class="lib-upgrade">Upgrade to Pro for up to 20 sets and the ability to make sets public.</p>
+          <p class="lib-upgrade"><a href="/account" class="upgrade-link">Upgrade your plan</a> for more sets and the ability to make sets public.</p>
         {/if}
       </div>
       <div class="header-actions">
@@ -441,7 +441,7 @@
           </button>
         </form>
       {:else}
-        <p class="lib-upgrade">Group limit reached. <a href="/account" class="upgrade-link">Upgrade to Pro</a> for more.</p>
+        <p class="lib-upgrade">Group limit reached. <a href="/account" class="upgrade-link">Upgrade your plan</a> for more.</p>
       {/if}
     </div>
     {/snippet}

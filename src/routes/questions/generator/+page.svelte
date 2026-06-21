@@ -388,7 +388,7 @@
           .select('id', { count: 'exact', head: true }).eq('user_id', $session.user.id).eq('staged', false);
         if ((nonStaged ?? 0) >= lim) {
           saving = false;
-          saveError = `You've reached your limit of ${lim} sets. Upgrade to Pro for more.`;
+          saveError = `You've reached your limit of ${lim} sets. Upgrade your plan for more.`;
           return;
         }
       }
@@ -416,7 +416,7 @@
       const limit = profile?.set_limit ?? 3;
       if (existing >= limit) {
         saving = false;
-        saveError = `You've reached your limit of ${limit} sets. Upgrade to Pro for more.`;
+        saveError = `You've reached your limit of ${limit} sets. Upgrade your plan for more.`;
         return;
       }
       const { data, error } = await supabase
